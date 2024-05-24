@@ -8,6 +8,8 @@ struct Account {
     owner: IdenKey,
     /// Balance
 		balance: Field,
+    /// Was it spent
+    spent: bool,
 }
 
 impl Account {
@@ -25,13 +27,19 @@ struct File {
 		data: MerkleRoot,
 }
 
+impl File {
+    fn hash(self) -> Hash {
+        hash::pedersen_hash([self.expiryTime, self.owner, self.data.hash])
+    }
+}
+
 struct MerkleRoot {
-    root: Hash
+    hash: Hash
 }
 
 impl Eq for MerkleRoot {
     fn eq(self, other: Self) -> bool {
-        self.root == other.root
+        self.hash == other.hash
     }
 }
 
@@ -42,12 +50,12 @@ impl MerkleRoot {
             // v = H(v, v)
             v = merkle::compute_merkle_root(v, 0, [v]);
         }
-        MerkleRoot { root: v }
+        MerkleRoot { hash: v }
     }
 
     fn update<N>(&mut self, index: Field, proof: [Hash; N], old_leaf: Hash, new_leaf: Hash) {
-        assert_eq((*self).root, merkle::compute_merkle_root(old_leaf, index, proof));
-        (*self).root = merkle::compute_merkle_root(new_leaf, index, proof);
+        assert_eq((*self).hash, merkle::compute_merkle_root(old_leaf, index, proof));
+        (*self).hash = merkle::compute_merkle_root(new_leaf, index, proof);
     }
 }
 
@@ -67,7 +75,7 @@ impl RollupState {
     }
 
     fn hash(self) -> Hash {
-        hash::pedersen_hash([self.accounts.root, self.storage.root])
+        hash::pedersen_hash([self.accounts.hash, self.storage.hash])
     }
 }
 
