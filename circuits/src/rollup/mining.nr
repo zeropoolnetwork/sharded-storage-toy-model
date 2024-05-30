@@ -11,6 +11,7 @@ global MAX_MINING_NONCE = 1048576; //1<<20
 global MINING_REWARD: Field = 1024; //1<<10
 
 
+#[export]
 struct RandomOracle<N> {
     offset: Field,
     data: [Field; N]
@@ -30,15 +31,16 @@ impl<N> RandomOracle<N> {
     }
 }
 
-
-struct Tx {
+#[export]
+struct MiningTx {
     sender_index: Field,
     nonce: Field,
     random_oracle_nonce: Field,
     mining_nonce: Field
 }
 
-struct TxAssets<N,K> {
+#[export]
+struct MiningTxAssets<N,K> {
     proof_sender: MerkleProof<N>,
     account_sender: Account,
     random_oracle_value: Field,
@@ -52,20 +54,21 @@ struct TxAssets<N,K> {
 
 }
 
-struct TxEx<N,K> {
-    tx: Tx,
-    assets: TxAssets<N,K>
+#[export]
+struct MiningTxEx<N,K> {
+    tx: MiningTx,
+    assets: MiningTxAssets<N,K>
 }
 
-impl Tx {
+impl MiningTx {
     fn hash(self) -> Field {
         poseidon2([self.sender_index, self.nonce, self.random_oracle_nonce, self.mining_nonce])
     }
 }
 
-impl<N,K> TxEx<N,K> {
+impl<N,K> MiningTxEx<N,K> {
     pub fn apply<O>(self, acc_root:Field, data_root:Field, random_oracle:RandomOracle<O>) -> Field {
-        let TxEx{tx, assets} = self;
+        let MiningTxEx{tx, assets} = self;
         let is_blank = assets.signature.a == 0;
 
         // check signature
@@ -127,11 +130,12 @@ impl<N,K> TxEx<N,K> {
     }
 }
 
-struct Block<M,N,K> {
-    txs: [TxEx<N,K>; M]
+#[export]
+struct MiningBlock<M,N,K> {
+    txs: [MiningTxEx<N,K>; M]
 }
 
-impl<M,N,K> Block<M,N,K> {
+impl<M,N,K> MiningBlock<M,N,K> {
     fn apply<O>(self, acc_root:Field, data_root:Field, random_oracle:RandomOracle<O>) -> Field {
         let mut cur = acc_root;
         for i in 0..M {

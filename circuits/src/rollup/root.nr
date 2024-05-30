@@ -1,6 +1,7 @@
 use crate::common::mt::poseidon2;
 
 
+#[export]
 struct Root {
     acc: Field,
     data: Field,

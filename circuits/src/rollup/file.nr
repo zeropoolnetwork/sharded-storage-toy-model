@@ -7,6 +7,7 @@ use crate::rollup::tx::Account;
 // hardcode price for storing
 global PRICE: Field = 1;
 
+#[export]
 struct File {
     /// Until when was it paid for
     expiration_time: Field,
@@ -32,7 +33,8 @@ impl File {
     }
 }
 
-struct Tx {
+#[export]
+struct FileTx {
     sender_index: Field,
     data_index: Field,
     time_interval: Field,
@@ -40,7 +42,8 @@ struct Tx {
     nonce: Field
 }
 
-struct TxAssets<N> {
+#[export]
+struct FileTxAssets<N> {
     proof_sender: MerkleProof<N>,
     proof_file: MerkleProof<N>,
     account_sender: Account,
@@ -48,20 +51,21 @@ struct TxAssets<N> {
     signature: SignaturePacked,
 }
 
-struct TxEx<N> {
-    tx: Tx,
-    assets: TxAssets<N>
+#[export]
+struct FileTxEx<N> {
+    tx: FileTx,
+    assets: FileTxAssets<N>
 }
 
-impl Tx {
+impl FileTx {
     pub fn hash(self) -> Field {
         poseidon2([self.sender_index, self.data_index, self.time_interval, self.data, self.nonce])
     }
 }
 
-impl<N> TxEx<N> {
+impl<N> FileTxEx<N> {
     pub fn apply(self, acc_root:Field, data_root:Field, now:Field) -> (Field, Field) {
-        let TxEx{tx, assets} = self;
+        let FileTxEx{tx, assets} = self;
         let is_blank = assets.signature.a == 0;
         
         // check signature
@@ -133,11 +137,12 @@ impl<N> TxEx<N> {
     }
 }
 
-struct Block<M,N> {
-    txs: [TxEx<N>; M]
+#[export]
+struct FileBlock<M,N> {
+    txs: [FileTxEx<N>; M]
 }
 
-impl<M,N> Block<M,N> {
+impl<M,N> FileBlock<M,N> {
     fn apply(self, acc_root:Field, data_root:Field, now:Field) -> (Field, Field) {
         let mut cur_acc = acc_root;
         let mut cur_data = data_root;

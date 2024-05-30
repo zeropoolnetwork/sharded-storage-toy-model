@@ -2,6 +2,7 @@ use crate::common::mt::{MerkleProof, poseidon2};
 use crate::common::ec::SignaturePacked;
 use crate::common::from_le_bits;
 
+#[export]
 struct Account {
     /// x coordinate of the owner account public key
     key: Field,
@@ -20,7 +21,8 @@ impl Account {
 }
 
 
-struct Tx {
+#[export]
+struct AccountTx {
     sender_index: Field,
     receiver_index: Field,
     receiver_key: Field,
@@ -28,7 +30,8 @@ struct Tx {
     nonce: Field
 }
 
-struct TxAssets<N> {
+#[export]
+struct AccountTxAssets<N> {
     proof_sender: MerkleProof<N>,
     proof_receiver: MerkleProof<N>,
     account_sender: Account,
@@ -36,21 +39,22 @@ struct TxAssets<N> {
     signature: SignaturePacked,
 }
 
-struct TxEx<N> {
-    tx: Tx,
-    assets: TxAssets<N>
+#[export]
+struct AccountTxEx<N> {
+    tx: AccountTx,
+    assets: AccountTxAssets<N>
 }
 
-impl Tx {
+impl AccountTx {
     fn hash(self) -> Field {
         poseidon2([self.sender_index, self.receiver_index, self.receiver_key, self.amount, self.nonce])
     }
 }
 
 
-impl<N> TxEx<N> {
+impl<N> AccountTxEx<N> {
     pub fn apply(self, root: Field) -> Field {
-        let TxEx {tx, assets} = self;
+        let AccountTxEx {tx, assets} = self;
         let is_blank = assets.signature.a == 0;
 
         // check signatures
@@ -112,11 +116,12 @@ impl<N> TxEx<N> {
     }
 }
 
-struct Block<M,N> {
-    txs: [TxEx<N>; M]
+#[export]
+struct AccountBlock<M,N> {
+    txs: [AccountTxEx<N>; M]
 }
 
-impl<M,N> Block<M,N> {
+impl<M,N> AccountBlock<M,N> {
     fn apply(self, root:Field) -> Field {
         let mut cur = root;
         for i in 0..M {

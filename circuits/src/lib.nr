@@ -30,9 +30,9 @@ struct RollupInput {
     public: RollupPubInput,
     old_root: Root,
     new_root: Root,
-    tx: tx::Block<MAX_TX_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH>,
-    file: file::Block<MAX_FILE_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH>,
-    mining: mining::Block<MAX_MINING_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH, FILE_TREE_DEPTH>
+    tx: tx::AccountBlock<MAX_TX_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH>,
+    file: file::FileBlock<MAX_FILE_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH>,
+    mining: mining::MiningBlock<MAX_MINING_PER_BLOCK, ACCOUNT_AND_DATA_TREE_DEPTH, FILE_TREE_DEPTH>
 }
 
 impl RollupPubInput {
