@@ -1,0 +1,26 @@
+{
+  "name": "my-new-project",
+  "version": "1.0.0",
+  "description": "My New Project description.",
+  "main": "index.js",
+  "repository": {
+    "url": "https://example.com/your-username/my-new-project",
+    "type": "git"
+  },
+  "author": "Your Name <you@example.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@noir-lang/noir_codegen": "^0.30.0",
+    "@tsconfig/node22": "^22.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@aztec/bb.js": "^0.41.0",
+    "@noir-lang/backend_barretenberg": "0.27.0",
+    "@noir-lang/noir_js": "0.27.0",
+    "@zk-kit/eddsa-poseidon": "^1.0.1"
+  }
+}
