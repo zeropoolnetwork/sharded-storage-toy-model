@@ -1,5 +1,6 @@
 {
   "name": "my-new-project",
+  "type": "module",
   "version": "1.0.0",
   "description": "My New Project description.",
   "main": "index.js",
@@ -24,6 +25,6 @@
     "@zk-kit/eddsa-poseidon": "^1.0.1"
   },
   "scripts": {
-    "noir-gen-circuits": "noir-codegen ../circuits/export/main.json --out-dir ./src/noir_codegen/"
+    "noir-gen-circuits": "noir-codegen ../circuits/export/main.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts"
   }
 }
