@@ -4,7 +4,9 @@ This library implements the cryptographic operations used by Sharded Storage Toy
 
 ## Building
 
-`yarn tsc`
+To build: `yarn tsc`.
+
+To test: `yarn test`.
 
 ## Noir Bindings
 

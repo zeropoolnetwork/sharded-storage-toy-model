@@ -15,6 +15,9 @@
     "@tsconfig/node22": "^22.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   },
@@ -25,6 +28,11 @@
     "@zk-kit/eddsa-poseidon": "^1.0.1"
   },
   "scripts": {
-    "noir-gen-circuits": "noir-codegen ../circuits/export/main.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts"
+    "noir-gen-circuits": "noir-codegen ../circuits/export/main.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
   }
 }

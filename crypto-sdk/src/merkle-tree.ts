@@ -5,9 +5,9 @@ import { Barretenberg, Fr } from '@aztec/bb.js';
 
 // A function to hash values of type T. Gives you any flexibility you want,
 // e.g. you can encode a Barretenberg instance inside it if you want
-type Hasher<T> = (x: T) => Promise<Fr>;
+export type Hasher<T> = (x: T) => Promise<Fr>;
 
-type Tree<T> = {
+export type Tree<T> = {
   // Function used to hash the leaves
   hash_leaf: Hasher<T>,
   hash_node: Hasher<[Fr, Fr]>,
@@ -18,14 +18,14 @@ type Tree<T> = {
 
 // Creates a new tree of given depth. If given leaves do not fill up all the
 // available ones, pads the remaining ones with zeroes
-async function newTree<T>(
+export async function newTree<T>(
   hash_leaf: Hasher<T>,
   hash_node: Hasher<[Fr, Fr]>,
   depth: number,
   values: T[]
 ): Promise<Tree<T>> {
   if (values.length != 1 << depth)
-    throw "incorrect number of values";
+    throw new Error("incorrect number of values");
   const hashes = await Promise.all(values.map(hash_leaf));
   if (depth == 0) {
     return {
@@ -51,13 +51,13 @@ async function newTree<T>(
   }
 }
 
-type MerkleProof = [0 | 1, Fr][];
+export type MerkleProof = [0 | 1, Fr][];
 
-function root<T>(t: Tree<T>): Fr {
+export function root<T>(t: Tree<T>): Fr {
   return t.nodes[1];
 }
 
-function readLeaf<T>(t: Tree<T>, i: number): [MerkleProof, T] {
+export function readLeaf<T>(t: Tree<T>, i: number): [MerkleProof, T] {
   let node = i + (1 << t.depth);
   let prf: MerkleProof = [];
   while (node > 1) {
@@ -70,7 +70,7 @@ function readLeaf<T>(t: Tree<T>, i: number): [MerkleProof, T] {
   return [prf, t.values[i]];
 }
 
-async function updateLeaf<T>(t: Tree<T>, i: number, x: T): Promise<void> {
+export async function updateLeaf<T>(t: Tree<T>, i: number, x: T): Promise<void> {
   let node = i + (1 << t.depth);
   t.values[i] = x;
   t.nodes[node] = await t.hash_leaf(x);
