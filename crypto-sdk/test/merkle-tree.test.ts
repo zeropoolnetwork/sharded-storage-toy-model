@@ -49,6 +49,10 @@ describe('Merkle Tree', () => {
 
     const [two_proof, { inner: two }] = tree.readLeaf(1);
     expect(frToBigInt(two)).toEqual(2n);
+    expect(two_proof).toEqual([
+      [false, await bb.poseidon2Hash([bigIntToFr(3n), bigIntToFr(4n)])],
+      [true, bigIntToFr(1n)]
+    ]);
     expect(two_proof.length).toBe(depth);
 
     tree.updateLeaf(1, FrHashed.fromBigInt(10n));

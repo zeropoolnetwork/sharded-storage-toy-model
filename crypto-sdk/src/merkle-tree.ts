@@ -4,7 +4,7 @@ import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js";
 import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Hashable } from './util.js';
 
-export type MerkleProof = [0 | 1, Fr][];
+export type MerkleProof = [Boolean, Fr][];
 
 export class Tree<T extends Hashable> implements Hashable {
   bb: Barretenberg;
@@ -62,8 +62,8 @@ export class Tree<T extends Hashable> implements Hashable {
     while (node > 1) {
       const parent = node >> 1;
       const sibling = node ^ 1;
-      const turn = node & 1;
-      prf.unshift([(1 ^ turn) as (0 | 1), this.nodes[sibling]]);
+      const turn = (node & 1) == 1;
+      prf.unshift([turn, this.nodes[sibling]]);
       node = parent;
     }
     return [prf, this.values[i]];
