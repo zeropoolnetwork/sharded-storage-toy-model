@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  storage-node:
+    container_name: storage-node
+    build:
+      context: .
+      dockerfile: storage-node/Dockerfile
+    depends_on:
+      - rollup-node
+    networks:
+      - app-network
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MASTER=http://rollup-node:3000
+
+  rollup-node:
+    container_name: rollup-node
+    build:
+      context: .
+      dockerfile: rollup-node/Dockerfile
+    networks:
+      - app-network
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+
+  client-app:
+    container_name: client-app
+    depends_on:
+      - storage-node
+      - rollup-node
+    build:
+      context: .
+      dockerfile: client-app/Dockerfile
+      args:
+        - PUBLIC_ROLLUP_API_URL=http://127.0.0.1/api/rollup
+        - PUBLIC_NODE_API_URL=http://127.0.0.1/api/storage
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

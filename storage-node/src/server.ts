@@ -1,60 +1,98 @@
-import Fastify from 'fastify';
 import { program } from 'commander';
+import io from 'socket.io-client';
+import { SparseMerkleTree, MapNodeStorage } from './sparse-merkle-tree';
+import { MerkleTree } from './merkle-tree';
+import { Fr } from '@aztec/bb.js';
+import { FileMetadata, FileStorage } from './file-storage';
+import express, { Express, Request, Response } from 'express';
+import cors from 'cors';
+
+
+// async function test() {
+//   const leaves = [];
+//   for (let i = 0; i < 2 ** 10; i++) {
+//     leaves.push(Fr.random());
+//   }
+
+//   console.log('Start');
+//   const start = Date.now();
+//   const tree = await MerkleTree.new(leaves);
+//   const end = Date.now();
+//   console.log('End:', end - start, 'ms');
+
+//   console.log('Root:', tree.getRoot().toString());
+// }
+
+// test();
+
+const storage = new FileStorage(2 ** 12);
 
 program
-  .option('-p, --port <port>', 'Port to listen on', '3000')
-  .option('-m, --master <address>', 'Master node (coordinator) URL')
-  .option('-u, --url <url>', 'Node URL');
+  .option('-p, --port <port>', 'Port to listen on', '3001')
+  .option('-m, --master <address>', 'Master node (coordinator) URL');
 
 program.parse();
 const options = program.opts();
 
-const fastify = Fastify({
-  logger: true
+console.log('Connecting to master node:', options.master || process.env.MASTER);
+const socket = io(options.master || process.env.MASTER, { autoConnect: true });
+
+socket.on('connect', () => {
+  console.log('Connected to master node');
 });
 
-fastify.get('/ping', async function handler(request, reply) {
-  return 'pong';
+socket.on('disconnect', () => {
+  console.log('Disconnected from master node');
 });
 
-fastify.post('/upload', async function handler(request, reply) {
-  // 1. Check the signature
-  // 2. Chech the reserved slots for the user
-  // 3. Write the file to the reserved slot
+socket.on('error', (err) => {
+  console.error('Socket error:', err);
 });
 
-fastify.post('/reserve', async function handler(request, reply) {
-  return { hello: 'world' };
-});
+// socket.on('reqFile', async (fileId: string, callback: (data: Buffer | undefined) => void) => {
+//   console.log('Requested file:', fileId);
 
-fastify.get('/download/:id', async function handler(request, reply) {
-  return { hello: 'world' };
-});
+//   const data = await storage.read(fileId);
 
-async function main() {
-  // @ts-ignore - TODO: fix fetch type
-  const res = await fetch(`${options.master}/nodes/register`, {
-    method: 'POST',
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      url: options.url,
-    }),
-  });
-  const resJson = await res.json() as { id: string };
+//   callback(data);
+// });
 
-  console.log(`Registered with master node. Assigned node ID: ${resJson.id}`);
-
+socket.on('uploadFile', async (data: Buffer, name: string, metadata: FileMetadata) => {
+  console.log('Saving file:', name, metadata);
   try {
-    await fastify.listen({ port: options.port });
+    await storage.reserve(name, metadata);
+    await storage.write(name, data);
   } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
+    console.error('Error uploading file:', err);
+    return;
   }
-}
+});
 
-main();
+const app: Express = express();
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.raw({ type: '*/*' }));
+app.use(cors())
 
+app.get('/files/:id', async (req: Request, res: Response) => {
+  const data = await storage.read(req.params.id);
 
+  if (!data) {
+    res.status(404).send('File not found');
+    return;
+  }
+
+  // FIXME: only supports JPEG for now
+  res.setHeader('Content-Type', 'image/jpeg');
+
+  res.send(data);
+});
+
+app.get('/status', async (req: Request, res: Response) => {
+  res.send({ status: 'OK' });
+});
+
+app.listen(process.env.PORT || options.port, () => {
+  console.log('Listening on port', options.port);
+});
