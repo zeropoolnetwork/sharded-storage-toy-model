@@ -11,12 +11,17 @@
   "dependencies": {
     "@aztec/bb.js": "^0.41.0",
     "commander": "^12.1.0",
-    "fastify": "^4.27.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
     "level": "^8.0.1",
-    "seedrandom": "^3.0.5"
+    "seedrandom": "^3.0.5",
+    "socket.io-client": "^4.7.5",
+    "zpst-common": "workspace:../common"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }

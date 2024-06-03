@@ -9,3 +9,11 @@ export interface DataEntry {
   owner: string,
   hash: string,
 }
+
+export interface Block {
+  index: number;
+  timestamp: string;
+  previousHash: string;
+  hash: string;
+  // nonce: number;
+}

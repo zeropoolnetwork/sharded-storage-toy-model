@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Reverse Proxy
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:1.0
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs:ro
+      - vhost:/etc/nginx/vhost.d
+      - conf:/etc/nginx/conf.d
+      - html:/usr/share/nginx/html
+    networks:
+      - app-network
+
+  acme-companion:
+    image: nginxproxy/acme-companion:2.2
+    container_name: nginx-proxy-acme
+    restart: always
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs:rw
+      - acme:/etc/acme.sh
+    networks:
+      - app-network
+
+  # Services
+  storage-node:
+    container_name: storage-node
+    restart: always
+    build:
+      context: .
+      dockerfile: storage-node/Dockerfile
+    depends_on:
+      - rollup-node
+    networks:
+      - app-network
+    environment:
+      - PORT=3001
+      - MASTER=http://rollup-node:3000
+    volumes:
+      - files:/app/storage-node/files
+
+  sequencer:
+    container_name: sequencer
+    restart: always
+    build:
+      context: .
+      dockerfile: sequencer/Dockerfile
+    networks:
+      - app-network
+    environment:
+      - PORT=3000
+    volumes:
+      - accounts:/app/sequencer/accounts
+
+  client-app:
+    container_name: client-app
+    depends_on:
+      - storage-node
+      - rollup-node
+    restart: always
+    build:
+      context: .
+      dockerfile: client-app/Dockerfile
+      args:
+        - PUBLIC_ROLLUP_API_URL=https://insideout.codes/api/rollup
+        - PUBLIC_NODE_API_URL=https://insideout.codes/api/storage
+    networks:
+      - app-network
+    environment:
+      - VIRTUAL_HOST=insideout.codes
+      - LETSENCRYPT_HOST=insideout.codes
+      - LETSENCRYPT_EMAIL=mail@test.com
+
+volumes:
+  vhost:
+  html:
+  certs:
+  acme:
+  conf:
+  files:
+  accounts:
+
+
+networks:
+  app-network:
+    driver: bridge

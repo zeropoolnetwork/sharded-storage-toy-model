@@ -12,6 +12,8 @@
 		"format": "prettier --write ."
 	},
 	"dependencies": {
+		"@web3modal/ethers": "^4.2.3",
+		"ethers": "^6.12.1",
 		"zpst-common": "workspace:../common"
 	},
 	"devDependencies": {
