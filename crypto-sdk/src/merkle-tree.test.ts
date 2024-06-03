@@ -14,7 +14,7 @@ describe('Merkle Tree', () => {
     expect(tree.values).toEqual(values);
     expect(tree.nodes.length).toBe(2 ** (depth + 1));
 
-    let exp_nodes = [0n, 0n, 0n, 0n, 1n, 20n, 300n, 4000n];
+    let exp_nodes = [0n, 0n, 0n, 0n, 1n, 2n, 3n, 4n];
     for (let i = (2 ** depth) - 1; i >= 1; --i)
       exp_nodes[i] = frToBigInt(await bb.poseidon2Hash([
         bigIntToFr(exp_nodes[i*2]),
@@ -22,38 +22,40 @@ describe('Merkle Tree', () => {
       ]));
 
     const test_nodes = tree.nodes.map(frToBigInt);
-    // console.log(`test_nodes = ${test_nodes}`);
-    // console.log(`exp_nodes = ${exp_nodes}`);
     expect(test_nodes).toEqual(exp_nodes);
+
+    bb.destroy();
   });
 
-  // test('throws an error when creating a tree with incorrect number of values', async () => {
-  //   let bb = await Barretenberg.new({ threads: cpus().length });
-  //   const values = ['a', 'b', 'c'];
-  //   const depth = 2;
+  test('throws an error when creating a tree with incorrect number of values', async () => {
+    let bb = await Barretenberg.new({ threads: cpus().length });
+    const values = [0n, 0n, 0n].map(FrHashed.fromBigInt);
+    const depth = 2;
 
-  //   await expect(Tree.init(bb, depth, values)).rejects.toThrow();
-  // });
+    await expect(Tree.init(bb, depth, values)).rejects.toThrow();
 
-  // test('Test Merkle tree with actual poseidon2Hash', async () => {
-  //   let bb = await Barretenberg.new({ threads: cpus().length });
-  //   const values = [1n, 2n, 3n, 4n].map(bigIntToFr);
-  //   const depth = 2;
-  //   const tree = await Tree.init(
-  //     bb,
-  //     depth,
-  //     values
-  //   );
+    bb.destroy();
+  });
 
-  //   const [two_proof, two] = tree.readLeaf(1);
-  //   expect(frToBigInt(two)).toEqual(2n);
-  //   expect(two_proof.length).toBe(depth);
+  test('Read and update Merkle tree leaf', async () => {
+    let bb = await Barretenberg.new({ threads: cpus().length });
+    const values = [1n, 2n, 3n, 4n].map(FrHashed.fromBigInt);
+    const depth = 2;
+    const tree = await Tree.init(
+      bb,
+      depth,
+      values
+    );
 
-  //   tree.updateLeaf(1, bigIntToFr(10n));
-  //   const [ten_proof, ten] = tree.readLeaf(1);
-  //   expect(frToBigInt(ten)).toEqual(10n);
-  //   expect(ten_proof).toEqual(two_proof);
+    const [two_proof, { inner: two }] = tree.readLeaf(1);
+    expect(frToBigInt(two)).toEqual(2n);
+    expect(two_proof.length).toBe(depth);
 
-  //   bb.destroy();
-  // });
+    tree.updateLeaf(1, FrHashed.fromBigInt(10n));
+    const [ten_proof, { inner: ten }] = tree.readLeaf(1);
+    expect(frToBigInt(ten)).toEqual(10n);
+    expect(ten_proof).toEqual(two_proof);
+
+    bb.destroy();
+  });
 });
