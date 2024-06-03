@@ -1,4 +1,18 @@
-import { Fr } from '@aztec/bb.js';
+import { Barretenberg, Fr } from '@aztec/bb.js';
+
+export interface Hashable {
+  hash(this: Hashable, bb: Barretenberg): Promise<Fr>;
+}
+
+export class FrHashed implements Hashable {
+  inner: Fr;
+  constructor (x: Fr) {
+    this.inner = x;
+  }
+  async hash(_: Barretenberg): Promise<Fr> {
+    return this.inner;
+  }
+}
 
 export function frToBigInt(x: Fr): bigint {
   const s = x.toString();

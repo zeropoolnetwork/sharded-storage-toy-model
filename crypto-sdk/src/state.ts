@@ -1,55 +1,64 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
-import { MerkleProof, Tree, newTree, root } from "./merkle-tree.js"; 
+import { MerkleProof, Tree } from "./merkle-tree.js"; 
+import { FrHashed, Hashable } from "./util.js"; 
 import { ShardedStorageSettings } from "./settings.js";
 
-type Option<T> = T | null;
+export class Account implements Hashable {
+  /// x coordinate of the owner account public key
+  key: Fr;
+  /// Balance
+  balance: Fr;
+  // Nonce
+  nonce: Fr;
+  // Mining nonce
+  random_oracle_nonce: Fr;
 
-type Account = {
-    /// x coordinate of the owner account public key
-    key: Fr,
-    /// Balance
-    balance: Fr,
-    // Nonce
-    nonce: Fr,
-    // Mining nonce
-    random_oracle_nonce: Fr
+  constructor() {
+    this.key = Fr.ZERO;
+    this.balance = Fr.ZERO;
+    this.nonce = Fr.ZERO;
+    this.random_oracle_nonce = Fr.ZERO;
+  }
+
+  async hash(bb: Barretenberg): Promise<Fr> {
+    if (this.key == Fr.ZERO) {
+        // Hash zero account
+        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
+    } else {
+        return bb.poseidon2Hash([this.key, this.balance, this.nonce, this.random_oracle_nonce]);
+    }
+  }
 };
 
-type File = {
-  expiration_time: Fr,
+export class File implements Hashable {
+  expiration_time: Fr;
   // Owner account pk
-  owner: Fr,
+  owner: Fr;
   // File contents serialized as a list of Fr. Null when file is not initialized
-  data: Tree<Fr>,
+  data: null | Tree<FrHashed>;
+
+  constructor() {
+    this.expiration_time = Fr.ZERO;
+    this.owner = Fr.ZERO;
+    this.data = null;
+  }
+
+  async hash(bb: Barretenberg): Promise<Fr> {
+    if (this.data == null) {
+        // Hash empty file
+        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
+    } else {
+        return bb.poseidon2Hash([this.expiration_time, this.owner, await this.data.hash(bb)]);
+    }
+  }
 };
 
 type State = {
-  accounts: Tree<Option<Account>>,
-  files: Tree<Option<File>>,
+  accounts: Tree<Account>,
+  files: Tree<File>,
 };
 
 export async function newState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
-  async function hash_acc_leaf(x: Option<Account>): Promise<Fr> {
-    switch (x) {
-      case null:
-        // Hash zero account
-        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
-      default:
-        return bb.poseidon2Hash([x.key, x.balance, x.nonce, x.random_oracle_nonce]);
-    }
-  }
-  async function hash_file_leaf(x: Option<File>): Promise<Fr> {
-    switch (x) {
-      case null:
-        // Hash empty file
-        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
-      default:
-        return bb.poseidon2Hash([x.expiration_time, x.owner, root(x.data)]);
-    }
-  }
-  async function hash_node(vs: [Fr, Fr]): Promise<Fr> {
-    return bb.poseidon2Hash(vs);
-  }
   return {
     accounts: await newTree(
       hash_acc_leaf,
