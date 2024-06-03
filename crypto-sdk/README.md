@@ -4,9 +4,9 @@ This library implements the cryptographic operations used by Sharded Storage Toy
 
 ## Building
 
-To build: `yarn tsc`.
+To build: `pnpm tsc`.
 
-To test: `yarn test`.
+To test: `pnpm test`.
 
 ## Noir Bindings
 
@@ -18,8 +18,4 @@ To re-generate them, do the following:
    For that, run the appropriate Nargo command from `../circuits/` (usually `nargo export`).
 
 2. Generate TypeScript bindings from `../circuits/export/main.json`:
-     `yarn noir-gen-circuits`.
-
-   If you get the error  “/usr/bin/env: ‘node’: Text file busy”,
-     try setting `UV_USE_IO_URING=0` environment variable
-     (it's some kind of bug in yarn/node).
+     `pnpm noir-gen-circuits`.
