@@ -53,24 +53,28 @@ export class File implements Hashable {
   }
 };
 
-type State = {
-  accounts: Tree<Account>,
-  files: Tree<File>,
-};
+export class State {
+  accounts: Tree<Account>;
+  files: Tree<File>;
 
-export async function newState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
-  return {
-    accounts: await newTree(
-      hash_acc_leaf,
-      hash_node,
-      sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(null)
-    ),
-    files: await newTree(
-      hash_file_leaf,
-      hash_node,
-      sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(null)
-    ),
-  };
+  constructor(x: never) {
+    this.accounts = x;
+    this.files = x;
+  }
+
+  async newState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
+    return {
+      accounts: await Tree.init(
+        bb,
+        sett.acc_data_tree_depth,
+        new Array(1 << sett.acc_data_tree_depth).fill(new Account())
+      ),
+      files: await Tree.init(
+        bb,
+        sett.acc_data_tree_depth,
+        new Array(1 << sett.acc_data_tree_depth).fill(new File())
+      ),
+    } as State;
+  }
+
 }
