@@ -1,6 +1,6 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Tree } from './merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed } from './util';
+import { Tree } from './../src/merkle-tree';
+import { bigIntToFr, frAdd, frToBigInt, FrHashed } from '../src/util';
 import { cpus } from 'os';
 
 describe('Merkle Tree', () => {
