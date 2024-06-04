@@ -1,6 +1,7 @@
 {
   	"compilerOptions": {
         "outDir": "tsc-output",
+        "strict": true,
   	},
     "extends": "@tsconfig/node22/tsconfig.json",
     "include": ["src/**/*"],
