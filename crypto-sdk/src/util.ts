@@ -4,16 +4,9 @@ export interface Hashable {
   hash(this: Hashable, bb: Barretenberg): Promise<Fr>;
 }
 
-export class FrHashed implements Hashable {
-  inner: Fr;
-  constructor (x: Fr) {
-    this.inner = x;
-  }
-  static fromBigInt (x: bigint) {
-    return new FrHashed(bigIntToFr(x));
-  }
+export class FrHashed extends Fr implements Hashable {
   async hash(_: Barretenberg): Promise<Fr> {
-    return this.inner;
+    return this;
   }
 }
 
