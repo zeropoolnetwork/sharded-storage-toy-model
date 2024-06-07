@@ -1,8 +1,10 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree.js"; 
-import { FrHashed, Hashable, frToNoir, noirToFr } from "./util.js"; 
+import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util.js"; 
 import { ShardedStorageSettings } from "./settings.js";
 import { Field as NoirFr, Account as NoirAccount, AccountTx, AccountTxAssets, SignaturePacked } from "./noir_codegen/index.js";
+
+import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 
 export class Account implements Hashable {
   /// x coordinate of the owner account public key
@@ -63,14 +65,14 @@ export class File implements Hashable {
   }
 };
 
-export function new_account_tx(
+export async function new_account_tx(
   bb: Barretenberg,
   sender_index: number,
-  sender_sk: Fr,
+  sender_sk: EdDSAPoseidon,
   receiver_index: number,
   receiver_pk: Fr,
   amount: Fr
-): [AccountTx, SignaturePacked] {
+): Promise<[AccountTx, SignaturePacked]> {
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
@@ -78,12 +80,17 @@ export function new_account_tx(
     amount: frToNoir(amount),
     nonce: frToNoir(Fr.random()),
   };
-  const hash = bb.poseidon2Hash(
+  const hash = await bb.poseidon2Hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
       .map(noirToFr)
   );
-  const signature = (undefined as any)(sender_sk, hash); // TODO: use sender_sk here to sign hash
-  return [tx, signature];
+  const signature = sender_sk.signMessage(frToBigInt(hash));
+  const packed = {
+    a: sender_sk.publicKey[0].toString(),
+    s: signature.S.toString(),
+    r8: signature.R8[0].toString(),
+  } as SignaturePacked;
+  return [tx, packed];
 }
 
 
@@ -114,6 +121,15 @@ export class State {
   async build_account_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+
+    this.accounts.updateLeaf(Number(tx.receiver_index),
+      {
+        key: noirToFr(tx.receiver_key),
+        balance: noirToFr(tx.amount),
+        nonce: noirToFr(tx.nonce),
+        random_oracle_nonce: Fr.ZERO,
+      } as Account
+    );
 
     return {
       proof_sender: proof_to_noir(sender_prf),
