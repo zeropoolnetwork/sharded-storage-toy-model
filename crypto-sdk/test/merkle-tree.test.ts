@@ -29,7 +29,7 @@ describe('Merkle Tree', () => {
 
   test('throws an error when creating a tree with incorrect number of values', async () => {
     let bb = await Barretenberg.new({ threads: cpus().length });
-    const values = [0n, 0n, 0n].map(FrHashed.fromBigInt);
+    const values = [0n, 0n, 0n].map((i) => new FrHashed(bigIntToFr(i)));
     const depth = 2;
 
     await expect(Tree.init(bb, depth, values)).rejects.toThrow();
@@ -39,7 +39,7 @@ describe('Merkle Tree', () => {
 
   test('Read and update Merkle tree leaf', async () => {
     let bb = await Barretenberg.new({ threads: cpus().length });
-    const values = [1n, 2n, 3n, 4n].map(FrHashed.fromBigInt);
+    const values = [1n, 2n, 3n, 4n].map((i) => new FrHashed(bigIntToFr(i)));
     const depth = 2;
     const tree = await Tree.init(
       bb,
@@ -47,7 +47,7 @@ describe('Merkle Tree', () => {
       values
     );
 
-    const [two_proof, { inner: two }] = tree.readLeaf(1);
+    const [two_proof, two] = tree.readLeaf(1);
     expect(frToBigInt(two)).toEqual(2n);
     expect(two_proof).toEqual([
       [false, await bb.poseidon2Hash([bigIntToFr(3n), bigIntToFr(4n)])],
@@ -55,8 +55,8 @@ describe('Merkle Tree', () => {
     ]);
     expect(two_proof.length).toBe(depth);
 
-    tree.updateLeaf(1, FrHashed.fromBigInt(10n));
-    const [ten_proof, { inner: ten }] = tree.readLeaf(1);
+    tree.updateLeaf(1, new FrHashed(bigIntToFr(10n)));
+    const [ten_proof, ten] = tree.readLeaf(1);
     expect(frToBigInt(ten)).toEqual(10n);
     expect(ten_proof).toEqual(two_proof);
 

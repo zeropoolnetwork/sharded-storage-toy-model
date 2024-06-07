@@ -1,8 +1,8 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
-import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree.js"; 
-import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util.js"; 
-import { ShardedStorageSettings } from "./settings.js";
-import { Field as NoirFr, Account as NoirAccount, AccountTx, AccountTxAssets, SignaturePacked } from "./noir_codegen/index.js";
+import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
+import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { ShardedStorageSettings } from "./settings";
+import { Field as NoirFr, Account as NoirAccount, AccountTx, AccountTxAssets, SignaturePacked } from "./noir_codegen/index";
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 

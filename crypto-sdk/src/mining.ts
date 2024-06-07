@@ -1,6 +1,6 @@
 import { Fr } from '@aztec/bb.js';
 import { Barretenberg } from '@aztec/bb.js';
-import { ShardedStorageSettings } from './settings.js';
+import { ShardedStorageSettings } from './settings';
 
 export type MiningResult = {
   mining_nonce: number,

@@ -1,13 +1,17 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Field as NoirFr } from "./noir_codegen/index.js"; 
+import { Field as NoirFr } from "./noir_codegen/index"; 
 
 export interface Hashable {
-  hash(this: Hashable, bb: Barretenberg): Promise<Fr>;
+  hash(bb: Barretenberg): Promise<Fr>;
 }
 
 export class FrHashed extends Fr implements Hashable {
   async hash(_: Barretenberg): Promise<Fr> {
     return this;
+  }
+
+  constructor(x: Fr) {
+    super(frToBigInt(x))
   }
 }
 
