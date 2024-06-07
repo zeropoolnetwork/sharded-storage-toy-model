@@ -1,4 +1,5 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
+import { Field as NoirFr } from "./noir_codegen/index.js"; 
 
 export interface Hashable {
   hash(this: Hashable, bb: Barretenberg): Promise<Fr>;
@@ -20,6 +21,14 @@ export function bigIntToFr(x: bigint): Fr {
   // let s = x.toString(16).padStart(32, '0');
   const res = new Fr(x);
   return res;
+}
+
+export function frToNoir(x: Fr): NoirFr {
+  return frToBigInt(x).toString();
+}
+
+export function noirToFr(x: NoirFr): Fr {
+  return bigIntToFr(BigInt(x));
 }
 
 export function frAdd(x: Fr, y: Fr): Fr {

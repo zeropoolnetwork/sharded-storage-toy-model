@@ -2,9 +2,16 @@
 
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Hashable } from './util.js';
+import { Hashable, frToNoir } from './util.js';
 
 export type MerkleProof = [Boolean, Fr][];
+
+export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
+  return {
+    index_bits: prf.map(([i, h]) => Number(i)),
+    hash_path: prf.map(([i, h]) => frToNoir(h)),
+  } as NoirMerkleProof;
+}
 
 export class Tree<T extends Hashable> implements Hashable {
   bb: Barretenberg;
