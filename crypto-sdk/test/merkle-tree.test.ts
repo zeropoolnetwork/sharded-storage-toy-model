@@ -4,6 +4,7 @@ import { bigIntToFr, frAdd, frToBigInt, FrHashed } from '../src/util';
 import { cpus } from 'os';
 
 describe('Merkle Tree', () => {
+
   test('creates a new tree with correct depth and values', async () => {
     let bb = await Barretenberg.new({ threads: cpus().length });
     const values = [1n, 2n, 3n, 4n].map((x) => new FrHashed(bigIntToFr(x)));

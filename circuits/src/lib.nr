@@ -19,6 +19,7 @@ global MAX_FILE_PER_BLOCK:u32=8;
 global MAX_MINING_PER_BLOCK:u32=1;
 
 
+#[export]
 struct RollupPubInput {
     old_root: Field,
     new_root: Field,
@@ -26,6 +27,7 @@ struct RollupPubInput {
     oracle: mining::RandomOracle<RANDOM_ORACLE_SIZE>
 }
 
+#[export]
 struct RollupInput {
     public: RollupPubInput,
     old_root: Root,
