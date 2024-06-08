@@ -45,7 +45,25 @@ pub fn poseidon2<N>(input: [Field; N]) -> Field {
 }
 
 
-// use dep::std::hash::poseidon2::Poseidon2Hasher;
+// assuming N<=1<<K
+pub fn mt_compute_root<K,N>(mut leaves: [Field; N], mut empty_cells: [Field;K]) -> Field {
+    assert(N <= (1<<K));
+    for i in 1..K {
+        empty_cells[i] = poseidon2([empty_cells[i-1], empty_cells[i-1]]);
+    }
 
-// let mut hasher = Poseidon2Hasher::default();
-// eddsa_verify_with_hasher(pub_key_a.x, pub_key_a.y, s_a, r8_a.x, r8_a.y, msg, &mut hasher);
+    let mut n = N;
+    for i in 0..K {
+        for j in 0..(n+1)/2 {   
+            let index_r = j*2+1;
+            let r = if index_r == n {
+                empty_cells[i]
+            } else {
+                leaves[index_r]
+            };
+            leaves[j] = poseidon2([leaves[j*2], r]);
+        }
+    }
+
+    leaves[0]
+}

@@ -51,6 +51,7 @@ struct FileTxAssets<N> {
     signature: SignaturePacked,
 }
 
+
 #[export]
 struct FileTxEx<N> {
     tx: FileTx,
@@ -64,6 +65,36 @@ impl FileTx {
 }
 
 impl<N> FileTxEx<N> {
+
+    pub fn write_first_block_data(self, data: [Field]) -> [Field] {
+        let a = if self.assets.signature.a == 0 {
+            &[0,0,0,0]
+        } else {
+            &[
+                self.tx.sender_index,
+                self.tx.data_index,
+                self.tx.time_interval,
+                // set 0 here to avoid hash circular dependency
+                0
+            ]
+        };
+        data.append(a)
+    }
+
+    pub fn write_block_data(self, data: [Field]) -> [Field] {
+        data.append(if self.assets.signature.a == 0 {
+            &[0,0,0,0]
+        } else {
+            &[
+                // This data should be enough 
+                self.tx.sender_index,
+                self.tx.data_index,
+                self.tx.time_interval,
+                self.tx.data
+            ]
+        })
+    }
+
     pub fn apply(self, acc_root:Field, data_root:Field, now:Field) -> (Field, Field) {
         let FileTxEx{tx, assets} = self;
         let is_blank = assets.signature.a == 0;
@@ -143,6 +174,16 @@ struct FileBlock<M,N> {
 }
 
 impl<M,N> FileBlock<M,N> {
+    fn write_block_data(self, data: [Field]) -> [Field] {
+        let mut cur = self.txs[0].write_first_block_data(data);
+
+        for i in 1..M {
+            cur = self.txs[i].write_block_data(cur);
+        }
+
+        cur
+    }
+
     fn apply(self, acc_root:Field, data_root:Field, now:Field) -> (Field, Field) {
         let mut cur_acc = acc_root;
         let mut cur_data = data_root;

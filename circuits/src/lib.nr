@@ -4,7 +4,7 @@ mod rollup;
 
 use rollup::{tx, file, mining};
 use rollup::root::Root;
-
+use common::mt::mt_compute_root;
 
 global RANDOM_ORACLE_SIZE:u32=16;
 global HASH_PAYLOAD_SIZE:u32=4+RANDOM_ORACLE_SIZE;
@@ -95,6 +95,23 @@ fn main(
         input.public.new_root,
         input.new_root.hash()
     );
+
+    // compute block data
+
+    let mut block_data = &[];
+
+    block_data = input.tx.write_block_data(block_data);
+    block_data = input.file.write_block_data(block_data);
+    block_data = input.mining.write_block_data(block_data);
+
+    // check that the block is stored inside the rollup dataset
+    // zk Storage happens here
+
+    let empty_cells = [0;FILE_TREE_DEPTH];
+    let data_root = mt_compute_root(block_data.as_array(), empty_cells);
+
+    assert(input.file.txs[0].tx.data == data_root);
+
 
 
     // apply blocks
