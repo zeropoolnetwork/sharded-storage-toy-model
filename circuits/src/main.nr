@@ -3,8 +3,12 @@ mod rollup;
 
 
 use rollup::{tx, file, mining};
+use tx::Account;
+use file::File;
 use rollup::root::Root;
 use common::mt::mt_compute_root;
+use crate::common::mt::{MerkleProof, poseidon2};
+use crate::common::ec::SignaturePacked;
 
 global RANDOM_ORACLE_SIZE:u32=16;
 global HASH_PAYLOAD_SIZE:u32=4+RANDOM_ORACLE_SIZE;
@@ -167,6 +171,320 @@ fn main(
         input.new_root.data,
         data_root
     );
+}
+
+// This code was taken from
+// https://github.com/zeropoolnetwork/sharded-storage-toy-model/blob/d2125003aebf1a57b77c1127b08ca9c35fc52efd/crypto-sdk/test/state.test.ts#L68
+// and converted to Noir using Claude AI.
+#[test]
+fn genesis_blank_transactions_test() {
+  let pubhash = 602553387949470750594511273396490299548949981251778541381794331133460415703;
+  let input = RollupInput {
+  public: RollupPubInput {
+  old_root: 14549430161668819174367687045193236134328868030804612193732634858347281983336,
+  new_root: 14549430161668819174367687045193236134328868030804612193732634858347281983336,
+  now: 0,
+  oracle: mining::RandomOracle {
+  offset: 0,
+  data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  }
+  },
+  tx: tx::AccountBlock {
+  txs: [
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  tx::AccountTxEx {
+  tx: tx::AccountTx {
+  sender_index: 0,
+  receiver_index: 0,
+  receiver_key: 0,
+  amount: 0,
+  nonce: 0
+  },
+  assets: tx::AccountTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_receiver: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  account_receiver: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  ]
+  },
+  file: file::FileBlock {
+  txs: [
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  file::FileTxEx {
+  tx: file::FileTx {
+  sender_index: 0,
+  data_index: 0,
+  time_interval: 0,
+  data: 0,
+  nonce: 0
+  },
+  assets: file::FileTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  },
+  ]
+  },
+  mining: mining::MiningBlock {
+  txs: [
+  mining::MiningTxEx {
+  tx: mining::MiningTx {
+  sender_index: 0,
+  nonce: 0,
+  random_oracle_nonce: 0,
+  mining_nonce: 0
+  },
+  assets: mining::MiningTxAssets {
+  proof_sender: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  account_sender: Account { key: 0, balance: 0, nonce: 0, random_oracle_nonce: 0 },
+  random_oracle_value: 0,
+  proof_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  file: File { expiration_time: 0, owner: 0, data: 0 },
+  proof_data_in_file: MerkleProof { index_bits: [0,0,0,0,0,0,0,0,0,0], hash_path: [0,0,0,0,0,0,0,0,0,0] },
+  data_in_file: 0,
+  signature: SignaturePacked { a: 0, s: 0, r8: 0 }
+  }
+  }
+  ]
+  },
+  old_root: Root {
+  acc: 11487528682305961401473309877471642447232578731758593718090665024687659047906,
+  data: 820977286390674538425862012493542916279341100017457750366535111511456236832
+  },
+  new_root: Root {
+  acc: 11487528682305961401473309877471642447232578731758593718090665024687659047906,
+  data: 820977286390674538425862012493542916279341100017457750366535111511456236832
+  }
+  };
+  main(pubhash, input);
 }
 
 #[test]
