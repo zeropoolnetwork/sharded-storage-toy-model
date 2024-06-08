@@ -46,24 +46,28 @@ pub fn poseidon2<N>(input: [Field; N]) -> Field {
 
 
 // assuming N<=1<<K
-pub fn mt_compute_root<K,N>(mut leaves: [Field; N], mut empty_cells: [Field;K]) -> Field {
-    assert(N <= (1<<K));
+pub fn mt_compute_root(leaves: [Field], N:u32, K:u32) -> Field {
+    let mut empty_cells = &[0];
     for i in 1..K {
-        empty_cells[i] = poseidon2([empty_cells[i-1], empty_cells[i-1]]);
+        empty_cells = empty_cells.push_back(poseidon2([empty_cells[i-1], empty_cells[i-1]]));
     }
 
     let mut n = N;
+    let mut cur_leaves = leaves;
     for i in 0..K {
+        let mut next_leaves = &[];
         for j in 0..(n+1)/2 {   
             let index_r = j*2+1;
             let r = if index_r == n {
                 empty_cells[i]
             } else {
-                leaves[index_r]
+                cur_leaves[index_r]
             };
-            leaves[j] = poseidon2([leaves[j*2], r]);
+            next_leaves=next_leaves.push_back(poseidon2([cur_leaves[j*2], r]));
         }
+        cur_leaves = next_leaves;
+        n = (n+1)/2;
     }
 
-    leaves[0]
+    cur_leaves[0]
 }

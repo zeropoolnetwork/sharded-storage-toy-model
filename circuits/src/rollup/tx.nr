@@ -75,7 +75,7 @@ impl<N> AccountTxEx<N> {
 
         // check signatures
         let txhash = tx.hash();
-        assert(is_blank | (assets.signature.verify(txhash)));
+        assert(assets.signature.cond_verify(txhash, is_blank));
 
         // check overflows
         assert(is_blank | (!assets.account_sender.balance.lt(tx.amount)));
