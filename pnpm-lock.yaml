@@ -92,18 +92,18 @@ importers:
         specifier: ^0.41.0
         version: 0.41.0
       '@noir-lang/backend_barretenberg':
-        specifier: 0.28.0
-        version: 0.28.0
+        specifier: 0.30.0
+        version: 0.30.0
       '@noir-lang/noir_js':
-        specifier: 0.28.0
-        version: 0.28.0
+        specifier: 0.30.0
+        version: 0.30.0
       '@zk-kit/eddsa-poseidon':
         specifier: ^1.0.1
         version: 1.0.1
     devDependencies:
       '@noir-lang/noir_codegen':
-        specifier: ^0.28.0
-        version: 0.28.0
+        specifier: ^0.30.0
+        version: 0.30.0
       '@tsconfig/node22':
         specifier: ^22.0.0
         version: 22.0.0
@@ -234,8 +234,8 @@ packages:
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
 
-  '@aztec/bb.js@0.35.1':
-    resolution: {integrity: sha512-EWBDxj7fY7p4BP9zhVoHPmCd+h0HFBCy02DhI3p/CkgbuXHMy1wb0aIxJyQDzi+z7FrA6QME4SOzIx//ITRCCA==}
+  '@aztec/bb.js@0.38.0':
+    resolution: {integrity: sha512-74MX3ieK0Oz3zUqbSfF1Bb25J38lGHkD4ajrOXfH1A97HMLCsOI5Rv40D5VUnv2JRnii3a9HU/ft26QafTsJQw==}
     hasBin: true
 
   '@aztec/bb.js@0.41.0':
@@ -841,24 +841,24 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noir-lang/acvm_js@0.44.0':
-    resolution: {integrity: sha512-nt0PBQj5XL2LbvXhfA0Ce9a+R6JXn4OY3peRdPo0p35QN3qb67WZqQlN4/7c1SLWKYdImkt8/d/KXWnqCal0HQ==}
+  '@noir-lang/acvm_js@0.46.0':
+    resolution: {integrity: sha512-1iDEHumZJVzaxC+Fr9eB8x0iCDDiW+W6tZW9kkKwyUjKtAWoqxR6ea8/aVRw/JdQ3QjiERZt94iki9tK63YqmQ==}
 
-  '@noir-lang/backend_barretenberg@0.28.0':
-    resolution: {integrity: sha512-kx61bBMfiyNwawM7L4+BcZMzHGp4Y/6W8Wt+XG73Jk4ozo8JWGuxTjbWzBCMr/pl+uWRFLsuFY6IRoMESySEMA==}
+  '@noir-lang/backend_barretenberg@0.30.0':
+    resolution: {integrity: sha512-siQwExKNYEcX5NcndHU1DWhXyGZLJdoIJ++/LFWFJEiVqtvM5lgGzhJPQWwPsqJtwX+3/5uS4I7ZYq3hJ6aqOA==}
 
-  '@noir-lang/noir_codegen@0.28.0':
-    resolution: {integrity: sha512-z4JZwUcg35RBuegMaxevSCa3f/QfmGxjXvg8vJ9rJ2eDNCADA7J7QBzNZ5ERAGNg3vl74VeZf87+P30md3GOxg==}
+  '@noir-lang/noir_codegen@0.30.0':
+    resolution: {integrity: sha512-jAmQAEGEwb1RO/XZaM6zggncp41nYkoDne0AfzmFxv0xb5LjfdMBXwF93Cmg1RtolKypmFIyYsNhPL3WT3Bp4g==}
     hasBin: true
 
-  '@noir-lang/noir_js@0.28.0':
-    resolution: {integrity: sha512-gWb627jbt5azd6QM8CZqivEn35yF/Nnz4KWA3C99ZulJpTNDRNW7QBV3fC3RNv/Orl/a3an82WLrf5Vf8ymakg==}
+  '@noir-lang/noir_js@0.30.0':
+    resolution: {integrity: sha512-z+Xh/eikHRNB6ycbAiMZKRx/kPaJdDychTpsXZyxn0BRSvsqyaX10gVO5zCzpQ5vDPkOT04ZPP8sew6mJyhYuw==}
 
-  '@noir-lang/noirc_abi@0.28.0':
-    resolution: {integrity: sha512-fVM5XlOXl+21PScvUF21AaAn8HnZrc1dUUkFhQOLSZet41SpfRuE3+01IsDo9Ka+3G0pddJl5ttbYX/A+hA1nQ==}
+  '@noir-lang/noirc_abi@0.30.0':
+    resolution: {integrity: sha512-1MmWgRmYAa3cvZQwNsJCJfXyPb1kKpbF8SzmjWqzBNPrYXxT2mD6zCakPEfJJAxABUvxNjWJDoU43wskQ+laQg==}
 
-  '@noir-lang/types@0.28.0':
-    resolution: {integrity: sha512-8QdtXtvqvZ7cHQS/EtcTuUilN29zDCZ21V1THSdzmTxZVesXpaHoZdsoeuuvpsj3Qzemfvsk28LWNRNr7U1MUw==}
+  '@noir-lang/types@0.30.0':
+    resolution: {integrity: sha512-jjMI1VX46SGJ9cXnaBSXY7HHUOATgsCeYdxwCj5uFnIPLnaUtiwuvZV0xUsaFYfW7dUPK7P+mpHmfEy2W1acJg==}
 
   '@nomicfoundation/edr-darwin-arm64@0.4.0':
     resolution: {integrity: sha512-7+rraFk9tCqvfemv9Ita5vTlSBAeO/S5aDKOgGRgYt0JEKZlrX161nDW6UfzMPxWl9GOLEDUzCEaYuNmXseUlg==}
@@ -5167,7 +5167,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@aztec/bb.js@0.35.1':
+  '@aztec/bb.js@0.38.0':
     dependencies:
       comlink: 4.4.1
       commander: 10.0.1
@@ -6057,33 +6057,33 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
-  '@noir-lang/acvm_js@0.44.0': {}
+  '@noir-lang/acvm_js@0.46.0': {}
 
-  '@noir-lang/backend_barretenberg@0.28.0':
+  '@noir-lang/backend_barretenberg@0.30.0':
     dependencies:
-      '@aztec/bb.js': 0.35.1
-      '@noir-lang/types': 0.28.0
+      '@aztec/bb.js': 0.38.0
+      '@noir-lang/types': 0.30.0
       fflate: 0.8.2
     transitivePeerDependencies:
       - supports-color
 
-  '@noir-lang/noir_codegen@0.28.0':
+  '@noir-lang/noir_codegen@0.30.0':
     dependencies:
-      '@noir-lang/types': 0.28.0
+      '@noir-lang/types': 0.30.0
       glob: 10.4.1
       ts-command-line-args: 2.5.1
 
-  '@noir-lang/noir_js@0.28.0':
+  '@noir-lang/noir_js@0.30.0':
     dependencies:
-      '@noir-lang/acvm_js': 0.44.0
-      '@noir-lang/noirc_abi': 0.28.0
-      '@noir-lang/types': 0.28.0
+      '@noir-lang/acvm_js': 0.46.0
+      '@noir-lang/noirc_abi': 0.30.0
+      '@noir-lang/types': 0.30.0
 
-  '@noir-lang/noirc_abi@0.28.0':
+  '@noir-lang/noirc_abi@0.30.0':
     dependencies:
-      '@noir-lang/types': 0.28.0
+      '@noir-lang/types': 0.30.0
 
-  '@noir-lang/types@0.28.0': {}
+  '@noir-lang/types@0.30.0': {}
 
   '@nomicfoundation/edr-darwin-arm64@0.4.0': {}
 
