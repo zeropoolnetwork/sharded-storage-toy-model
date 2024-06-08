@@ -46,13 +46,13 @@ describe('State', () => {
     let input: RollupInput = {
       public: pubInput,
       tx: {
-        txs: new Array(sett.account_tx_per_block).fill(await blank_account_tx(sett)),
+        txs: new Array(sett.account_tx_per_block).fill(blank_account_tx(sett)),
       },
       file: {
-        txs: new Array(sett.file_tx_per_block).fill(await blank_file_tx(sett)),
+        txs: new Array(sett.file_tx_per_block).fill(blank_file_tx(sett)),
       },
       mining: {
-        txs: new Array(sett.mining_tx_per_block).fill(await blank_mining_tx(sett)),
+        txs: new Array(sett.mining_tx_per_block).fill(blank_mining_tx(sett)),
       },
       old_root: st_root,
       new_root: st_root,
