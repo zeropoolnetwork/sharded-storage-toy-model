@@ -36,12 +36,14 @@ export class Account implements Hashable {
   }
 
   async hash(bb: Barretenberg): Promise<Fr> {
+    let to_hash: [Fr, Fr, Fr, Fr];
     if (this.key == Fr.ZERO) {
         // Hash zero account
-        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
+        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO];
     } else {
-        return bb.poseidon2Hash([this.key, this.balance, this.nonce, this.random_oracle_nonce]);
+        to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
     }
+    return bb.poseidon2Hash(to_hash);
   }
 };
 
@@ -68,12 +70,14 @@ export class File implements Hashable {
   }
 
   async hash(bb: Barretenberg): Promise<Fr> {
+    let to_hash: [Fr, Fr, Fr];
     if (this.data == null) {
         // Hash empty file
-        return bb.poseidon2Hash([Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO]);
+        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO];
     } else {
-        return bb.poseidon2Hash([this.expiration_time, this.owner, await this.data.hash(bb)]);
+        to_hash = [this.expiration_time, this.owner, await this.data.hash(bb)];
     }
+    return bb.poseidon2Hash(to_hash);
   }
 };
 
