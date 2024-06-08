@@ -1,6 +1,21 @@
 import { Fr } from '@aztec/bb.js';
 import { Barretenberg } from '@aztec/bb.js';
-import { ShardedStorageSettings } from './settings.js';
+import { ShardedStorageSettings } from './settings';
+import { MiningTx, MiningTxAssets, MiningTxEx } from './noir_codegen';
+
+import {
+  Field as NoirFr,
+  Account as NoirAccount,
+  File as NoirFile,
+  MerkleProof as NoirMerkleProof,
+  AccountTx,
+  AccountTxAssets,
+  SignaturePacked,
+  AccountTxEx,
+  FileTxEx,
+  FileTx,
+  FileTxAssets
+} from "./noir_codegen/index";
 
 export type MiningResult = {
   mining_nonce: number,
@@ -70,4 +85,55 @@ export async function mine(
   }
 
   return null;
+}
+
+export function blank_mining_tx(sett: ShardedStorageSettings): MiningTxEx {
+  const tx: MiningTx = {
+    sender_index: "0",
+    nonce: "0",
+    random_oracle_nonce: "0",
+    mining_nonce: "0",
+  };
+
+  const dummy_proof: NoirMerkleProof = {
+    index_bits: new Array(sett.acc_data_tree_depth).fill("0"),
+    hash_path: new Array(sett.acc_data_tree_depth).fill("0"),
+  };
+
+  const dummy_file_proof: NoirMerkleProof = {
+    index_bits: new Array(sett.file_tree_depth).fill("0"),
+    hash_path: new Array(sett.file_tree_depth).fill("0"),
+  };
+
+  const dummy_account: NoirAccount = {
+    key: "0",
+    balance: "0",
+    nonce: "0",
+    random_oracle_nonce: "0",
+  }
+
+  const dummy_file: NoirFile = {
+    expiration_time: "0",
+    owner: "0",
+    data: "0",
+  };
+
+  const dummy_signature: SignaturePacked = {
+    a: "0",
+    s: "0",
+    r8: "0",
+  };
+
+  const assets: MiningTxAssets = {
+    proof_sender: dummy_proof,
+    account_sender: dummy_account,
+    random_oracle_value: "0",
+    proof_file: dummy_proof,
+    file: dummy_file,
+    proof_data_in_file: dummy_file_proof,
+    data_in_file: "0",
+    signature: dummy_signature,
+  };
+
+  return { tx, assets };
 }

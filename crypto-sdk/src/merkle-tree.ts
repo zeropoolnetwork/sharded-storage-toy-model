@@ -2,7 +2,7 @@
 
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Hashable, frToNoir } from './util.js';
+import { Hashable, frToNoir } from './util';
 
 export type MerkleProof = [Boolean, Fr][];
 

@@ -1,8 +1,22 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
-import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree.js"; 
-import { FrHashed, Hashable, frToNoir, noirToFr } from "./util.js"; 
-import { ShardedStorageSettings } from "./settings.js";
-import { Field as NoirFr, Account as NoirAccount, AccountTx, AccountTxAssets, SignaturePacked } from "./noir_codegen/index.js";
+import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
+import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { ShardedStorageSettings } from "./settings";
+import {
+  Field as NoirFr,
+  Account as NoirAccount,
+  File as NoirFile,
+  MerkleProof as NoirMerkleProof,
+  AccountTx,
+  AccountTxAssets,
+  SignaturePacked,
+  AccountTxEx,
+  FileTxEx,
+  FileTx,
+  FileTxAssets
+} from "./noir_codegen/index";
+
+import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 
 export class Account implements Hashable {
   /// x coordinate of the owner account public key
@@ -63,14 +77,97 @@ export class File implements Hashable {
   }
 };
 
-export function new_account_tx(
+
+export function blank_account_tx(sett: ShardedStorageSettings): AccountTxEx {
+  const tx: AccountTx = {
+    sender_index: "0",
+    receiver_index: "0",
+    receiver_key: "0",
+    amount: "0",
+    nonce: "0",
+  };
+
+  const dummy_proof: NoirMerkleProof = {
+    index_bits: new Array(sett.acc_data_tree_depth).fill("0"),
+    hash_path: new Array(sett.acc_data_tree_depth).fill("0"),
+  };
+
+  const dummy_account: NoirAccount = {
+    key: "0",
+    balance: "0",
+    nonce: "0",
+    random_oracle_nonce: "0",
+  }
+
+  const dummy_signature: SignaturePacked = {
+    a: "0",
+    s: "0",
+    r8: "0",
+  };
+
+  const assets: AccountTxAssets = {
+    proof_sender: dummy_proof,
+    proof_receiver: dummy_proof,
+    account_sender: dummy_account,
+    account_receiver: dummy_account,
+    signature: dummy_signature,
+  };
+
+  return { tx, assets };
+}
+
+export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
+  const tx: FileTx = {
+    sender_index: "0",
+    data_index: "0",
+    time_interval: "0",
+    data: "0",
+    nonce: "0",
+  };
+
+  const dummy_proof: NoirMerkleProof = {
+    index_bits: new Array(sett.acc_data_tree_depth).fill("0"),
+    hash_path: new Array(sett.acc_data_tree_depth).fill("0"),
+  };
+
+  const dummy_account: NoirAccount = {
+    key: "0",
+    balance: "0",
+    nonce: "0",
+    random_oracle_nonce: "0",
+  }
+
+  const dummy_file: NoirFile = {
+    expiration_time: "0",
+    owner: "0",
+    data: "0",
+  };
+
+  const dummy_signature: SignaturePacked = {
+    a: "0",
+    s: "0",
+    r8: "0",
+  };
+
+  const assets: FileTxAssets = {
+    proof_sender: dummy_proof,
+    proof_file: dummy_proof,
+    account_sender: dummy_account,
+    file: dummy_file,
+    signature: dummy_signature,
+  };
+
+  return { tx, assets };
+}
+
+export async function new_account_tx(
   bb: Barretenberg,
   sender_index: number,
-  sender_sk: Fr,
+  sender_sk: EdDSAPoseidon,
   receiver_index: number,
   receiver_pk: Fr,
   amount: Fr
-): [AccountTx, SignaturePacked] {
+): Promise<[AccountTx, SignaturePacked]> {
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
@@ -78,42 +175,53 @@ export function new_account_tx(
     amount: frToNoir(amount),
     nonce: frToNoir(Fr.random()),
   };
-  const hash = bb.poseidon2Hash(
+  const hash = await bb.poseidon2Hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
       .map(noirToFr)
   );
-  const signature = (undefined as any)(sender_sk, hash); // TODO: use sender_sk here to sign hash
-  return [tx, signature];
+  const signature = sender_sk.signMessage(frToBigInt(hash));
+  const packed = {
+    a: sender_sk.publicKey[0].toString(),
+    s: signature.S.toString(),
+    r8: signature.R8[0].toString(),
+  } as SignaturePacked;
+  return [tx, packed];
 }
 
 
-export class State {
+export class State implements Hashable {
   accounts: Tree<Account>;
   files: Tree<File>;
 
-  constructor(x: never) {
-    this.accounts = x;
-    this.files = x;
+  constructor(accounts: Tree<Account>, files: Tree<File>) {
+    this.accounts = accounts;
+    this.files = files;
   }
 
   static async genesisState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
-    return {
-      accounts: await Tree.init(
-        bb,
-        sett.acc_data_tree_depth,
-        new Array(1 << sett.acc_data_tree_depth).fill(new Account())
-      ),
-      files: await Tree.init(
-        bb,
-        sett.acc_data_tree_depth,
-        new Array(1 << sett.acc_data_tree_depth).fill(new File())
-      ),
-    } as State;
+    const accounts = await Tree.init(
+      bb,
+      sett.acc_data_tree_depth,
+      new Array(1 << sett.acc_data_tree_depth).fill(new Account())
+    );
+    const files = await Tree.init(
+      bb,
+      sett.acc_data_tree_depth,
+      new Array(1 << sett.acc_data_tree_depth).fill(new File())
+    );
+    return new State(accounts, files);
   }
 
   async build_account_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+
+    let acc = new Account();
+    acc.key = noirToFr(tx.receiver_key);
+    acc.balance = noirToFr(tx.amount);
+    acc.nonce = noirToFr(tx.nonce);
+    acc.random_oracle_nonce = Fr.ZERO;
+    this.accounts.updateLeaf(Number(tx.receiver_index), acc);
 
     return {
       proof_sender: proof_to_noir(sender_prf),
@@ -121,7 +229,14 @@ export class State {
       account_sender: accountToNoir(sender),
       account_receiver: accountToNoir(receiver),
       signature: signature,
-    } as AccountTxAssets;
+    };
+  }
+
+  async hash(bb: Barretenberg): Promise<Fr> {
+    return bb.poseidon2Hash([
+      await this.accounts.hash(bb),
+      await this.files.hash(bb),
+    ]);
   }
 
 }
