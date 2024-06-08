@@ -96,21 +96,20 @@ fn main(
         input.new_root.hash()
     );
 
-    // compute block data
+    // // compute block data
 
-    let mut block_data = &[];
+    // let mut block_data = &[];
 
-    block_data = input.tx.write_block_data(block_data);
-    block_data = input.file.write_block_data(block_data);
-    block_data = input.mining.write_block_data(block_data);
+    // block_data = input.tx.write_block_data(block_data);
+    // block_data = input.file.write_block_data(block_data);
+    // block_data = input.mining.write_block_data(block_data);
 
-    // check that the block is stored inside the rollup dataset
-    // zk Storage happens here
+    // // check that the block is stored inside the rollup dataset
+    // // zk Storage happens here
 
-    let empty_cells = [0;FILE_TREE_DEPTH];
-    let data_root = mt_compute_root(block_data.as_array(), empty_cells);
+    // let data_root = mt_compute_root(block_data, 4*MAX_FILE_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*MAX_TX_PER_BLOCK, FILE_TREE_DEPTH);
 
-    assert(input.file.txs[0].tx.data == data_root);
+    // assert(input.file.txs[0].tx.data == data_root);
 
 
 

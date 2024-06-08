@@ -22,6 +22,20 @@ impl SignaturePacked {
         let mut hasher = PoseidonHasher::default();
         eddsa_verify_with_hasher(a.x, a.y, self.s, r8.x, r8.y, msg, &mut hasher)
     }
+
+    pub fn cond_verify(self, msg:Field, is_disabled:bool) -> bool {
+        let (_self, _msg) = if is_disabled {
+                (SignaturePacked {
+                    a: 0x10935fd5b96cbecb172faac0eb39c8bf2723657447c4b4eb25e3cdda65a884b2,
+                    s: 1426372084044121736122992573070463971308106428625281813611574795316037851300,
+                    r8: 0x28535d59d9066b35df8441c156da49b310523835dedfbf6aea4012d11ce6d931,
+                },5)
+        } else {
+            (self, msg)
+        };
+
+        _self.verify(_msg)
+    }
 }
 
 
