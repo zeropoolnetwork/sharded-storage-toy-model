@@ -67,20 +67,6 @@ impl MiningTx {
 }
 
 impl<N,K> MiningTxEx<N,K> {
-    pub fn write_block_data(self, data: [Field]) -> [Field] {
-        let is_blank = self.assets.signature.a == 0;
-
-        data.append(if is_blank {
-            &[0,0]
-        } else {
-            &[
-                self.tx.sender_index,
-                self.tx.random_oracle_nonce
-            ]
-        })
-    }
-
-
     pub fn apply<O>(self, acc_root:Field, data_root:Field, random_oracle:RandomOracle<O>) -> Field {
         let MiningTxEx{tx, assets} = self;
         let is_blank = assets.signature.a == 0;
@@ -150,17 +136,6 @@ struct MiningBlock<M,N,K> {
 }
 
 impl<M,N,K> MiningBlock<M,N,K> {
-
-    fn write_block_data(self, data: [Field]) -> [Field] {
-        let mut cur = data;
-
-        for i in 0..M {
-            cur = self.txs[i].write_block_data(cur);
-        }
-
-        cur
-    }
-
     fn apply<O>(self, acc_root:Field, data_root:Field, random_oracle:RandomOracle<O>) -> Field {
         let mut cur = acc_root;
         for i in 0..M {

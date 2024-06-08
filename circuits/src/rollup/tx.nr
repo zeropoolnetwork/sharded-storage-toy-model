@@ -53,22 +53,6 @@ impl AccountTx {
 
 
 impl<N> AccountTxEx<N> {
-    pub fn write_block_data(self, data: [Field]) -> [Field] {
-        let is_blank = self.assets.signature.a == 0;
-
-        data.append(if is_blank {
-            &[0,0,0,0]
-        } else {
-            &[
-                self.tx.sender_index,
-                self.tx.receiver_index,
-                self.tx.receiver_key,
-                self.tx.amount
-            ]
-        })
-    }
-
-
     pub fn apply(self, root: Field) -> Field {
         let AccountTxEx {tx, assets} = self;
         let is_blank = assets.signature.a == 0;
@@ -138,17 +122,6 @@ struct AccountBlock<M,N> {
 }
 
 impl<M,N> AccountBlock<M,N> {
-
-    fn write_block_data(self, data: [Field]) -> [Field] {
-        let mut cur = data;
-
-        for i in 0..M {
-            cur = self.txs[i].write_block_data(cur);
-        }
-
-        cur
-    }
-
     fn apply(self, root:Field) -> Field {
         let mut cur = root;
         for i in 0..M {
