@@ -1,3 +1,2 @@
-import { Barretenberg, Fr } from '@aztec/bb.js';
-
-import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
+export { mine } from './mining';
+export { Account, File } from './state';
