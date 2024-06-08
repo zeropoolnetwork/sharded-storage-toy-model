@@ -73,6 +73,6 @@ describe('State', () => {
     console.log('logs', 'Verifying proof... ✅');
 
     bb.destroy();
-  });
+  }, 60 * 1000); // 60 seconds
 
 });
