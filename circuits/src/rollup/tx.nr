@@ -103,16 +103,10 @@ impl<N> AccountTxEx<N> {
         let mut cur = root;
 
         // update sender
-        cur = assets.proof_sender.update(assets.account_sender.hash(), new_account_sender.hash(), cur);
+        cur = assets.proof_sender.cond_update(assets.account_sender.hash(), new_account_sender.hash(), cur, is_blank);
 
         // update receiver
-        cur = assets.proof_receiver.update(assets.account_receiver.hash(), new_account_receiver.hash(), cur);
-
-        if is_blank {
-            root
-        } else {
-            cur
-        }
+        assets.proof_receiver.cond_update(assets.account_receiver.hash(), new_account_receiver.hash(), cur, is_blank)
     }
 }
 

@@ -13,7 +13,7 @@ pub fn from_le_bits<N>(bits: [u1;N]) -> Field {
 }
 
 pub fn trim(f:Field, n:u32) -> Field {
-    let f_bits = f.to_le_bits(n);
+    let f_bits = f.to_le_bits(254);
     let mut res = 0;
     let mut cur = 1;
     for i in 0..n {

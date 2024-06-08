@@ -16,6 +16,20 @@ impl<N> MerkleProof<N> {
         assert(self.root(leaf) == old_root);
         self.root(new_leaf)
     }
+
+    pub fn cond_update(self, leaf: Field, new_leaf: Field, old_root: Field, is_blank:bool) -> Field {
+        let _old_root = self.root(leaf);
+        let _new_root = self.root(new_leaf);
+
+        let (__old_root, __new_root) = if is_blank {
+            (_old_root, old_root)
+        } else {
+            (old_root, _new_root)
+        };
+
+        assert(__old_root == _old_root);
+        __new_root
+    }
     
 }
 

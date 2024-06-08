@@ -96,49 +96,51 @@ fn main(
         input.new_root.hash()
     );
 
+    
+    
     // // compute block data
+    // {
+    //     let mut block_data = [0; 4*MAX_FILE_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*MAX_TX_PER_BLOCK];
+
+    //     for i in 0..MAX_TX_PER_BLOCK {
+    //         let offset = 4*i;
+    //         block_data[offset] = input.tx.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.tx.txs[i].tx.receiver_index;
+    //         block_data[offset+2] = input.tx.txs[i].tx.receiver_key;
+    //         block_data[offset+3] = input.tx.txs[i].tx.amount;
+    //     }
+
+    //     for i in 0..MAX_MINING_PER_BLOCK {
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*i;
+    //         block_data[offset] = input.mining.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.mining.txs[i].tx.random_oracle_nonce;
+    //     }
 
 
-    let mut block_data = [0; 4*MAX_FILE_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*MAX_TX_PER_BLOCK];
-
-    for i in 0..MAX_TX_PER_BLOCK {
-        let offset = 4*i;
-        block_data[offset] = input.tx.txs[i].tx.sender_index;
-        block_data[offset+1] = input.tx.txs[i].tx.receiver_index;
-        block_data[offset+2] = input.tx.txs[i].tx.receiver_key;
-        block_data[offset+3] = input.tx.txs[i].tx.amount;
-    }
-
-    for i in 0..MAX_MINING_PER_BLOCK {
-        let offset = 4*MAX_TX_PER_BLOCK + 2*i;
-        block_data[offset] = input.mining.txs[i].tx.sender_index;
-        block_data[offset+1] = input.mining.txs[i].tx.random_oracle_nonce;
-    }
+    //     { // i = 0
+    //         let i = 0;
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
+    //         block_data[offset] = input.file.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.file.txs[i].tx.data_index;
+    //         block_data[offset+2] = input.file.txs[i].tx.time_interval;
+    //         block_data[offset+3] = 0;
+    //     }
 
 
-    { // i = 0
-        let i = 0;
-        let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
-        block_data[offset] = input.file.txs[i].tx.sender_index;
-        block_data[offset+1] = input.file.txs[i].tx.data_index;
-        block_data[offset+2] = input.file.txs[i].tx.time_interval;
-        block_data[offset+3] = 0;
-    }
+    //     for i in 1..MAX_FILE_PER_BLOCK {
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
+    //         block_data[offset] = input.file.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.file.txs[i].tx.data_index;
+    //         block_data[offset+2] = input.file.txs[i].tx.time_interval;
+    //         block_data[offset+3] = input.file.txs[i].tx.data;
+    //     }
 
+    //     let empty_cells = [0; FILE_TREE_DEPTH];
 
-    for i in 1..MAX_FILE_PER_BLOCK {
-        let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
-        block_data[offset] = input.file.txs[i].tx.sender_index;
-        block_data[offset+1] = input.file.txs[i].tx.data_index;
-        block_data[offset+2] = input.file.txs[i].tx.time_interval;
-        block_data[offset+3] = input.file.txs[i].tx.data;
-    }
+    //     let data_root = mt_compute_root(block_data, empty_cells);
 
-    let empty_cells = [0; FILE_TREE_DEPTH];
-
-    let data_root = mt_compute_root(block_data, empty_cells);
-
-    assert(input.file.txs[0].tx.data == data_root);
+    //     assert(input.file.txs[0].tx.data == data_root);
+    // }
 
 
 
@@ -152,6 +154,8 @@ fn main(
     let (acc_root, data_root) = input.file.apply(acc_root, data_root, input.public.now);
 
     let acc_root = input.mining.apply(acc_root, data_root, input.public.oracle);
+
+    let (new_acc_root, _new_data_root) = (input.new_root.acc, input.new_root.data);
 
     // check the new roots
     assert_eq(

@@ -100,7 +100,7 @@ impl<N> FileTxEx<N> {
         };
 
         // update sender
-        let new_acc_root = assets.proof_sender.update(assets.account_sender.hash(), new_account_sender.hash(), acc_root);
+        let new_acc_root = assets.proof_sender.cond_update(assets.account_sender.hash(), new_account_sender.hash(), acc_root, is_blank);
 
         // check access to the file
         assert(is_blank | (assets.file.is_writeable(now, assets.account_sender.key)));
@@ -129,12 +129,10 @@ impl<N> FileTxEx<N> {
             }
         };
 
-        let new_data_root = assets.proof_file.update(assets.file.hash(), new_file.hash(), data_root);
-        if is_blank {
-            (acc_root, data_root)
-        } else {   
-            (new_acc_root, new_data_root)
-        }
+        let new_data_root = assets.proof_file.cond_update(assets.file.hash(), new_file.hash(), data_root, is_blank);
+        
+        (new_acc_root, new_data_root)
+        
     }
 }
 

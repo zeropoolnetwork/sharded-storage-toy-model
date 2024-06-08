@@ -120,13 +120,7 @@ impl<N,K> MiningTxEx<N,K> {
             random_oracle_nonce: tx.random_oracle_nonce
         };
 
-        let new_acc_root = assets.proof_sender.update(acc_root, assets.account_sender.hash(), new_account_sender.hash());
-
-        if is_blank {
-            new_acc_root
-        } else {
-            acc_root
-        }
+        assets.proof_sender.cond_update(assets.account_sender.hash(), new_account_sender.hash(), acc_root, is_blank)
     }
 }
 
