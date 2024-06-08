@@ -1,0 +1,594 @@
+pubhash = "8793690525322549314021897259186101606390817094047390134314264678108002230680"
+
+[input.public]
+old_root = "1531359414402147463415244130379745806149706438094898118371593916032187702773"
+new_root = "1531359414402147463415244130379745806149706438094898118371593916032187702773"
+now = "0"
+
+  [input.public.oracle]
+  offset = "0"
+  data = [
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0",
+  "0"
+  ]
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.tx.txs]]
+[input.tx.txs.tx]
+sender_index = "0"
+receiver_index = "0"
+receiver_key = "0"
+amount = "0"
+nonce = "0"
+
+[input.tx.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.proof_receiver]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.tx.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.account_receiver]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.tx.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.file.txs]]
+[input.file.txs.tx]
+sender_index = "0"
+data_index = "0"
+time_interval = "0"
+data = "0"
+nonce = "0"
+
+[input.file.txs.assets.proof_sender]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.proof_file]
+index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+[input.file.txs.assets.account_sender]
+key = "0"
+balance = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+
+[input.file.txs.assets.file]
+expiration_time = "0"
+owner = "0"
+data = "0"
+
+[input.file.txs.assets.signature]
+a = "0"
+s = "0"
+r8 = "0"
+
+[[input.mining.txs]]
+[input.mining.txs.tx]
+sender_index = "0"
+nonce = "0"
+random_oracle_nonce = "0"
+mining_nonce = "0"
+
+[input.mining.txs.assets]
+random_oracle_value = "0"
+data_in_file = "0"
+
+  [input.mining.txs.assets.proof_sender]
+  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+  [input.mining.txs.assets.account_sender]
+  key = "0"
+  balance = "0"
+  nonce = "0"
+  random_oracle_nonce = "0"
+
+  [input.mining.txs.assets.proof_file]
+  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+  [input.mining.txs.assets.file]
+  expiration_time = "0"
+  owner = "0"
+  data = "0"
+
+  [input.mining.txs.assets.proof_data_in_file]
+  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+
+  [input.mining.txs.assets.signature]
+  a = "0"
+  s = "0"
+  r8 = "0"
+
+[input.old_root]
+acc = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
+data = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
+
+[input.new_root]
+acc = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
+data = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
