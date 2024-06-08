@@ -39,6 +39,7 @@ export function noirToFr(x: NoirFr): Fr {
 // Generated using Claude AI from Noir circuit definintion
 export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInput): FrHashed {
   const payload: bigint[] = new Array(sett.pub_len).fill(BigInt(0));
+
   payload[0] = BigInt(input.old_root);
   payload[1] = BigInt(input.new_root);
   payload[2] = BigInt(input.now);
@@ -77,7 +78,7 @@ function bigIntToBytes(value: bigint, length: number): number[] {
   for (let i = 0; i < hex.length; i += 2) {
     bytes.push(parseInt(hex.slice(i, i + 2), 16));
   }
-  return bytes.reverse(); // use BE for Ethereum compatibility
+  return bytes; // use BE for Ethereum compatibility
 }
 
 export function frAdd(x: Fr, y: Fr): Fr {
