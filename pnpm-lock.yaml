@@ -100,6 +100,9 @@ importers:
       '@zk-kit/eddsa-poseidon':
         specifier: ^1.0.1
         version: 1.0.1
+      smol-toml:
+        specifier: ^1.2.1
+        version: 1.2.1
     devDependencies:
       '@noir-lang/noir_codegen':
         specifier: ^0.30.0
@@ -4383,6 +4386,10 @@ packages:
   slice-ansi@4.0.0:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
+
+  smol-toml@1.2.1:
+    resolution: {integrity: sha512-OtZKrVrGIT+m++lxyF0z5n68nkwdgZotPhy89bfA4T7nSWe0xeQtfbjM1z5VLTilJdWXH46g8i0oAcpQNkzZTg==}
+    engines: {node: '>= 18', pnpm: '>= 9'}
 
   socket.io-adapter@2.5.4:
     resolution: {integrity: sha512-wDNHGXGewWAjQPt3pyeYBtpWSq9cLE5UW1ZUPL/2eGK9jtse/FpXib7epSTsz0Q0m+6sg6Y4KtcFTlah1bdOVg==}
@@ -10518,6 +10525,8 @@ snapshots:
       ansi-styles: 4.3.0
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
+
+  smol-toml@1.2.1: {}
 
   socket.io-adapter@2.5.4:
     dependencies:

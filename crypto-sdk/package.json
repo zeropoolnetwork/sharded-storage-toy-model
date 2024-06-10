@@ -25,7 +25,8 @@
     "@aztec/bb.js": "^0.41.0",
     "@noir-lang/backend_barretenberg": "0.30.0",
     "@noir-lang/noir_js": "0.30.0",
-    "@zk-kit/eddsa-poseidon": "^1.0.1"
+    "@zk-kit/eddsa-poseidon": "^1.0.1",
+    "smol-toml": "^1.2.1"
   },
   "scripts": {
     "noir-gen-circuits": "noir-codegen ../circuits/target/circuits.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts",
