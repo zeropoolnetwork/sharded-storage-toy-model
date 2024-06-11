@@ -7,76 +7,13 @@ import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settin
 import { blank_mining_tx } from '../src/mining';
 import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit } from '../src/noir_codegen';
 
-import { parse, stringify } from 'smol-toml';
-
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
 
 import { Worker } from 'worker_threads';
 Worker.setMaxListeners(2000);
-
-type ProverToml = {
-  pubhash: Field,
-  input: RollupInput,
-};
-
-type VerifierToml = {
-  pubhash: Field,
-}
-
-export function prove(nargo_project_path: string, inputs: ProverToml): string {
-  const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-prover-'));
-  const tempFilePath = path.join(tempDirPath, 'Prover.toml');
-
-  try {
-    fs.cpSync(nargo_project_path, path.join(tempDirPath, "circuits"), {recursive: true});
-    fs.writeFileSync(tempFilePath, stringify(inputs));
-    const out = execSync(`
-       set -xefu
-       cd "${tempDirPath}/circuits"
-       nargo prove --prover-name "${tempFilePath}"
-   `, { encoding: 'utf8' });
-    return fs.readFileSync(
-      path.join(tempDirPath, "circuits", "proofs", "circuits.proof"),
-      { encoding: 'utf-8' }
-    );
-  } catch (e) {
-    throw e;
-  } finally {
-    execSync("rm -rf ${tempDirPath}");
-  }
-}
-
-export function verify(nargo_project_path: string, inputs: VerifierToml, proof: string): Boolean {
-  const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-prover-'));
-  const tempFilePath = path.join(tempDirPath, 'Verifier.toml');
-
-  try {
-    fs.cpSync(nargo_project_path, path.join(tempDirPath, "circuits"), {recursive: true});
-    fs.writeFileSync(tempFilePath, stringify(inputs));
-    fs.writeFileSync(path.join(tempDirPath, "circuits", "proofs", "circuits.proof"), proof);
-    try {
-      execSync(`
-         set -xefu
-         cd "${tempDirPath}/circuits"
-         nargo verify --verifier-name "${tempFilePath}"
-     `, { encoding: 'utf8' });
-      return true;
-    } catch (e) {
-      console.log(`verification failed with ${e}`);
-      return false;
-    }
-  } catch (e) {
-    throw e;
-  } finally {
-    execSync("rm -rf ${tempDirPath}");
-  }
-}
 
 describe('State', () => {
 
@@ -93,8 +30,6 @@ describe('State', () => {
 
     const txex = blank_account_tx(sett);
 
-    console.log("building pub input");
-
     const pubInput: RollupPubInput = {
       old_root: frToNoir(st_hash),
       new_root: frToNoir(st_hash),
@@ -105,8 +40,6 @@ describe('State', () => {
       } as RandomOracle,
     };
     const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
-
-    console.log("building input");
 
     let input: RollupInput = {
       public: pubInput,
@@ -132,13 +65,16 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    console.log(`proving...`);
     const proof = prove("../circuits/", prover_data);
     console.log(`proof = ${proof}`);
 
-    console.log(`verifying...`);
     const res = verify("../circuits/", verifier_data, proof);
     expect(res).toEqual(true);
+
+    const corrupted_proof = "deadbeef" + proof;
+    expect(
+      verify("../circuits/", verifier_data, corrupted_proof)
+    ).toEqual(false);
 
     bb.destroy();
   }, 30 * 60 * 1000); // 10 minutes
