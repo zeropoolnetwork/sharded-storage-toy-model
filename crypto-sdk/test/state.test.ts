@@ -21,24 +21,56 @@ import { Worker } from 'worker_threads';
 Worker.setMaxListeners(2000);
 
 type ProverToml = {
-      pubhash: Field,
-      input: RollupInput,
+  pubhash: Field,
+  input: RollupInput,
 };
 
-export async function prove(nargo_project_path: string, inputs: ProverToml) {
+type VerifierToml = {
+  pubhash: Field,
+}
+
+export function prove(nargo_project_path: string, inputs: ProverToml): string {
   const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-prover-'));
   const tempFilePath = path.join(tempDirPath, 'Prover.toml');
 
   try {
+    fs.cpSync(nargo_project_path, path.join(tempDirPath, "circuits"), {recursive: true});
     fs.writeFileSync(tempFilePath, stringify(inputs));
     const out = execSync(`
-       set -xe
-       cp -rv ${nargo_project_path}/* "${tempDirPath}"
-       cd "${tempDirPath}"
+       set -xefu
+       cd "${tempDirPath}/circuits"
        nargo prove --prover-name "${tempFilePath}"
-       find
    `, { encoding: 'utf8' });
-    console.log(out);
+    return fs.readFileSync(
+      path.join(tempDirPath, "circuits", "proofs", "circuits.proof"),
+      { encoding: 'utf-8' }
+    );
+  } catch (e) {
+    throw e;
+  } finally {
+    execSync("rm -rf ${tempDirPath}");
+  }
+}
+
+export function verify(nargo_project_path: string, inputs: VerifierToml, proof: string): Boolean {
+  const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-prover-'));
+  const tempFilePath = path.join(tempDirPath, 'Verifier.toml');
+
+  try {
+    fs.cpSync(nargo_project_path, path.join(tempDirPath, "circuits"), {recursive: true});
+    fs.writeFileSync(tempFilePath, stringify(inputs));
+    fs.writeFileSync(path.join(tempDirPath, "circuits", "proofs", "circuits.proof"), proof);
+    try {
+      execSync(`
+         set -xefu
+         cd "${tempDirPath}/circuits"
+         nargo verify --verifier-name "${tempFilePath}"
+     `, { encoding: 'utf8' });
+      return true;
+    } catch (e) {
+      console.log(`verification failed with ${e}`);
+      return false;
+    }
   } catch (e) {
     throw e;
   } finally {
@@ -91,30 +123,24 @@ describe('State', () => {
       new_root: st_root,
     };
 
-    const prover_data = {
+    const prover_data: ProverToml = {
       pubhash: pubInputHash,
       input: input
     };
 
-    prove("../circuits/", prover_data);
+    const verifier_data: VerifierToml = {
+      pubhash: pubInputHash,
+    };
 
-    // const backend = new BarretenbergBackend(circuits_circuit);
-    // const noir = new Noir(circuits_circuit, backend);
-    // console.log('logs', 'Generating proof... ⌛');
-    // const ins = {
-    //   pubhash: frToNoir(pubInputHash),
-    //   input: input,
-    // };
-    // console.log(JSON.stringify(ins));
-    // const proof = await noir.generateProof(ins);
-    // console.log('logs', 'Generating proof... ✅');
-    // console.log('results', proof.proof);
-    // console.log('logs', 'Verifying proof... ⌛');
-    // const verification = await noir.verifyProof(proof);
-    // expect(verification).toEqual(true);
-    // console.log('logs', 'Verifying proof... ✅');
+    console.log(`proving...`);
+    const proof = prove("../circuits/", prover_data);
+    console.log(`proof = ${proof}`);
+
+    console.log(`verifying...`);
+    const res = verify("../circuits/", verifier_data, proof);
+    expect(res).toEqual(true);
 
     bb.destroy();
-  }, 10 * 60 * 1000); // 10 minutes
+  }, 30 * 60 * 1000); // 10 minutes
 
 });
