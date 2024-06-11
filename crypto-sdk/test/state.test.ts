@@ -68,8 +68,9 @@ describe('State', () => {
     const proof = prove("../circuits/", prover_data);
     console.log(`proof = ${proof}`);
 
-    const res = verify("../circuits/", verifier_data, proof);
-    expect(res).toEqual(true);
+    expect(
+      verify("../circuits/", verifier_data, proof)
+    ).toEqual(true);
 
     const corrupted_proof = "deadbeef" + proof;
     expect(

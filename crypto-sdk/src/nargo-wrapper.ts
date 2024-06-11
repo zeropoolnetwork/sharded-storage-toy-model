@@ -46,6 +46,9 @@ export function verify(nargo_project_path: string, inputs: VerifierToml, proof: 
   try {
     fs.cpSync(nargo_project_path, path.join(tempDirPath, "circuits"), {recursive: true});
     fs.writeFileSync(tempFilePath, stringify(inputs));
+    try {
+      fs.mkdirSync(path.join(tempDirPath, "circuits", "proofs"));
+    } catch (_) {}
     fs.writeFileSync(path.join(tempDirPath, "circuits", "proofs", "circuits.proof"), proof);
     try {
       execSync(`
