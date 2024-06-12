@@ -105,7 +105,7 @@ export async function sign_acc_tx(bb: Barretenberg, sk: string, tx: AccountTx): 
   ));
   const sigma = signMessage(sk, m);
   return {
-    a: derivePublicKey(sk).toString(),
+    a: derivePublicKey(sk)[0].toString(),
     s: sigma.S.toString(),
     r8: sigma.R8[0].toString(),
   };
