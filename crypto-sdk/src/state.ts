@@ -224,8 +224,8 @@ export class State implements Hashable {
   }
 
   async build_account_tx_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
-    let [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    let [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
 
     let acc = new Account();
     acc.key = noirToFr(tx.receiver_key);
@@ -233,13 +233,15 @@ export class State implements Hashable {
     acc.nonce = noirToFr(tx.nonce);
     acc.random_oracle_nonce = Fr.ZERO;
     await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
-    sender.balance = frSub(
+    // TODO: double-check if TS is not doing anything weird with copying sender_mod here
+    let sender_mod = sender;
+    sender_mod.balance = frSub(
       sender.balance,
       noirToFr(tx.amount)
     );
     if (frToBigInt(sender.balance) == 0n)
-      sender.key = Fr.ZERO;
-    await this.accounts.updateLeaf(Number(tx.sender_index), sender);
+      sender_mod.key = Fr.ZERO;
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     return {
       proof_sender: proof_to_noir(sender_prf),

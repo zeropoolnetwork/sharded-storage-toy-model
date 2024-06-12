@@ -7,9 +7,10 @@ import { Hashable, frToNoir } from './util';
 export type MerkleProof = [Boolean, Fr][];
 
 export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
+  // Noir code uses little-endian (LSB) for some reason
   return {
-    index_bits: prf.map(([i, h]) => Number(i)),
-    hash_path: prf.map(([i, h]) => frToNoir(h)),
+    index_bits: prf.map(([i, h]) => Number(i)).reverse(),
+    hash_path: prf.map(([i, h]) => frToNoir(h)).reverse(),
   } as NoirMerkleProof;
 }
 

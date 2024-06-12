@@ -47,24 +47,14 @@ describe('State', () => {
       data: frToNoir(await st.files.hash(bb)),
     };
 
-    const pubInput: RollupPubInput = {
-      old_root: frToNoir(st_hash),
-      new_root: frToNoir(st_hash),
-      now: "0",
-      oracle: {
-        offset: "0",
-        data: new Array(sett.oracle_len).fill("0"),
-      } as RandomOracle,
-    };
-    const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
-
     const rec_pk = derivePublicKey("receiver password");
 
     let acc_txs = new Array(sett.account_tx_per_block).fill(blank_account_tx(sett));
+    // TODO: check if indices are correctly encoded here
     let tx: AccountTx = {
       sender_index: "0",
-      receiver_index: "0",
-      receiver_key: "1",
+      receiver_index: "1",
+      receiver_key: rec_pk[0].toString(),
       amount: "10",
       nonce: "0",
     };
@@ -74,6 +64,23 @@ describe('State', () => {
       assets: await st.build_account_tx_assets(tx, sign),
     }
     acc_txs[0] = txex;
+
+    const new_st_root: Root = {
+      acc: frToNoir(await st.accounts.hash(bb)),
+      data: frToNoir(await st.files.hash(bb)),
+    };
+    const new_st_hash = await st.hash(bb);
+
+    const pubInput: RollupPubInput = {
+      old_root: frToNoir(st_hash),
+      new_root: frToNoir(new_st_hash),
+      now: "0",
+      oracle: {
+        offset: "0",
+        data: new Array(sett.oracle_len).fill("0"),
+      } as RandomOracle,
+    };
+    const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
 
     let input: RollupInput = {
       public: pubInput,
@@ -87,7 +94,7 @@ describe('State', () => {
         txs: new Array(sett.mining_tx_per_block).fill(blank_mining_tx(sett)),
       },
       old_root: st_root,
-      new_root: st_root,
+      new_root: new_st_root,
     };
 
     const prover_data: ProverToml = {
@@ -100,7 +107,6 @@ describe('State', () => {
     };
 
     const proof = prove("../circuits/", prover_data);
-    console.log(`proof = ${proof}`);
 
     expect(
       verify("../circuits/", verifier_data, proof)
@@ -166,7 +172,6 @@ describe('State', () => {
     };
 
     const proof = prove("../circuits/", prover_data);
-    console.log(`proof = ${proof}`);
 
     expect(
       verify("../circuits/", verifier_data, proof)
