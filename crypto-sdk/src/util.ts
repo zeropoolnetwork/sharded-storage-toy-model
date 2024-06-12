@@ -3,6 +3,15 @@ import { AccountTx, Field, Field as NoirFr, RollupPubInput, SignaturePacked } fr
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
 
+import {
+    derivePublicKey,
+    signMessage,
+    verifySignature,
+    deriveSecretScalar,
+    packPublicKey,
+    unpackPublicKey
+} from "@zk-kit/eddsa-poseidon"
+
 export interface Hashable {
   hash(bb: Barretenberg): Promise<Fr>;
 }
@@ -89,7 +98,15 @@ export function frSub(x: Fr, y: Fr): Fr {
   return bigIntToFr(frToBigInt(x) - frToBigInt(y))
 }
 
-export function sign_acc_tx(sk: string, tx: AccountTx): SignaturePacked {
-  /// TODO:
-  return undefined as any;
+export async function sign_acc_tx(bb: Barretenberg, sk: string, tx: AccountTx): Promise<SignaturePacked> {
+  const m = frToBigInt(await bb.poseidon2Hash(
+    [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
+      .map(noirToFr)
+  ));
+  const sigma = signMessage(sk, m);
+  return {
+    a: derivePublicKey(sk).toString(),
+    s: sigma.S.toString(),
+    r8: sigma.R8[0].toString(),
+  };
 }

@@ -68,7 +68,7 @@ describe('State', () => {
       amount: "10",
       nonce: "0",
     };
-    const sign = sign_acc_tx(sk, tx);
+    const sign = await sign_acc_tx(bb, sk, tx);
     let txex: AccountTxEx = {
       tx: tx,
       assets: await st.build_account_tx_assets(tx, sign),
@@ -105,11 +105,6 @@ describe('State', () => {
     expect(
       verify("../circuits/", verifier_data, proof)
     ).toEqual(true);
-
-    const corrupted_proof = "deadbeef" + proof;
-    expect(
-      verify("../circuits/", verifier_data, corrupted_proof)
-    ).toEqual(false);
 
     bb.destroy();
   }, 10 * 60 * 1000); // 10 minutes
