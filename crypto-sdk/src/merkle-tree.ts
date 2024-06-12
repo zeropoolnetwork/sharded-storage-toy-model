@@ -88,6 +88,7 @@ export class Tree<T extends Hashable> implements Hashable {
         this.nodes[left_child],
         this.nodes[right_child]
       );
+      node = node >> 1;
     }
   }
 
