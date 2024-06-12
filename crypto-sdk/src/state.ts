@@ -61,12 +61,17 @@ export class File implements Hashable {
   // Owner account pk
   owner: Fr;
   // File contents serialized as a list of Fr. Null when file is not initialized
-  data: null | Tree<FrHashed>;
+  data: Tree<FrHashed>;
 
-  constructor() {
-    this.expiration_time = Fr.ZERO;
-    this.owner = Fr.ZERO;
-    this.data = null;
+  constructor(expiration_time: Fr, owner: Fr, data: Tree<FrHashed>) {
+    this.expiration_time = expiration_time;
+    this.owner = owner;
+    this.data = data;
+  }
+
+  static async blank(bb: Barretenberg, d: number): Promise<File> {
+    const data = await Tree.init(bb, d, new Array(1 << d).fill(Fr.ZERO));
+    return new File(Fr.ZERO, Fr.ZERO, data);
   }
 
   async hash(bb: Barretenberg): Promise<Fr> {
@@ -211,7 +216,7 @@ export class State implements Hashable {
     const files = await Tree.init(
       bb,
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(new File())
+      new Array(1 << sett.acc_data_tree_depth).fill(await File.blank(bb, sett.file_tree_depth))
     );
     return new State(accounts, files);
   }

@@ -159,7 +159,6 @@ fn main(
 
     let acc_root = input.mining.apply(acc_root, data_root, input.public.oracle);
 
-    let (new_acc_root, _new_data_root) = (input.new_root.acc, input.new_root.data);
 
     // check the new roots
     assert_eq(
