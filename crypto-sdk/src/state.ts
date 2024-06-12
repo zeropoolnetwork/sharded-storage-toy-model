@@ -1,6 +1,6 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { FrHashed, Hashable, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
 import { ShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -223,16 +223,23 @@ export class State implements Hashable {
     return new State(accounts, files);
   }
 
-  async build_account_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
-    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+  async build_account_tx_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
+    let [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
 
     let acc = new Account();
     acc.key = noirToFr(tx.receiver_key);
     acc.balance = noirToFr(tx.amount);
     acc.nonce = noirToFr(tx.nonce);
     acc.random_oracle_nonce = Fr.ZERO;
-    this.accounts.updateLeaf(Number(tx.receiver_index), acc);
+    await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
+    sender.balance = frSub(
+      sender.balance,
+      noirToFr(tx.amount)
+    );
+    if (frToBigInt(sender.balance) == 0n)
+      sender.key = Fr.ZERO;
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender);
 
     return {
       proof_sender: proof_to_noir(sender_prf),

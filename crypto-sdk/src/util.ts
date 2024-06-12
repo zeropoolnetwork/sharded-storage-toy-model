@@ -1,5 +1,5 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Field as NoirFr, RollupPubInput } from "./noir_codegen/index"; 
+import { AccountTx, Field, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
 
@@ -83,4 +83,13 @@ function bigIntToBytes(value: bigint, length: number): number[] {
 
 export function frAdd(x: Fr, y: Fr): Fr {
   return bigIntToFr(frToBigInt(x) + frToBigInt(y))
+}
+
+export function frSub(x: Fr, y: Fr): Fr {
+  return bigIntToFr(frToBigInt(x) - frToBigInt(y))
+}
+
+export function sign_acc_tx(sk: string, tx: AccountTx): SignaturePacked {
+  /// TODO:
+  return undefined as any;
 }
