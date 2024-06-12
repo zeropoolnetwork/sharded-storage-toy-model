@@ -207,11 +207,13 @@ export class State implements Hashable {
     this.files = files;
   }
 
-  static async genesisState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
+  static async genesisState(bb: Barretenberg, first_acc: Account, sett: ShardedStorageSettings): Promise<State> {
+    let accs = new Array(1 << sett.acc_data_tree_depth).fill(new Account());
+    accs[0] = first_acc;
     const accounts = await Tree.init(
       bb,
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(new Account())
+      accs,
     );
     const files = await Tree.init(
       bb,

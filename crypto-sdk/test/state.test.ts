@@ -1,16 +1,25 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
 import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash } from '../src/util';
-import { State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
+import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx } from '../src/mining';
-import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit } from '../src/noir_codegen';
+import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx } from '../src/noir_codegen';
 
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir } from '@noir-lang/noir_js';
 
 import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
+
+import {
+    derivePublicKey,
+    signMessage,
+    verifySignature,
+    deriveSecretScalar,
+    packPublicKey,
+    unpackPublicKey
+} from "@zk-kit/eddsa-poseidon"
 
 import { Worker } from 'worker_threads';
 Worker.setMaxListeners(2000);
@@ -21,14 +30,22 @@ describe('State', () => {
     let bb = await Barretenberg.new({ threads: cpus().length });
     const sett = defShardedStorageSettings;
 
-    let st = await State.genesisState(bb, sett);
+    const sk = "mypassword";
+    const pk = derivePublicKey(sk);
+
+    let first_acc = new Account();
+
+    first_acc.key = bigIntToFr(pk[0]);
+    first_acc.balance = bigIntToFr(1000000n);
+    first_acc.nonce = Fr.ZERO;
+    first_acc.random_oracle_nonce = Fr.ZERO;
+
+    let st = await State.genesisState(bb, first_acc, sett);
     const st_hash = await st.hash(bb);
     const st_root: Root = {
       acc: frToNoir(await st.accounts.hash(bb)),
       data: frToNoir(await st.files.hash(bb)),
     };
-
-    const txex = blank_account_tx(sett);
 
     const pubInput: RollupPubInput = {
       old_root: frToNoir(st_hash),
@@ -78,6 +95,6 @@ describe('State', () => {
     ).toEqual(false);
 
     bb.destroy();
-  }, 30 * 60 * 1000); // 10 minutes
+  }, 10 * 60 * 1000); // 10 minutes
 
 });
