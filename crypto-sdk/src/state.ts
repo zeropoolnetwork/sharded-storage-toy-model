@@ -70,7 +70,7 @@ export class File implements Hashable {
   }
 
   static async blank(bb: Barretenberg, d: number): Promise<File> {
-    const data = await Tree.init(bb, d, new Array(1 << d).fill(Fr.ZERO));
+    const data = await Tree.init(bb, d, new Array(1 << d).fill(new FrHashed(Fr.ZERO)));
     return new File(Fr.ZERO, Fr.ZERO, data);
   }
 
