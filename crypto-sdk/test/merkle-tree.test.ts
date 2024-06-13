@@ -56,7 +56,7 @@ describe('Merkle Tree', () => {
     ]);
     expect(two_proof.length).toBe(depth);
 
-    tree.updateLeaf(1, new FrHashed(bigIntToFr(10n)));
+    await tree.updateLeaf(1, new FrHashed(bigIntToFr(10n)));
     const [ten_proof, ten] = tree.readLeaf(1);
     expect(frToBigInt(ten)).toEqual(10n);
     expect(ten_proof).toEqual(two_proof);
