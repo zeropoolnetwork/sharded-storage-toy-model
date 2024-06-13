@@ -1,6 +1,6 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { FrHashed, Hashable, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { FrHashed, Hashable, bigIntToFr, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
 import { ShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -233,14 +233,20 @@ export class State implements Hashable {
     acc.nonce = noirToFr(tx.nonce);
     acc.random_oracle_nonce = Fr.ZERO;
     await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
-    // TODO: double-check if TS is not doing anything weird with copying sender_mod here
-    let sender_mod = sender;
+    let sender_mod = new Account();
     sender_mod.balance = frSub(
       sender.balance,
       noirToFr(tx.amount)
     );
-    if (frToBigInt(sender.balance) == 0n)
+    if (frToBigInt(sender_mod.balance) == 0n) {
+      sender_mod.nonce = Fr.ZERO;
+      sender_mod.random_oracle_nonce = Fr.ZERO;
       sender_mod.key = Fr.ZERO;
+    } else {
+      sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+      sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
+      sender_mod.key = sender.key;
+    }
     await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     return {

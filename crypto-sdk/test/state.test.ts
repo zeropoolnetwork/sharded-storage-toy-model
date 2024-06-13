@@ -78,7 +78,7 @@ describe('State', () => {
       oracle: {
         offset: "0",
         data: new Array(sett.oracle_len).fill("0"),
-      } as RandomOracle,
+      },
     };
     const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
 
@@ -143,7 +143,7 @@ describe('State', () => {
       oracle: {
         offset: "0",
         data: new Array(sett.oracle_len).fill("0"),
-      } as RandomOracle,
+      },
     };
     const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
 
