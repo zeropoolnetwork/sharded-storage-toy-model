@@ -1,6 +1,6 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash, sign_acc_tx, pad_array, prep_account_tx } from '../src/util';
+import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash, pad_array, prep_account_tx } from '../src/util';
 import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';

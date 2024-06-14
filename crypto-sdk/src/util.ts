@@ -1,5 +1,5 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { AccountTx, Field, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
+import { AccountTx, Field, FileTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
 
@@ -101,6 +101,44 @@ export function frAdd(x: Fr, y: Fr): Fr {
 
 export function frSub(x: Fr, y: Fr): Fr {
   return bigIntToFr(frToBigInt(x) - frToBigInt(y))
+}
+
+/// Same as prep_account_tx, but for file transactions.
+export async function prep_file_tx(
+  bb: Barretenberg,
+  time_interval: bigint,
+  /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
+  sender_index: number,
+  data_index: number,
+  /// Contents hash
+  data: bigint,
+  /// Sender key, using zk-kit/eddsa-poseidon format (pk packed into x coordinate)
+  sender_sk: string,
+  /// Sender account's nonce. Increases by 1 with each transaction from sender
+  nonce: bigint,
+): Promise<[FileTx, SignaturePacked]> {
+
+  const tx: FileTx = {
+    sender_index: sender_index.toString(),
+    data_index: data_index.toString(),
+    time_interval: time_interval.toString(),
+    data: data.toString(),
+    nonce: nonce.toString(),
+  };
+
+  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
+  const m = frToBigInt(await bb.poseidon2Hash(
+    [tx.sender_index, tx.data_index, tx.time_interval, tx.data, tx.nonce]
+      .map(noirToFr)
+  ));
+  const sigma = signMessage(sender_sk, m);
+  const sign: SignaturePacked = {
+    a: derivePublicKey(sender_sk)[0].toString(),
+    s: sigma.S.toString(),
+    r8: sigma.R8[0].toString(),
+  };
+
+  return [tx, sign];
 }
 
 /// This function prepares the account transaction. It does not use global
