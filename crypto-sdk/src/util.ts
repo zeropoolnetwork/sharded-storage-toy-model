@@ -123,6 +123,7 @@ export async function prep_account_tx(
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
 ): Promise<[AccountTx, SignaturePacked]> {
+
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
@@ -130,20 +131,18 @@ export async function prep_account_tx(
     amount: amount.toString(),
     nonce: nonce.toString(),
   };
-  const sign = await sign_acc_tx(bb, sender_sk, tx);
-  return [tx, sign];
-}
 
-// TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
-export async function sign_acc_tx(bb: Barretenberg, sk: string, tx: AccountTx): Promise<SignaturePacked> {
+  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
   const m = frToBigInt(await bb.poseidon2Hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
       .map(noirToFr)
   ));
-  const sigma = signMessage(sk, m);
-  return {
-    a: derivePublicKey(sk)[0].toString(),
+  const sigma = signMessage(sender_sk, m);
+  const sign: SignaturePacked = {
+    a: derivePublicKey(sender_sk)[0].toString(),
     s: sigma.S.toString(),
     r8: sigma.R8[0].toString(),
   };
+
+  return [tx, sign];
 }
