@@ -19,6 +19,9 @@ export type ShardedStorageSettings = {
   // Mining settings
   mining_max_nonce: number,
   mining_difficulty: bigint,
+
+  // Storage fee per time unit
+  storage_fee: bigint,
 };
 
 export const defShardedStorageSettings : ShardedStorageSettings = {
@@ -31,4 +34,5 @@ export const defShardedStorageSettings : ShardedStorageSettings = {
   mining_tx_per_block: 1,
   mining_max_nonce: 1048576,
   mining_difficulty: 28269553036454149273332760011886696253239742350009903329945699220681916416n,
+  storage_fee: 1n,
 };

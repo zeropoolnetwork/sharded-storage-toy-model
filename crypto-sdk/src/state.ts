@@ -1,7 +1,7 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
 import { FrHashed, Hashable, bigIntToFr, frAdd, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
-import { ShardedStorageSettings } from "./settings";
+import { ShardedStorageSettings, defShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
   Account as NoirAccount,
@@ -47,13 +47,21 @@ export class Account implements Hashable {
   }
 };
 
+export async function fileToNoir(bb: Barretenberg, file: File): Promise<NoirFile> {
+  return {
+    expiration_time: frToNoir(file.expiration_time),
+    owner: frToNoir(file.owner),
+    data: frToNoir(await file.data.hash(bb)),
+  };
+}
+
 export function accountToNoir(acc: Account): NoirAccount {
   return {
     key: frToNoir(acc.key),
     balance: frToNoir(acc.balance),
     nonce: frToNoir(acc.nonce),
     random_oracle_nonce: frToNoir(acc.random_oracle_nonce),
-  } as NoirAccount;
+  };
 }
 
 export class File implements Hashable {
@@ -63,15 +71,19 @@ export class File implements Hashable {
   // File contents serialized as a list of Fr. Null when file is not initialized
   data: Tree<FrHashed>;
 
-  constructor(expiration_time: Fr, owner: Fr, data: Tree<FrHashed>) {
-    this.expiration_time = expiration_time;
-    this.owner = owner;
-    this.data = data;
+  constructor(v: {expiration_time: Fr, owner: Fr, data: Tree<FrHashed>}) {
+    this.expiration_time = v.expiration_time;
+    this.owner = v.owner;
+    this.data = v.data;
   }
 
   static async blank(bb: Barretenberg, d: number): Promise<File> {
     const data = await Tree.init(bb, d, new Array(1 << d).fill(new FrHashed(Fr.ZERO)));
-    return new File(Fr.ZERO, Fr.ZERO, data);
+    return new File({
+      expiration_time: Fr.ZERO,
+      owner: Fr.ZERO,
+      data: data,
+    });
   }
 
   async hash(bb: Barretenberg): Promise<Fr> {
@@ -260,6 +272,54 @@ export class State implements Hashable {
       proof_receiver: proof_to_noir(receiver_prf),
       account_sender: accountToNoir(sender),
       account_receiver: accountToNoir(receiver),
+      signature: signature,
+    };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
+  }
+
+  async build_file_txex(bb: Barretenberg, now: bigint, data: Tree<FrHashed>, [tx, signature]: [FileTx, SignaturePacked]): Promise<FileTxEx> {
+
+    const sett = defShardedStorageSettings; 
+
+    const fee = sett.storage_fee * BigInt(tx.time_interval);
+
+    // calculate proof for the sender and update tree
+    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let sender_mod = new Account();
+    sender_mod.balance = frSub(
+      sender.balance,
+      bigIntToFr(fee)
+    );
+    if (frToBigInt(sender_mod.balance) == 0n) {
+      sender_mod.nonce = Fr.ZERO;
+      sender_mod.random_oracle_nonce = Fr.ZERO;
+      sender_mod.key = Fr.ZERO;
+    } else {
+      sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+      sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
+      sender_mod.key = sender.key;
+    }
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    // calculate proof for the receiver and update proof
+    const [file_prf, file] = this.files.readLeaf(Number(tx.data_index));
+    const exp_time = frToBigInt(file.expiration_time);
+    let file_mod = new File({
+      expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
+      owner: sender.key,
+      data: data,
+    });
+    await this.files.updateLeaf(Number(tx.data_index), file_mod);
+
+    const assets: FileTxAssets = {
+      proof_sender: proof_to_noir(sender_prf),
+      proof_file: proof_to_noir(file_prf),
+      account_sender: accountToNoir(sender),
+      file: await fileToNoir(bb, file),
       signature: signature,
     };
 
