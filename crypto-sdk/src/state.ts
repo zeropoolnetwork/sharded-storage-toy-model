@@ -225,14 +225,10 @@ export class State implements Hashable {
 
   async build_account_tx_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+    const [old_rec_prf, old_rec] = this.accounts.readLeaf(Number(tx.receiver_index));
 
-    let acc = new Account();
-    acc.key = noirToFr(tx.receiver_key);
-    acc.balance = noirToFr(tx.amount);
-    acc.nonce = noirToFr(tx.nonce);
-    acc.random_oracle_nonce = Fr.ZERO;
-    await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
+    console.log(`old receiver prf: ${JSON.stringify([proof_to_noir(old_rec_prf), accountToNoir(old_rec)])}`);
+
     let sender_mod = new Account();
     sender_mod.balance = frSub(
       sender.balance,
@@ -248,6 +244,16 @@ export class State implements Hashable {
       sender_mod.key = sender.key;
     }
     await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+    console.log(`old receiver prf: ${JSON.stringify([proof_to_noir(receiver_prf), accountToNoir(receiver)])}`);
+
+    let acc = new Account();
+    acc.key = noirToFr(tx.receiver_key);
+    acc.balance = noirToFr(tx.amount);
+    acc.nonce = noirToFr(tx.nonce);
+    acc.random_oracle_nonce = Fr.ZERO;
+    await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
 
     return {
       proof_sender: proof_to_noir(sender_prf),
