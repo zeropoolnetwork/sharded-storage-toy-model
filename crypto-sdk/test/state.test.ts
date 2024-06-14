@@ -62,11 +62,12 @@ describe('State', () => {
     const txex2 = await st.build_account_txex(tx_sign2);
 
     // Transcation #3: master 228 tokens → rec2
-    const tx_sign3 = await prep_account_tx(bb, 228n, 0, 2, sk, rec2_pk[0], 0n);
+    // nonce == 1 here because nonce == 0 was used in Transcation #1
+    const tx_sign3 = await prep_account_tx(bb, 228n, 0, 2, sk, rec2_pk[0], 1n);
     const txex3 = await st.build_account_txex(tx_sign3);
 
     // Collect account transactions into one array
-    const acc_txs = pad_array([txex1, txex2], sett.account_tx_per_block, blank_account_tx(sett));
+    const acc_txs = pad_array([txex1, txex2, txex3], sett.account_tx_per_block, blank_account_tx(sett));
 
     // ===== File transactions =====
 

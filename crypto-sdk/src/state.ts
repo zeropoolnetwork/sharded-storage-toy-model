@@ -1,6 +1,6 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { FrHashed, Hashable, bigIntToFr, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { FrHashed, Hashable, bigIntToFr, frAdd, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
 import { ShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -245,12 +245,15 @@ export class State implements Hashable {
 
     // calculate proof for the receiver and update proof
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
-    let acc = new Account();
-    acc.key = noirToFr(tx.receiver_key);
-    acc.balance = noirToFr(tx.amount);
-    acc.nonce = noirToFr(tx.nonce);
-    acc.random_oracle_nonce = Fr.ZERO;
-    await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
+    let receiver_mod = new Account();
+    receiver_mod.key = noirToFr(tx.receiver_key);
+    receiver_mod.balance = frAdd(
+      noirToFr(tx.amount),
+      receiver.balance
+    );
+    receiver_mod.nonce = receiver.nonce;
+    receiver_mod.random_oracle_nonce = receiver.random_oracle_nonce;
+    await this.accounts.updateLeaf(Number(tx.receiver_index), receiver_mod);
 
     const assets: AccountTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
