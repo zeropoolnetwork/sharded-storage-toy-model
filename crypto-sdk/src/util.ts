@@ -80,6 +80,11 @@ export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInp
   return new FrHashed(bigIntToFr(acc));
 }
 
+export function pad_array<T>(arr: T[], length: number, def: T): T[] {
+  const padding: T[] = new Array(length - arr.length).fill(def);
+  return arr.concat(padding);
+}
+
 // Helper function to convert bigint to byte array
 function bigIntToBytes(value: bigint, length: number): number[] {
   const hex = value.toString(16).padStart(length * 2, '0');
@@ -98,6 +103,38 @@ export function frSub(x: Fr, y: Fr): Fr {
   return bigIntToFr(frToBigInt(x) - frToBigInt(y))
 }
 
+/// This function prepares the account transaction. It does not use global
+/// accounts tree and is suitable for running on client that doesn't have
+/// access to it. It also doesn't do any balance checks (since it doesn't know
+/// balances), it's up to the caller to ensure this.
+///
+/// Outputs of this function should be passed to Tree.build_account_tx_assets
+/// (by sequencer) to make a full transaction to be passed to contract.
+export async function prep_account_tx(
+  bb: Barretenberg,
+  amount: bigint,
+  /// Account leaf indices in global merkle tree, from 0 to 2^depth-1
+  sender_index: number,
+  receiver_index: number,
+  /// Sender and receiver keys, using zk-kit/eddsa-poseidon format (pk packed
+  /// into x coordinate)
+  sender_sk: string,
+  receiver_pk: bigint,
+  /// Sender account's nonce. Increases by 1 with each transaction from sender
+  nonce: bigint,
+): Promise<[AccountTx, SignaturePacked]> {
+  const tx: AccountTx = {
+    sender_index: sender_index.toString(),
+    receiver_index: receiver_index.toString(),
+    receiver_key: receiver_pk.toString(),
+    amount: amount.toString(),
+    nonce: nonce.toString(),
+  };
+  const sign = await sign_acc_tx(bb, sender_sk, tx);
+  return [tx, sign];
+}
+
+// TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
 export async function sign_acc_tx(bb: Barretenberg, sk: string, tx: AccountTx): Promise<SignaturePacked> {
   const m = frToBigInt(await bb.poseidon2Hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]

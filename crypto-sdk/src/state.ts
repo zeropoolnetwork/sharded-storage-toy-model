@@ -223,12 +223,10 @@ export class State implements Hashable {
     return new State(accounts, files);
   }
 
-  async build_account_tx_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
+  async build_account_txex([tx, signature]: [AccountTx, SignaturePacked]): Promise<AccountTxEx> {
+
+    // calculate proof for the sender and update tree
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    const [old_rec_prf, old_rec] = this.accounts.readLeaf(Number(tx.receiver_index));
-
-    console.log(`old receiver prf: ${JSON.stringify([proof_to_noir(old_rec_prf), accountToNoir(old_rec)])}`);
-
     let sender_mod = new Account();
     sender_mod.balance = frSub(
       sender.balance,
@@ -245,9 +243,8 @@ export class State implements Hashable {
     }
     await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
+    // calculate proof for the receiver and update proof
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
-    console.log(`old receiver prf: ${JSON.stringify([proof_to_noir(receiver_prf), accountToNoir(receiver)])}`);
-
     let acc = new Account();
     acc.key = noirToFr(tx.receiver_key);
     acc.balance = noirToFr(tx.amount);
@@ -255,13 +252,18 @@ export class State implements Hashable {
     acc.random_oracle_nonce = Fr.ZERO;
     await this.accounts.updateLeaf(Number(tx.receiver_index), acc);
 
-    return {
+    const assets: AccountTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
       proof_receiver: proof_to_noir(receiver_prf),
       account_sender: accountToNoir(sender),
       account_receiver: accountToNoir(receiver),
       signature: signature,
     };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
   }
 
   async hash(bb: Barretenberg): Promise<Fr> {
