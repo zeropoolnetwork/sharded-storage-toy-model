@@ -153,6 +153,9 @@ describe('State', () => {
       verify("../circuits/", verifier_data, proof)
     ).toEqual(true);
 
+    // TODO: chage now value here and verify another transaction, making sure
+    // that expired files can be overwritten
+
     bb.destroy();
   }, 10 * 60 * 1000); // 10 minutes
 

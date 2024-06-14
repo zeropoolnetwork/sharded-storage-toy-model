@@ -1,5 +1,5 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
-import { AccountTx, Field, FileTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
+import { AccountTx, Field, FileTx, MiningTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
 
@@ -11,6 +11,7 @@ import {
     packPublicKey,
     unpackPublicKey
 } from "@zk-kit/eddsa-poseidon"
+import { MiningResult } from './mining';
 
 export interface Hashable {
   hash(bb: Barretenberg): Promise<Fr>;
@@ -101,6 +102,43 @@ export function frAdd(x: Fr, y: Fr): Fr {
 
 export function frSub(x: Fr, y: Fr): Fr {
   return bigIntToFr(frToBigInt(x) - frToBigInt(y))
+}
+
+/// Same as prep_account_tx, but for mining transactions.
+export async function prep_mining_tx(
+  bb: Barretenberg,
+  /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
+  sender_index: number,
+  /// Mining result
+  mi: MiningResult,
+  /// Sender sk
+  sender_sk: string,
+  /// Sender nonce
+  nonce: bigint,
+  /// RO nonce
+  random_oracle_nonce: bigint,
+): Promise<[MiningTx, SignaturePacked]> {
+
+  const tx: MiningTx = {
+    sender_index: sender_index.toString(),
+    nonce: nonce.toString(),
+    random_oracle_nonce: random_oracle_nonce.toString(),
+    mining_nonce: mi.mining_nonce.toString(),
+  };
+
+  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
+  const m = frToBigInt(await bb.poseidon2Hash(
+    [tx.sender_index, tx.nonce, tx.random_oracle_nonce, tx.mining_nonce]
+      .map(noirToFr)
+  ));
+  const sigma = signMessage(sender_sk, m);
+  const sign: SignaturePacked = {
+    a: derivePublicKey(sender_sk)[0].toString(),
+    s: sigma.S.toString(),
+    r8: sigma.R8[0].toString(),
+  };
+
+  return [tx, sign];
 }
 
 /// Same as prep_account_tx, but for file transactions.
