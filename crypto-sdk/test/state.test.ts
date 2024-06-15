@@ -50,22 +50,21 @@ describe('State', () => {
 
     // ===== Account transactions =====
 
-    // Transcation #1: master 10 tokens → rec1
+    // Transcation #1: master 10 tokens → user-1
     const rec1_sk = "receiver password";
     let nonce1 = 0n;
     const rec1_pk = derivePublicKey(rec1_sk);
     const tx_sign1 = await prep_account_tx(bb, 10n, 0, 1, sk, rec1_pk[0], nonce++);
     const txex1 = await st.build_account_txex(tx_sign1);
 
-    // Transcation #2: rec1 10 tokens → rec2
+    // Transcation #2: user-1 10 tokens → user-2
     const rec2_sk = "receiver password";
     let nonce2 = 0n;
     const rec2_pk = derivePublicKey(rec2_sk);
     const tx_sign2 = await prep_account_tx(bb, 10n, 1, 2, rec1_sk, rec2_pk[0], nonce1++);
     const txex2 = await st.build_account_txex(tx_sign2);
 
-    // Transcation #3: master 228 tokens → rec2
-    // nonce == 1 here because nonce == 0 was used in Transcation #1
+    // Transcation #3: master 228 tokens → user-2
     const tx_sign3 = await prep_account_tx(bb, 228n, 0, 2, sk, rec2_pk[0], nonce++);
     const txex3 = await st.build_account_txex(tx_sign3);
 
@@ -83,7 +82,7 @@ describe('State', () => {
     const ftx1 = await prep_file_tx(bb, 10n, 0, 0, frToBigInt(await fives.hash(bb)), sk, nonce++);
     const ftxex1 = await st.build_file_txex(bb, now, fives, ftx1);
 
-    // File Transcation #2: rec2 adds another file #1 that contains sequence of numbers 0, 1, …
+    // File Transcation #2: user-2 adds another file #1 that contains sequence of numbers 0, 1, …
     const count_file = await Tree.init(bb, sett.file_tree_depth,
       Array.from(
         { length: 1 << sett.file_tree_depth },
@@ -106,15 +105,25 @@ describe('State', () => {
       return w;
     };
 
-    // Mining Transcation #1, rec2 mines
+    // Mining Transcation #1, user-2 mines
     const ro_off1 = ro_values.length - 2; // just as example
     const ro_val1 = ro_values[ro_off1];
-    const mres1 = await mine(bb, sett, bigIntToFr(rec2_pk[0]), ro_values[ro_off1], file_reader);
+    const mres1 = await mine(bb, sett, bigIntToFr(rec2_pk[0]), ro_val1, file_reader);
     const mtx1 = await prep_mining_tx(bb, 2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
     const mtxex1 = await st.build_mining_txex(bb, mres1, mtx1);
 
-    // TODO: prepare some non-blank transactions to put here
-    const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
+    // // Mining Transcation #2, (new) master mines
+    // // const rec4_sk = "user-4 password";
+    // // const rec4_pk = derivePublicKey(rec4_sk);
+    // // let nonce4 = 0n;
+    // const ro_off2 = 1;
+    // const ro_val2 = ro_values[ro_off2];
+    // const mres2 = await mine(bb, sett, bigIntToFr(pk[0]), ro_val2, file_reader);
+    // const mtx2 = await prep_mining_tx(bb, 0, mres2, sk, nonce++, ro_offset + BigInt(ro_off2));
+    // const mtxex2 = await st.build_mining_txex(bb, mres2, mtx2);
+
+    // const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
+    const mining_txs = [mtxex1];
 
     // Compute the new hash
     const new_st_root: Root = {
