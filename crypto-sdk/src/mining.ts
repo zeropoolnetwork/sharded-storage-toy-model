@@ -16,14 +16,18 @@ import {
   FileTx,
   FileTxAssets
 } from "./noir_codegen/index";
+import { bigIntToFr, frToBigInt } from './util';
 
 export type MiningResult = {
+  random_oracle_value: Fr,
   mining_nonce: number,
   bruteforce_hash: Fr,
   index_hash: Fr,
   index: bigint,
   data: Fr,
   mining_hash: Fr,
+  file_in_storage_index: bigint,
+  word_in_file_index: bigint,
 };
 
 function keepLower(f: bigint, n: number): bigint {
@@ -46,18 +50,18 @@ function bigIntFromBuffer(b: Buffer, start: number, len: number): bigint {
 
 // FIXME: we use one one sameple, production will use more
 export async function mine(
+  bb: Barretenberg,
   sett: ShardedStorageSettings,
+  pk: Fr,
+  random_oracle_value: Fr,
   // file_id is a leaf index (path) in data Merkle tree
   // word_id is a leaf index in Merkle tree of this file
   storage_read: (file_id: bigint, word_id: bigint) => Fr,
-  bb: Barretenberg,
-  pk: Fr,
-  oracle: Fr,
-): Promise<MiningResult | null> {
+): Promise<MiningResult> {
 
   for (let mining_nonce = 0; mining_nonce < sett.mining_max_nonce; ++mining_nonce) {
     const bruteforce_hash =
-      await bb.poseidon2Hash([pk, oracle, Fr.fromString(mining_nonce.toString())]);
+      await bb.poseidon2Hash([pk, random_oracle_value, bigIntToFr(BigInt(mining_nonce))]);
     const index_hash = 
       await bb.poseidon2Hash([bruteforce_hash]);
     const index : bigint = keepLower(
@@ -65,26 +69,33 @@ export async function mine(
         sett.acc_data_tree_depth + sett.file_tree_depth
     );
 
-    const file_in_storage_index = keepLower(index, sett.acc_data_tree_depth);
-    const word_in_file_index = trimLower(index, sett.acc_data_tree_depth);
+    const file_in_storage_index = trimLower(index, sett.file_tree_depth);
+    const word_in_file_index = keepLower(index, sett.file_tree_depth);
 
     const data = storage_read(file_in_storage_index, word_in_file_index);
 
     const mining_hash =
       await bb.poseidon2Hash([bruteforce_hash, data]);
 
-    if (BigInt(mining_hash.toString()) < sett.mining_difficulty)
+    if (frToBigInt(mining_hash) < sett.mining_difficulty) {
+      // console.log(`bruteforce_hash = ${frToBigInt(bruteforce_hash)}, index_hash = ${frToBigInt(index_hash)}`);
+      // console.log(`indices: ${index} = ${word_in_file_index} + 2^${sett.file_tree_depth} * ${file_in_storage_index}`);
+
       return {
+        random_oracle_value: random_oracle_value,
         mining_nonce: mining_nonce,
         bruteforce_hash: bruteforce_hash,
         index_hash: index_hash,
         index: BigInt(index.toString()),
         data: data,
         mining_hash: mining_hash,
+        file_in_storage_index: file_in_storage_index,
+        word_in_file_index: word_in_file_index,
       }
+    }
   }
 
-  return null;
+  throw Error("all mining nonces failed");
 }
 
 export function blank_mining_tx(sett: ShardedStorageSettings): MiningTxEx {

@@ -1,10 +1,10 @@
 import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash, pad_array, prep_account_tx, prep_file_tx } from '../src/util';
+import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
 import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
-import { blank_mining_tx } from '../src/mining';
+import { blank_mining_tx, mine } from '../src/mining';
 import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx } from '../src/noir_codegen';
 
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
@@ -98,8 +98,23 @@ describe('State', () => {
 
     // ===== Mining transactions =====
 
+    let ro_offset= 0n;
+    const ro_values = Array.from({length: sett.oracle_len}, (_, index) => bigIntToFr(BigInt(index)));
+    const file_reader = (file_id: bigint, word_id: bigint): Fr => {
+      const [_f_prf, f] = st.files.readLeaf(Number(file_id));
+      const [_w_prf, w] = f.data.readLeaf(Number(word_id));
+      return w;
+    };
+
+    // Mining Transcation #1, rec2 mines
+    const ro_off1 = ro_values.length - 2; // just as example
+    const ro_val1 = ro_values[ro_off1];
+    const mres1 = await mine(bb, sett, bigIntToFr(rec2_pk[0]), ro_values[ro_off1], file_reader);
+    const mtx1 = await prep_mining_tx(bb, 2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
+    const mtxex1 = await st.build_mining_txex(bb, mres1, mtx1);
+
     // TODO: prepare some non-blank transactions to put here
-    const mining_txs = pad_array([], sett.mining_tx_per_block, blank_mining_tx(sett));
+    const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
 
     // Compute the new hash
     const new_st_root: Root = {
@@ -114,8 +129,8 @@ describe('State', () => {
       new_root: frToNoir(new_st_hash),
       now: now.toString(),
       oracle: {
-        offset: "0",
-        data: new Array(sett.oracle_len).fill("0"),
+        offset: ro_offset.toString(),
+        data: ro_values.map((x) => x.toString()),
       },
     };
     const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();

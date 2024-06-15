@@ -13,10 +13,14 @@ import {
   AccountTxEx,
   FileTxEx,
   FileTx,
-  FileTxAssets
+  FileTxAssets,
+  MiningTx,
+  MiningTxEx,
+  MiningTxAssets
 } from "./noir_codegen/index";
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
+import { MiningResult } from "./mining";
 
 export class Account implements Hashable {
   /// x coordinate of the owner account public key
@@ -281,7 +285,12 @@ export class State implements Hashable {
     }
   }
 
-  async build_file_txex(bb: Barretenberg, now: bigint, data: Tree<FrHashed>, [tx, signature]: [FileTx, SignaturePacked]): Promise<FileTxEx> {
+  async build_file_txex(
+    bb: Barretenberg,
+    now: bigint,
+    data: Tree<FrHashed>,
+    [tx, signature]: [FileTx, SignaturePacked]
+  ): Promise<FileTxEx> {
 
     const sett = defShardedStorageSettings; 
 
@@ -320,6 +329,46 @@ export class State implements Hashable {
       proof_file: proof_to_noir(file_prf),
       account_sender: accountToNoir(sender),
       file: await fileToNoir(bb, file),
+      signature: signature,
+    };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
+  }
+
+  async build_mining_txex(
+    bb: Barretenberg,
+    mi: MiningResult,
+    [tx, signature]: [MiningTx, SignaturePacked]
+  ): Promise<MiningTxEx> {
+
+    const sett = defShardedStorageSettings; 
+
+    // calculate proof for the sender and update tree
+    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let sender_mod = new Account();
+    sender_mod.balance = frAdd(
+      sender.balance,
+      bigIntToFr(sett.mining_reward)
+    );
+    sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+    sender_mod.random_oracle_nonce = noirToFr(tx.random_oracle_nonce);
+    sender_mod.key = sender.key;
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    const [proof_file, file] = this.files.readLeaf(Number(mi.file_in_storage_index));
+    const [proof_word, word] = file.data.readLeaf(Number(mi.word_in_file_index));
+
+    const assets: MiningTxAssets = {
+      proof_sender: proof_to_noir(sender_prf),
+      account_sender: accountToNoir(sender),
+      random_oracle_value: frToNoir(mi.random_oracle_value),
+      proof_file: proof_to_noir(proof_file),
+      file: await fileToNoir(bb, file),
+      proof_data_in_file: proof_to_noir(proof_word),
+      data_in_file: frToNoir(word),
       signature: signature,
     };
 
