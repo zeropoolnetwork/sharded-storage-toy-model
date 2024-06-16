@@ -1,4 +1,5 @@
 mod utils;
+mod parameters;
 
 use wasm_bindgen::prelude::*;
 
@@ -6,7 +7,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 use core::str::FromStr;
 
-use ark_ff::BigInt;
+
 use ark_ff::fields::PrimeField;
 use num_bigint::BigUint;
 
@@ -16,10 +17,11 @@ use zkhash::{
   merkle_tree::merkle_tree_fp::MerkleTreeHash,
   poseidon2::{
     poseidon2::Poseidon2,
-    poseidon2_params::Poseidon2Params,
     poseidon2_instance_bn256::POSEIDON2_BN256_PARAMS,
   },
 };
+
+// use parameters::POSEIDON2_BN256_PARAMS;
 
 pub type F = FpBN256;
 pub type FEnc = String;
@@ -54,4 +56,14 @@ pub fn poseidon2_internal(vals: &[&F]) -> F {
   let pos = Poseidon2::new(&params);
 
   pos.compress(vals)
+}
+
+#[test]
+fn poseidon2test() {
+    let v: Vec<_> = vec!["3", "4"].into_iter().map(|x| String::from(x)).collect();
+    assert_eq!(
+      "17380952042446168291178743041044530828369674063485643659763567652647121881611",
+      poseidon2(v),
+    );
+    // H(3, 4) = 17380952042446168291178743041044530828369674063485643659763567652647121881611
 }
