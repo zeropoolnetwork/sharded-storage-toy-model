@@ -2,11 +2,11 @@ mod utils;
 mod parameters;
 mod sponge;
 
-use wasm_bindgen::{prelude::*, JsObject};
+use wasm_bindgen::{prelude::*};
 
 use std::convert::TryFrom;
-use std::sync::Arc;
-use std::iter::once;
+
+
 use core::str::FromStr;
 
 use ark_ff::fields::PrimeField;
@@ -16,13 +16,7 @@ use sponge::Poseidon2Hash;
 
 // use ark_bn254::fq::Fq;
 use zkhash::fields::bn256::FpBN256;
-use zkhash::{
-  merkle_tree::merkle_tree_fp::MerkleTreeHash,
-  poseidon2::{
-    poseidon2::Poseidon2,
-    // poseidon2_instance_bn256::POSEIDON2_BN256_PARAMS,
-  },
-};
+
 
 use parameters::POSEIDON2_BN256_PARAMS;
 
