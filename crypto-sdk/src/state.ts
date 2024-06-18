@@ -1,6 +1,5 @@
-import { Barretenberg, Fr } from "@aztec/bb.js";
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { FrHashed, Hashable, bigIntToFr, frAdd, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { Fr, bigIntToFr, frAdd, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
 import { ShardedStorageSettings, defShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -19,10 +18,12 @@ import {
   MiningTxAssets
 } from "./noir_codegen/index";
 
+import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree'
+
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 import { MiningResult } from "./mining";
 
-export class Account implements Hashable {
+export class Account {
   /// x coordinate of the owner account public key
   key: Fr;
   /// Balance
@@ -33,29 +34,29 @@ export class Account implements Hashable {
   random_oracle_nonce: Fr;
 
   constructor() {
-    this.key = Fr.ZERO;
-    this.balance = Fr.ZERO;
-    this.nonce = Fr.ZERO;
-    this.random_oracle_nonce = Fr.ZERO;
+    this.key = 0n;
+    this.balance = 0n;
+    this.nonce = 0n;
+    this.random_oracle_nonce = 0n;
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
+  hash(): Fr {
     let to_hash: [Fr, Fr, Fr, Fr];
-    if (this.key == Fr.ZERO) {
+    if (this.key == 0n) {
         // Hash zero account
-        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO];
+        to_hash = [0n, 0n, 0n, 0n];
     } else {
         to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
     }
-    return bb.poseidon2Hash(to_hash);
+    return noirToFr(poseidon2_bn256_hash(to_hash.map(frToNoir)));
   }
 };
 
-export async function fileToNoir(bb: Barretenberg, file: File): Promise<NoirFile> {
+export function fileToNoir(file: File): NoirFile {
   return {
     expiration_time: frToNoir(file.expiration_time),
     owner: frToNoir(file.owner),
-    data: frToNoir(await file.data.hash(bb)),
+    data: frToNoir(file.data.root()),
   };
 }
 
@@ -68,37 +69,37 @@ export function accountToNoir(acc: Account): NoirAccount {
   };
 }
 
-export class File implements Hashable {
+export class File {
   expiration_time: Fr;
   // Owner account pk
   owner: Fr;
   // File contents serialized as a list of Fr. Null when file is not initialized
-  data: Tree<FrHashed>;
+  data: Tree<Fr>;
 
-  constructor(v: {expiration_time: Fr, owner: Fr, data: Tree<FrHashed>}) {
+  constructor(v: {expiration_time: Fr, owner: Fr, data: Tree<Fr>}) {
     this.expiration_time = v.expiration_time;
     this.owner = v.owner;
     this.data = v.data;
   }
 
-  static async blank(bb: Barretenberg, d: number): Promise<File> {
-    const data = await Tree.init(bb, d, new Array(1 << d).fill(new FrHashed(Fr.ZERO)));
+  static blank(d: number): File {
+    const data = Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
     return new File({
-      expiration_time: Fr.ZERO,
-      owner: Fr.ZERO,
+      expiration_time: 0n,
+      owner: 0n,
       data: data,
     });
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
+  hash(): Fr {
     let to_hash: [Fr, Fr, Fr];
     if (this.data == null) {
         // Hash empty file
-        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO];
+        to_hash = [0n, 0n, 0n];
     } else {
-        to_hash = [this.expiration_time, this.owner, await this.data.hash(bb)];
+        to_hash = [this.expiration_time, this.owner, this.data.root()];
     }
-    return bb.poseidon2Hash(to_hash);
+    return noirToFr(poseidon2_bn256_hash(to_hash.map(frToNoir)));
   }
 };
 
@@ -186,7 +187,6 @@ export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
 }
 
 export async function new_account_tx(
-  bb: Barretenberg,
   sender_index: number,
   sender_sk: EdDSAPoseidon,
   receiver_index: number,
@@ -198,13 +198,12 @@ export async function new_account_tx(
     receiver_index: receiver_index.toString(),
     receiver_key: frToNoir(receiver_pk),
     amount: frToNoir(amount),
-    nonce: frToNoir(Fr.random()),
+    nonce: frToNoir(0n),
   };
-  const hash = await bb.poseidon2Hash(
+  const hash = poseidon2_bn256_hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
-      .map(noirToFr)
   );
-  const signature = sender_sk.signMessage(frToBigInt(hash));
+  const signature = sender_sk.signMessage(noirToFr(hash));
   const packed = {
     a: sender_sk.publicKey[0].toString(),
     s: signature.S.toString(),
@@ -214,7 +213,7 @@ export async function new_account_tx(
 }
 
 
-export class State implements Hashable {
+export class State {
   accounts: Tree<Account>;
   files: Tree<File>;
 
@@ -223,18 +222,18 @@ export class State implements Hashable {
     this.files = files;
   }
 
-  static async genesisState(bb: Barretenberg, first_acc: Account, sett: ShardedStorageSettings): Promise<State> {
+  static genesisState(first_acc: Account, sett: ShardedStorageSettings): State {
     let accs = new Array(1 << sett.acc_data_tree_depth).fill(new Account());
     accs[0] = first_acc;
-    const accounts = await Tree.init(
-      bb,
+    const accounts = Tree.init(
       sett.acc_data_tree_depth,
       accs,
+      (acc) => acc.hash(),
     );
-    const files = await Tree.init(
-      bb,
+    const files = Tree.init(
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(await File.blank(bb, sett.file_tree_depth))
+      new Array(1 << sett.acc_data_tree_depth).fill(File.blank(sett.file_tree_depth)),
+      (file) => file.hash(),
     );
     return new State(accounts, files);
   }
@@ -249,9 +248,9 @@ export class State implements Hashable {
       noirToFr(tx.amount)
     );
     if (frToBigInt(sender_mod.balance) == 0n) {
-      sender_mod.nonce = Fr.ZERO;
-      sender_mod.random_oracle_nonce = Fr.ZERO;
-      sender_mod.key = Fr.ZERO;
+      sender_mod.nonce = 0n;
+      sender_mod.random_oracle_nonce = 0n;
+      sender_mod.key = 0n;
     } else {
       sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
       sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
@@ -286,9 +285,8 @@ export class State implements Hashable {
   }
 
   async build_file_txex(
-    bb: Barretenberg,
     now: bigint,
-    data: Tree<FrHashed>,
+    data: Tree<Fr>,
     [tx, signature]: [FileTx, SignaturePacked]
   ): Promise<FileTxEx> {
 
@@ -304,9 +302,9 @@ export class State implements Hashable {
       bigIntToFr(fee)
     );
     if (frToBigInt(sender_mod.balance) == 0n) {
-      sender_mod.nonce = Fr.ZERO;
-      sender_mod.random_oracle_nonce = Fr.ZERO;
-      sender_mod.key = Fr.ZERO;
+      sender_mod.nonce = 0n;
+      sender_mod.random_oracle_nonce = 0n;
+      sender_mod.key = 0n;
     } else {
       sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
       sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
@@ -328,7 +326,7 @@ export class State implements Hashable {
       proof_sender: proof_to_noir(sender_prf),
       proof_file: proof_to_noir(file_prf),
       account_sender: accountToNoir(sender),
-      file: await fileToNoir(bb, file),
+      file: fileToNoir(file),
       signature: signature,
     };
 
@@ -339,7 +337,6 @@ export class State implements Hashable {
   }
 
   async build_mining_txex(
-    bb: Barretenberg,
     mi: MiningResult,
     [tx, signature]: [MiningTx, SignaturePacked]
   ): Promise<MiningTxEx> {
@@ -366,7 +363,7 @@ export class State implements Hashable {
       account_sender: accountToNoir(sender),
       random_oracle_value: frToNoir(mi.random_oracle_value),
       proof_file: proof_to_noir(proof_file),
-      file: await fileToNoir(bb, file),
+      file: fileToNoir(file),
       proof_data_in_file: proof_to_noir(proof_word),
       data_in_file: frToNoir(word),
       signature: signature,
@@ -378,11 +375,11 @@ export class State implements Hashable {
     }
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
-    return bb.poseidon2Hash([
-      await this.accounts.hash(bb),
-      await this.files.hash(bb),
-    ]);
+  hash(): Fr {
+    return noirToFr(poseidon2_bn256_hash([
+      this.accounts.root(),
+      this.files.root(),
+    ].map(frToNoir)));
   }
 
 }

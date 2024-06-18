@@ -1,14 +1,10 @@
-import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed, frToNoir, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
+import { bigIntToFr, frAdd, frToBigInt, Fr, frToNoir, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
 import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx, mine } from '../src/mining';
 import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx } from '../src/noir_codegen';
-
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
-import { Noir } from '@noir-lang/noir_js';
 
 import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
 
@@ -24,10 +20,11 @@ import {
 import { Worker } from 'worker_threads';
 Worker.setMaxListeners(2000);
 
+function id(x: Fr): Fr { return x }
+
 describe('State', () => {
 
   test('Run meaningful transactions on genesis state', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
     const sett = defShardedStorageSettings;
 
     // Initialize the master account that holds all the tokens in the genesis state
@@ -37,15 +34,15 @@ describe('State', () => {
     let first_acc = new Account();
     first_acc.key = bigIntToFr(pk[0]);
     first_acc.balance = bigIntToFr(1000000n);
-    first_acc.nonce = Fr.ZERO;
-    first_acc.random_oracle_nonce = Fr.ZERO;
+    first_acc.nonce = 0n;
+    first_acc.random_oracle_nonce = 0n;
 
     // Initialize genesis state
-    let st = await State.genesisState(bb, first_acc, sett);
-    const st_hash = await st.hash(bb);
+    let st = await State.genesisState(first_acc, sett);
+    const st_hash = st.hash();
     const st_root: Root = {
-      acc: frToNoir(await st.accounts.hash(bb)),
-      data: frToNoir(await st.files.hash(bb)),
+      acc: frToNoir(st.accounts.root()),
+      data: frToNoir(st.files.root()),
     };
 
     // ===== Account transactions =====
@@ -54,18 +51,18 @@ describe('State', () => {
     const rec1_sk = "receiver password";
     let nonce1 = 0n;
     const rec1_pk = derivePublicKey(rec1_sk);
-    const tx_sign1 = await prep_account_tx(bb, 10n, 0, 1, sk, rec1_pk[0], nonce++);
+    const tx_sign1 = await prep_account_tx(10n, 0, 1, sk, rec1_pk[0], nonce++);
     const txex1 = await st.build_account_txex(tx_sign1);
 
     // Transcation #2: user-1 10 tokens → user-2
     const rec2_sk = "receiver password";
     let nonce2 = 0n;
     const rec2_pk = derivePublicKey(rec2_sk);
-    const tx_sign2 = await prep_account_tx(bb, 10n, 1, 2, rec1_sk, rec2_pk[0], nonce1++);
+    const tx_sign2 = await prep_account_tx(10n, 1, 2, rec1_sk, rec2_pk[0], nonce1++);
     const txex2 = await st.build_account_txex(tx_sign2);
 
     // Transcation #3: master 228 tokens → user-2
-    const tx_sign3 = await prep_account_tx(bb, 228n, 0, 2, sk, rec2_pk[0], nonce++);
+    const tx_sign3 = await prep_account_tx(228n, 0, 2, sk, rec2_pk[0], nonce++);
     const txex3 = await st.build_account_txex(tx_sign3);
 
     // Collect account transactions into one array
@@ -76,21 +73,25 @@ describe('State', () => {
     const now = 0n;
 
     // File Transcation #1: master creates a file #0 with all 5s
-    const fives = await Tree.init(bb, sett.file_tree_depth,
-      pad_array([], 1 << sett.file_tree_depth, new FrHashed(bigIntToFr(5n)))
+    const fives: Tree<Fr> = Tree.init(
+      sett.file_tree_depth,
+      pad_array([], 1 << sett.file_tree_depth, BigInt(5)),
+      id
     );
-    const ftx1 = await prep_file_tx(bb, 10n, 0, 0, frToBigInt(await fives.hash(bb)), sk, nonce++);
-    const ftxex1 = await st.build_file_txex(bb, now, fives, ftx1);
+    const ftx1 = await prep_file_tx(10n, 0, 0, fives.root(), sk, nonce++);
+    const ftxex1 = await st.build_file_txex(now, fives, ftx1);
 
     // File Transcation #2: user-2 adds another file #1 that contains sequence of numbers 0, 1, …
-    const count_file = await Tree.init(bb, sett.file_tree_depth,
+    const count_file: Tree<Fr> = await Tree.init(
+      sett.file_tree_depth,
       Array.from(
         { length: 1 << sett.file_tree_depth },
-        (_, i) => new FrHashed(bigIntToFr(BigInt(i))),
-      )
+        (_, i) => BigInt(i),
+      ),
+      id
     );
-    const ftx2 = await prep_file_tx(bb, 100n, 2, 1, frToBigInt(await count_file.hash(bb)), rec2_sk, nonce2++);
-    const ftxex2 = await st.build_file_txex(bb, now, count_file, ftx2);
+    const ftx2 = await prep_file_tx(100n, 2, 1, frToBigInt(count_file.root()), rec2_sk, nonce2++);
+    const ftxex2 = await st.build_file_txex(now, count_file, ftx2);
 
     // Collect file transactions
     const file_txs = pad_array([ftxex1, ftxex2], sett.file_tx_per_block, blank_file_tx(sett));
@@ -108,9 +109,9 @@ describe('State', () => {
     // Mining Transcation #1, user-2 mines
     const ro_off1 = ro_values.length - 2; // just as example
     const ro_val1 = ro_values[ro_off1];
-    const mres1 = await mine(bb, sett, bigIntToFr(rec2_pk[0]), ro_val1, file_reader);
-    const mtx1 = await prep_mining_tx(bb, 2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
-    const mtxex1 = await st.build_mining_txex(bb, mres1, mtx1);
+    const mres1 = await mine(sett, bigIntToFr(rec2_pk[0]), ro_val1, file_reader);
+    const mtx1 = await prep_mining_tx(2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
+    const mtxex1 = await st.build_mining_txex(mres1, mtx1);
 
     // // Mining Transcation #2, (new) master mines
     // // const rec4_sk = "user-4 password";
@@ -118,19 +119,19 @@ describe('State', () => {
     // // let nonce4 = 0n;
     // const ro_off2 = 1;
     // const ro_val2 = ro_values[ro_off2];
-    // const mres2 = await mine(bb, sett, bigIntToFr(pk[0]), ro_val2, file_reader);
-    // const mtx2 = await prep_mining_tx(bb, 0, mres2, sk, nonce++, ro_offset + BigInt(ro_off2));
-    // const mtxex2 = await st.build_mining_txex(bb, mres2, mtx2);
+    // const mres2 = await mine(sett, bigIntToFr(pk[0]), ro_val2, file_reader);
+    // const mtx2 = await prep_mining_tx(0, mres2, sk, nonce++, ro_offset + BigInt(ro_off2));
+    // const mtxex2 = await st.build_mining_txex(mres2, mtx2);
 
     // const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
     const mining_txs = [mtxex1];
 
     // Compute the new hash
     const new_st_root: Root = {
-      acc: frToNoir(await st.accounts.hash(bb)),
-      data: frToNoir(await st.files.hash(bb)),
+      acc: frToNoir(await st.accounts.root()),
+      data: frToNoir(await st.files.root()),
     };
-    const new_st_hash = await st.hash(bb);
+    const new_st_hash = await st.hash();
 
     // Public input known to contract
     const pubInput: RollupPubInput = {
@@ -180,11 +181,9 @@ describe('State', () => {
     // TODO: chage now value here and verify another transaction, making sure
     // that expired files can be overwritten
 
-    bb.destroy();
   }, 10 * 60 * 1000); // 10 minutes
 
   test('Run blank transactions on genesis state', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
     const sett = defShardedStorageSettings;
 
     const sk = "mypassword";
@@ -194,14 +193,14 @@ describe('State', () => {
 
     first_acc.key = bigIntToFr(pk[0]);
     first_acc.balance = bigIntToFr(1000000n);
-    first_acc.nonce = Fr.ZERO;
-    first_acc.random_oracle_nonce = Fr.ZERO;
+    first_acc.nonce = 0n;
+    first_acc.random_oracle_nonce = 0n;
 
-    let st = await State.genesisState(bb, first_acc, sett);
-    const st_hash = await st.hash(bb);
+    let st = await State.genesisState(first_acc, sett);
+    const st_hash = await st.hash();
     const st_root: Root = {
-      acc: frToNoir(await st.accounts.hash(bb)),
-      data: frToNoir(await st.files.hash(bb)),
+      acc: frToNoir(await st.accounts.root()),
+      data: frToNoir(await st.files.root()),
     };
 
     const pubInput: RollupPubInput = {
@@ -249,8 +248,6 @@ describe('State', () => {
     expect(
       verify("../circuits/", verifier_data, corrupted_proof)
     ).toEqual(false);
-
-    bb.destroy();
   }, 10 * 60 * 1000); // 10 minutes
 
 });

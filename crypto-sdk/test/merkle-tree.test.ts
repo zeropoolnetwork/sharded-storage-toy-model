@@ -1,15 +1,16 @@
-import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed } from '../src/util';
+import { bigIntToFr, frAdd, frToBigInt, Fr, frToNoir, noirToFr } from '../src/util';
 import { cpus } from 'os';
+import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree';
+
+function id<T>(x: T): T { return x }
 
 describe('Merkle Tree', () => {
 
   test('creates a new tree with correct depth and values', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
-    const values = [1n, 2n, 3n, 4n].map((x) => new FrHashed(bigIntToFr(x)));
+    const values = [1n, 2n, 3n, 4n];
     const depth = 2;
-    const tree = await Tree.init(bb, depth, values);
+    const tree = await Tree.init(depth, values, id);
 
     expect(tree.depth).toBe(depth);
     expect(tree.values).toEqual(values);
@@ -17,46 +18,35 @@ describe('Merkle Tree', () => {
 
     let exp_nodes = [0n, 0n, 0n, 0n, 1n, 2n, 3n, 4n];
     for (let i = (2 ** depth) - 1; i >= 1; --i)
-      exp_nodes[i] = frToBigInt(await bb.poseidon2Hash([
-        bigIntToFr(exp_nodes[i*2]),
-        bigIntToFr(exp_nodes[i*2 + 1])
+      exp_nodes[i] = noirToFr(poseidon2_bn256_hash([
+        frToNoir(exp_nodes[i*2]),
+        frToNoir(exp_nodes[i*2 + 1])
       ]));
 
     const test_nodes = tree.nodes.map(frToBigInt);
     expect(test_nodes).toEqual(exp_nodes);
-
-    bb.destroy();
   });
 
   test('throws an error when creating a tree with incorrect number of values', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
-    const values = [0n, 0n, 0n].map((i) => new FrHashed(bigIntToFr(i)));
+    const values = [0n, 0n, 0n];
     const depth = 2;
 
-    await expect(Tree.init(bb, depth, values)).rejects.toThrow();
-
-    bb.destroy();
+    await expect(Tree.init(depth, values, id)).rejects.toThrow();
   });
 
 
-  test('Compute Poseidon2 hash with Barretenberg', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
+  test('Compute Poseidon2 hash with WASM', async () => {
 
-    expect(frToBigInt(await bb.poseidon2Hash([bigIntToFr(0n)])))
+    expect(noirToFr(poseidon2_bn256_hash([frToNoir(0n)])))
       .toEqual(17668610518173883319035856328661308815933580113901672897605691629848497347345n);
-    expect(frToBigInt(await bb.poseidon2Hash([bigIntToFr(1n)])))
+    expect(noirToFr(poseidon2_bn256_hash([frToNoir(1n)])))
       .toEqual(10190015755989328289879378487807721086446093622177241109507523918927702106995n);
   });
 
   test('Read and update Merkle tree leaf', async () => {
-    let bb = await Barretenberg.new({ threads: cpus().length });
-    const values = [1n, 2n, 3n, 4n].map((i) => new FrHashed(bigIntToFr(i)));
+    const values = [1n, 2n, 3n, 4n];
     const depth = 2;
-    const tree = await Tree.init(
-      bb,
-      depth,
-      values
-    );
+    const tree = await Tree.init(depth, values, id);
 
     expect(tree.nodes.map(frToBigInt)).toEqual(
       [
@@ -74,16 +64,14 @@ describe('Merkle Tree', () => {
     const [two_proof, two] = tree.readLeaf(1);
     expect(frToBigInt(two)).toEqual(2n);
     expect(two_proof).toEqual([
-      [false, await bb.poseidon2Hash([bigIntToFr(3n), bigIntToFr(4n)])],
+      [false, poseidon2_bn256_hash([frToNoir(3n), frToNoir(4n)])],
       [true, bigIntToFr(1n)]
     ]);
     expect(two_proof.length).toBe(depth);
 
-    await tree.updateLeaf(1, new FrHashed(bigIntToFr(10n)));
+    await tree.updateLeaf(1, 10n);
     const [ten_proof, ten] = tree.readLeaf(1);
     expect(frToBigInt(ten)).toEqual(10n);
     expect(ten_proof).toEqual(two_proof);
-
-    bb.destroy();
   });
 });

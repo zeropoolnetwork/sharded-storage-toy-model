@@ -1,7 +1,11 @@
-import { Barretenberg, Fr } from '@aztec/bb.js';
 import { AccountTx, Field, FileTx, MiningTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
+
+import { merkle_tree, poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree'
+
+export type Fr = bigint;
+const FR_MODULUS = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n;
 
 import {
     derivePublicKey,
@@ -13,33 +17,16 @@ import {
 } from "@zk-kit/eddsa-poseidon"
 import { MiningResult } from './mining';
 
-export interface Hashable {
-  hash(bb: Barretenberg): Promise<Fr>;
-}
-
-export class FrHashed extends Fr implements Hashable {
-  async hash(_: Barretenberg): Promise<Fr> {
-    return this;
-  }
-
-  constructor(x: Fr) {
-    super(frToBigInt(x))
-  }
-}
-
 export function frToBigInt(x: Fr): bigint {
-  const s = x.toString();
-  const res = BigInt(s.slice(0,2) + '0' + s.slice(2));
-  return res;
+  return x;
 }
 
 export function bigIntToFr(x: bigint): Fr {
-  const res = new Fr(x % Fr.MODULUS);
-  return res;
+  return x % FR_MODULUS;
 }
 
-export function frToNoir(x: Fr): NoirFr {
-  return frToBigInt(x).toString();
+export function frToNoir(x: bigint): NoirFr {
+  return x.toString();
 }
 
 export function noirToFr(x: NoirFr): Fr {
@@ -47,7 +34,7 @@ export function noirToFr(x: NoirFr): Fr {
 }
 
 // Generated using Claude AI from Noir circuit definintion
-export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInput): FrHashed {
+export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInput): Fr {
   const payload: bigint[] = new Array(sett.pub_len).fill(BigInt(0));
 
   payload[0] = BigInt(input.old_root);
@@ -78,7 +65,7 @@ export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInp
     acc = acc * BigInt(256) + BigInt(res[i]);
   }
 
-  return new FrHashed(bigIntToFr(acc));
+  return acc;
 }
 
 export function pad_array<T>(arr: T[], length: number, def: T): T[] {
@@ -106,7 +93,6 @@ export function frSub(x: Fr, y: Fr): Fr {
 
 /// Same as prep_account_tx, but for mining transactions.
 export async function prep_mining_tx(
-  bb: Barretenberg,
   /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
   sender_index: number,
   /// Mining result
@@ -126,11 +112,9 @@ export async function prep_mining_tx(
     mining_nonce: mi.mining_nonce.toString(),
   };
 
-  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
-  const m = frToBigInt(await bb.poseidon2Hash(
+  const m = poseidon2_bn256_hash(
     [tx.sender_index, tx.nonce, tx.random_oracle_nonce, tx.mining_nonce]
-      .map(noirToFr)
-  ));
+  );
   const sigma = signMessage(sender_sk, m);
   const sign: SignaturePacked = {
     a: derivePublicKey(sender_sk)[0].toString(),
@@ -143,7 +127,6 @@ export async function prep_mining_tx(
 
 /// Same as prep_account_tx, but for file transactions.
 export async function prep_file_tx(
-  bb: Barretenberg,
   time_interval: bigint,
   /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
   sender_index: number,
@@ -164,11 +147,9 @@ export async function prep_file_tx(
     nonce: nonce.toString(),
   };
 
-  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
-  const m = frToBigInt(await bb.poseidon2Hash(
+  const m = poseidon2_bn256_hash(
     [tx.sender_index, tx.data_index, tx.time_interval, tx.data, tx.nonce]
-      .map(noirToFr)
-  ));
+  );
   const sigma = signMessage(sender_sk, m);
   const sign: SignaturePacked = {
     a: derivePublicKey(sender_sk)[0].toString(),
@@ -187,7 +168,6 @@ export async function prep_file_tx(
 /// Outputs of this function should be passed to Tree.build_account_tx_assets
 /// (by sequencer) to make a full transaction to be passed to contract.
 export async function prep_account_tx(
-  bb: Barretenberg,
   amount: bigint,
   /// Account leaf indices in global merkle tree, from 0 to 2^depth-1
   sender_index: number,
@@ -208,11 +188,9 @@ export async function prep_account_tx(
     nonce: nonce.toString(),
   };
 
-  // TODO: find an implementation of poseidon2 that doesn't use Barretenberg and apply here
-  const m = frToBigInt(await bb.poseidon2Hash(
+  const m = poseidon2_bn256_hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
-      .map(noirToFr)
-  ));
+  );
   const sigma = signMessage(sender_sk, m);
   const sign: SignaturePacked = {
     a: derivePublicKey(sender_sk)[0].toString(),

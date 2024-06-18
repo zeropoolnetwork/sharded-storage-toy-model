@@ -1,5 +1,3 @@
-import { Fr } from '@aztec/bb.js';
-import { Barretenberg } from '@aztec/bb.js';
 import { ShardedStorageSettings } from './settings';
 import { MiningTx, MiningTxAssets, MiningTxEx } from './noir_codegen';
 
@@ -16,7 +14,8 @@ import {
   FileTx,
   FileTxAssets
 } from "./noir_codegen/index";
-import { bigIntToFr, frToBigInt } from './util';
+import { Fr, bigIntToFr, frToBigInt, frToNoir, noirToFr } from './util';
+import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree';
 
 export type MiningResult = {
   random_oracle_value: Fr,
@@ -50,7 +49,6 @@ function bigIntFromBuffer(b: Buffer, start: number, len: number): bigint {
 
 // FIXME: we use one one sameple, production will use more
 export async function mine(
-  bb: Barretenberg,
   sett: ShardedStorageSettings,
   pk: Fr,
   random_oracle_value: Fr,
@@ -61,9 +59,9 @@ export async function mine(
 
   for (let mining_nonce = 0; mining_nonce < sett.mining_max_nonce; ++mining_nonce) {
     const bruteforce_hash =
-      await bb.poseidon2Hash([pk, random_oracle_value, bigIntToFr(BigInt(mining_nonce))]);
+      poseidon2_bn256_hash([pk, random_oracle_value, bigIntToFr(BigInt(mining_nonce))].map(frToNoir));
     const index_hash = 
-      await bb.poseidon2Hash([bruteforce_hash]);
+      poseidon2_bn256_hash([bruteforce_hash]);
     const index : bigint = keepLower(
         BigInt(index_hash.toString()),
         sett.acc_data_tree_depth + sett.file_tree_depth
@@ -75,20 +73,20 @@ export async function mine(
     const data = storage_read(file_in_storage_index, word_in_file_index);
 
     const mining_hash =
-      await bb.poseidon2Hash([bruteforce_hash, data]);
+      poseidon2_bn256_hash([bruteforce_hash, frToNoir(data)]);
 
-    if (frToBigInt(mining_hash) < sett.mining_difficulty) {
+    if (noirToFr(mining_hash) < sett.mining_difficulty) {
       // console.log(`bruteforce_hash = ${frToBigInt(bruteforce_hash)}, index_hash = ${frToBigInt(index_hash)}`);
       // console.log(`indices: ${index} = ${word_in_file_index} + 2^${sett.file_tree_depth} * ${file_in_storage_index}`);
 
       return {
         random_oracle_value: random_oracle_value,
         mining_nonce: mining_nonce,
-        bruteforce_hash: bruteforce_hash,
-        index_hash: index_hash,
+        bruteforce_hash: noirToFr(bruteforce_hash),
+        index_hash: noirToFr(index_hash),
         index: BigInt(index.toString()),
         data: data,
-        mining_hash: mining_hash,
+        mining_hash: noirToFr(mining_hash),
         file_in_storage_index: file_in_storage_index,
         word_in_file_index: word_in_file_index,
       }

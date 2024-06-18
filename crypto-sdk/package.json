@@ -22,8 +22,6 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@aztec/bb.js": "^0.41.0",
-    "@noir-lang/backend_barretenberg": "0.30.0",
     "@noir-lang/noir_js": "0.30.0",
     "@zk-kit/eddsa-poseidon": "^1.0.1",
     "smol-toml": "^1.2.1"
