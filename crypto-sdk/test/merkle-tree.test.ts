@@ -38,6 +38,16 @@ describe('Merkle Tree', () => {
     bb.destroy();
   });
 
+
+  test('Compute Poseidon2 hash with Barretenberg', async () => {
+    let bb = await Barretenberg.new({ threads: cpus().length });
+
+    expect(frToBigInt(await bb.poseidon2Hash([bigIntToFr(0n)])))
+      .toEqual(17668610518173883319035856328661308815933580113901672897605691629848497347345n);
+    expect(frToBigInt(await bb.poseidon2Hash([bigIntToFr(1n)])))
+      .toEqual(10190015755989328289879378487807721086446093622177241109507523918927702106995n);
+  });
+
   test('Read and update Merkle tree leaf', async () => {
     let bb = await Barretenberg.new({ threads: cpus().length });
     const values = [1n, 2n, 3n, 4n].map((i) => new FrHashed(bigIntToFr(i)));
@@ -46,6 +56,19 @@ describe('Merkle Tree', () => {
       bb,
       depth,
       values
+    );
+
+    expect(tree.nodes.map(frToBigInt)).toEqual(
+      [
+        0n, // not used, always 0
+        18145963038378645805713504092197197549342394757429773105454438568839292866655n, // root = H(H(1, 2), H(3,4))
+        1594597865669602199208529098208508950092942746041644072252494753744672355203n, // H(1, 2)
+        17380952042446168291178743041044530828369674063485643659763567652647121881611n, // H(3, 4)
+        1n, // the rest are the leaves with values in them
+        2n,
+        3n,
+        4n,
+      ]
     );
 
     const [two_proof, two] = tree.readLeaf(1);
