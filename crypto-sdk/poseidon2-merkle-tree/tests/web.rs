@@ -7,4 +7,3 @@ use wasm_bindgen_test::*;
 use poseidon2_merkle_tree::poseidon2;
 
 wasm_bindgen_test_configure!(run_in_browser);
-
