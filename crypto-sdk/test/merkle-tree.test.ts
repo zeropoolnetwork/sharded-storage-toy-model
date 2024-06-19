@@ -1,5 +1,5 @@
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, Fr, frToNoir, noirToFr } from '../src/util';
+import { bigIntToFr, frAdd, Fr, frToNoir, noirToFr } from '../src/util';
 import { cpus } from 'os';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 
@@ -16,6 +16,7 @@ describe('Merkle Tree', () => {
     expect(tree.values).toEqual(values);
     expect(tree.nodes.length).toBe(2 ** (depth + 1));
 
+
     let exp_nodes = [0n, 0n, 0n, 0n, 1n, 2n, 3n, 4n];
     for (let i = (2 ** depth) - 1; i >= 1; --i)
       exp_nodes[i] = noirToFr(poseidon2_bn256_hash([
@@ -23,15 +24,15 @@ describe('Merkle Tree', () => {
         frToNoir(exp_nodes[i*2 + 1])
       ]));
 
-    const test_nodes = tree.nodes.map(frToBigInt);
-    expect(test_nodes).toEqual(exp_nodes);
+
+    expect(tree.nodes).toEqual(exp_nodes);
   });
 
   test('throws an error when creating a tree with incorrect number of values', async () => {
     const values = [0n, 0n, 0n];
     const depth = 2;
 
-    await expect(Tree.init(depth, values, id)).rejects.toThrow();
+    await expect(async () => Tree.init(depth, values, id)).rejects.toThrow();
   });
 
 
@@ -48,7 +49,8 @@ describe('Merkle Tree', () => {
     const depth = 2;
     const tree = await Tree.init(depth, values, id);
 
-    expect(tree.nodes.map(frToBigInt)).toEqual(
+
+    expect(tree.nodes).toEqual(
       [
         0n, // not used, always 0
         18145963038378645805713504092197197549342394757429773105454438568839292866655n, // root = H(H(1, 2), H(3,4))
@@ -61,17 +63,20 @@ describe('Merkle Tree', () => {
       ]
     );
 
+
     const [two_proof, two] = tree.readLeaf(1);
-    expect(frToBigInt(two)).toEqual(2n);
+    expect(two).toEqual(2n);
     expect(two_proof).toEqual([
-      [false, poseidon2_bn256_hash([frToNoir(3n), frToNoir(4n)])],
-      [true, bigIntToFr(1n)]
+      [false, noirToFr(poseidon2_bn256_hash([frToNoir(3n), frToNoir(4n)]))],
+      [true, 1n]
     ]);
     expect(two_proof.length).toBe(depth);
 
+
     await tree.updateLeaf(1, 10n);
     const [ten_proof, ten] = tree.readLeaf(1);
-    expect(frToBigInt(ten)).toEqual(10n);
+    expect(ten).toEqual(10n);
+
     expect(ten_proof).toEqual(two_proof);
   });
 });

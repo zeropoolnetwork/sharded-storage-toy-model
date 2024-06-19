@@ -32,7 +32,7 @@ describe('State', () => {
     let nonce = 0n;
     const pk = derivePublicKey(sk);
     let first_acc = new Account();
-    first_acc.key = bigIntToFr(pk[0]);
+    first_acc.key = pk[0];
     first_acc.balance = bigIntToFr(1000000n);
     first_acc.nonce = 0n;
     first_acc.random_oracle_nonce = 0n;
@@ -90,7 +90,7 @@ describe('State', () => {
       ),
       id
     );
-    const ftx2 = await prep_file_tx(100n, 2, 1, frToBigInt(count_file.root()), rec2_sk, nonce2++);
+    const ftx2 = await prep_file_tx(100n, 2, 1, count_file.root(), rec2_sk, nonce2++);
     const ftxex2 = await st.build_file_txex(now, count_file, ftx2);
 
     // Collect file transactions
@@ -99,7 +99,7 @@ describe('State', () => {
     // ===== Mining transactions =====
 
     let ro_offset= 0n;
-    const ro_values = Array.from({length: sett.oracle_len}, (_, index) => bigIntToFr(BigInt(index)));
+    const ro_values = Array.from({length: sett.oracle_len}, (_, index) => BigInt(index));
     const file_reader = (file_id: bigint, word_id: bigint): Fr => {
       const [_f_prf, f] = st.files.readLeaf(Number(file_id));
       const [_w_prf, w] = f.data.readLeaf(Number(word_id));
@@ -109,7 +109,7 @@ describe('State', () => {
     // Mining Transcation #1, user-2 mines
     const ro_off1 = ro_values.length - 2; // just as example
     const ro_val1 = ro_values[ro_off1];
-    const mres1 = await mine(sett, bigIntToFr(rec2_pk[0]), ro_val1, file_reader);
+    const mres1 = await mine(sett, rec2_pk[0], ro_val1, file_reader);
     const mtx1 = await prep_mining_tx(2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
     const mtxex1 = await st.build_mining_txex(mres1, mtx1);
 
@@ -119,7 +119,7 @@ describe('State', () => {
     // // let nonce4 = 0n;
     // const ro_off2 = 1;
     // const ro_val2 = ro_values[ro_off2];
-    // const mres2 = await mine(sett, bigIntToFr(pk[0]), ro_val2, file_reader);
+    // const mres2 = await mine(sett, pk[0], ro_val2, file_reader);
     // const mtx2 = await prep_mining_tx(0, mres2, sk, nonce++, ro_offset + BigInt(ro_off2));
     // const mtxex2 = await st.build_mining_txex(mres2, mtx2);
 
@@ -143,7 +143,7 @@ describe('State', () => {
         data: ro_values.map((x) => x.toString()),
       },
     };
-    const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
+    const pubInputHash = pub_input_hash(sett, pubInput).toString();
 
     // Private input known to rollup
     let input: RollupInput = {
@@ -191,7 +191,7 @@ describe('State', () => {
 
     let first_acc = new Account();
 
-    first_acc.key = bigIntToFr(pk[0]);
+    first_acc.key = pk[0];
     first_acc.balance = bigIntToFr(1000000n);
     first_acc.nonce = 0n;
     first_acc.random_oracle_nonce = 0n;
@@ -212,7 +212,7 @@ describe('State', () => {
         data: new Array(sett.oracle_len).fill("0"),
       },
     };
-    const pubInputHash = frToBigInt(pub_input_hash(sett, pubInput)).toString();
+    const pubInputHash = pub_input_hash(sett, pubInput).toString();
 
     let input: RollupInput = {
       public: pubInput,

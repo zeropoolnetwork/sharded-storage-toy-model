@@ -1,7 +1,7 @@
 // This module implements a non-sparse, severely limited in size Merkle tree
 
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
-import { frToNoir, Fr, noirToFr } from './util';
+import { fr_serialize, Fr, fr_deserialize } from './util';
 
 import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
 
@@ -12,7 +12,7 @@ export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
   // Noir code uses little-endian (LSB) for some reason
   return {
     index_bits: prf.map(([i, h]) => Number(i)).reverse(),
-    hash_path: prf.map(([i, h]) => frToNoir(h)).reverse(),
+    hash_path: prf.map(([i, h]) => fr_serialize(h)).reverse(),
   } as NoirMerkleProof;
 }
 
@@ -30,7 +30,7 @@ export class Tree<T> {
   }
 
   static node_hash(left: Fr, right: Fr): Fr {
-    return noirToFr(poseidon2_bn256_hash([left, right].map(frToNoir)));
+    return fr_deserialize(poseidon2_bn256_hash([left, right].map(fr_serialize)));
   }
 
   // Creates a new tree of given depth. If given leaves do not fill up all the
@@ -43,8 +43,8 @@ export class Tree<T> {
     if (values.length != 1 << depth)
       throw new Error("incorrect number of values");
 
-    const nodes = merkle_tree(depth, values.map((x, i, ar) => frToNoir(hash_cb(x))), "0")
-      .map(noirToFr);
+    const nodes = merkle_tree(depth, values.map((x, i, ar) => fr_serialize(hash_cb(x))), "0")
+      .map(fr_deserialize);
 
     return new Tree(depth, nodes, values, hash_cb);
   }

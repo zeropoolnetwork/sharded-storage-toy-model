@@ -1,5 +1,5 @@
 import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { Fr, bigIntToFr, frAdd, frSub, frToBigInt, frToNoir, noirToFr } from "./util"; 
+import { Fr, bigIntToFr, frAdd, frSub, fr_serialize, fr_deserialize } from "./util"; 
 import { ShardedStorageSettings, defShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -48,24 +48,24 @@ export class Account {
     } else {
         to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
     }
-    return noirToFr(poseidon2_bn256_hash(to_hash.map(frToNoir)));
+    return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
   }
 };
 
 export function fileToNoir(file: File): NoirFile {
   return {
-    expiration_time: frToNoir(file.expiration_time),
-    owner: frToNoir(file.owner),
-    data: frToNoir(file.data.root()),
+    expiration_time: fr_serialize(file.expiration_time),
+    owner: fr_serialize(file.owner),
+    data: fr_serialize(file.data.root()),
   };
 }
 
 export function accountToNoir(acc: Account): NoirAccount {
   return {
-    key: frToNoir(acc.key),
-    balance: frToNoir(acc.balance),
-    nonce: frToNoir(acc.nonce),
-    random_oracle_nonce: frToNoir(acc.random_oracle_nonce),
+    key: fr_serialize(acc.key),
+    balance: fr_serialize(acc.balance),
+    nonce: fr_serialize(acc.nonce),
+    random_oracle_nonce: fr_serialize(acc.random_oracle_nonce),
   };
 }
 
@@ -99,7 +99,7 @@ export class File {
     } else {
         to_hash = [this.expiration_time, this.owner, this.data.root()];
     }
-    return noirToFr(poseidon2_bn256_hash(to_hash.map(frToNoir)));
+    return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
   }
 };
 
@@ -196,14 +196,14 @@ export async function new_account_tx(
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
-    receiver_key: frToNoir(receiver_pk),
-    amount: frToNoir(amount),
-    nonce: frToNoir(0n),
+    receiver_key: fr_serialize(receiver_pk),
+    amount: fr_serialize(amount),
+    nonce: fr_serialize(0n),
   };
   const hash = poseidon2_bn256_hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
   );
-  const signature = sender_sk.signMessage(noirToFr(hash));
+  const signature = sender_sk.signMessage(fr_deserialize(hash));
   const packed = {
     a: sender_sk.publicKey[0].toString(),
     s: signature.S.toString(),
@@ -245,9 +245,9 @@ export class State {
     let sender_mod = new Account();
     sender_mod.balance = frSub(
       sender.balance,
-      noirToFr(tx.amount)
+      fr_deserialize(tx.amount)
     );
-    if (frToBigInt(sender_mod.balance) == 0n) {
+    if (sender_mod.balance == 0n) {
       sender_mod.nonce = 0n;
       sender_mod.random_oracle_nonce = 0n;
       sender_mod.key = 0n;
@@ -261,9 +261,9 @@ export class State {
     // calculate proof for the receiver and update proof
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
     let receiver_mod = new Account();
-    receiver_mod.key = noirToFr(tx.receiver_key);
+    receiver_mod.key = fr_deserialize(tx.receiver_key);
     receiver_mod.balance = frAdd(
-      noirToFr(tx.amount),
+      fr_deserialize(tx.amount),
       receiver.balance
     );
     receiver_mod.nonce = receiver.nonce;
@@ -299,9 +299,9 @@ export class State {
     let sender_mod = new Account();
     sender_mod.balance = frSub(
       sender.balance,
-      bigIntToFr(fee)
+      fee
     );
-    if (frToBigInt(sender_mod.balance) == 0n) {
+    if (sender_mod.balance == 0n) {
       sender_mod.nonce = 0n;
       sender_mod.random_oracle_nonce = 0n;
       sender_mod.key = 0n;
@@ -314,7 +314,7 @@ export class State {
 
     // calculate proof for the receiver and update proof
     const [file_prf, file] = this.files.readLeaf(Number(tx.data_index));
-    const exp_time = frToBigInt(file.expiration_time);
+    const exp_time = file.expiration_time;
     let file_mod = new File({
       expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
       owner: sender.key,
@@ -348,10 +348,10 @@ export class State {
     let sender_mod = new Account();
     sender_mod.balance = frAdd(
       sender.balance,
-      bigIntToFr(sett.mining_reward)
+      sett.mining_reward
     );
     sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
-    sender_mod.random_oracle_nonce = noirToFr(tx.random_oracle_nonce);
+    sender_mod.random_oracle_nonce = fr_deserialize(tx.random_oracle_nonce);
     sender_mod.key = sender.key;
     await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
@@ -361,11 +361,11 @@ export class State {
     const assets: MiningTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
       account_sender: accountToNoir(sender),
-      random_oracle_value: frToNoir(mi.random_oracle_value),
+      random_oracle_value: fr_serialize(mi.random_oracle_value),
       proof_file: proof_to_noir(proof_file),
       file: fileToNoir(file),
       proof_data_in_file: proof_to_noir(proof_word),
-      data_in_file: frToNoir(word),
+      data_in_file: fr_serialize(word),
       signature: signature,
     };
 
@@ -376,10 +376,10 @@ export class State {
   }
 
   hash(): Fr {
-    return noirToFr(poseidon2_bn256_hash([
+    return fr_deserialize(poseidon2_bn256_hash([
       this.accounts.root(),
       this.files.root(),
-    ].map(frToNoir)));
+    ].map(fr_serialize)));
   }
 
 }

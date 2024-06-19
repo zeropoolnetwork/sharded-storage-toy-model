@@ -17,19 +17,17 @@ import {
 } from "@zk-kit/eddsa-poseidon"
 import { MiningResult } from './mining';
 
-export function frToBigInt(x: Fr): bigint {
-  return x;
-}
-
 export function bigIntToFr(x: bigint): Fr {
   return x % FR_MODULUS;
 }
 
-export function frToNoir(x: bigint): NoirFr {
+// Serializes Fr values for external calls (nargo or WASM bindings)
+export function fr_serialize(x: bigint): string {
   return x.toString();
 }
 
-export function noirToFr(x: NoirFr): Fr {
+// Deserializes Fr values received from external calls (nargo or WASM bindings)
+export function fr_deserialize(x: string): Fr {
   return bigIntToFr(BigInt(x));
 }
 
@@ -37,12 +35,12 @@ export function noirToFr(x: NoirFr): Fr {
 export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInput): Fr {
   const payload: bigint[] = new Array(sett.pub_len).fill(BigInt(0));
 
-  payload[0] = BigInt(input.old_root);
-  payload[1] = BigInt(input.new_root);
-  payload[2] = BigInt(input.now);
-  payload[3] = BigInt(input.oracle.offset);
+  payload[0] = fr_deserialize(input.old_root);
+  payload[1] = fr_deserialize(input.new_root);
+  payload[2] = fr_deserialize(input.now);
+  payload[3] = fr_deserialize(input.oracle.offset);
   for (let i = 0; i < sett.oracle_len; i++) {
-    payload[4 + i] = BigInt(input.oracle.data[i]);
+    payload[4 + i] = fr_deserialize(input.oracle.data[i]);
   }
 
   const u8_pub_len = 32 * sett.pub_len;
@@ -58,11 +56,11 @@ export function pub_input_hash(sett: ShardedStorageSettings, input: RollupPubInp
 
   const res = keccak256(bytesPayload);
 
-  let acc = BigInt(0);
+  let acc = 0n;
 
   // use BE for Ethereum compatibility
   for (let i = 0; i < 32; i++) {
-    acc = acc * BigInt(256) + BigInt(res[i]);
+    acc = (acc * 256n + BigInt(res[i])) % FR_MODULUS;
   }
 
   return acc;
@@ -84,11 +82,11 @@ function bigIntToBytes(value: bigint, length: number): number[] {
 }
 
 export function frAdd(x: Fr, y: Fr): Fr {
-  return bigIntToFr(frToBigInt(x) + frToBigInt(y))
+  return bigIntToFr(x + y)
 }
 
 export function frSub(x: Fr, y: Fr): Fr {
-  return bigIntToFr(frToBigInt(x) - frToBigInt(y))
+  return bigIntToFr(x - y)
 }
 
 /// Same as prep_account_tx, but for mining transactions.
