@@ -2,7 +2,7 @@ import { AccountTx, Field, FileTx, MiningTx, Field as NoirFr, RollupPubInput, Si
 import { ShardedStorageSettings } from './settings';
 import { keccak256 } from '@noir-lang/noir_js'; 
 
-import { merkle_tree, poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree'
+import { merkle_tree, poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
 
 export type Fr = bigint;
 const FR_MODULUS = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n;

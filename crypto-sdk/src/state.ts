@@ -18,7 +18,7 @@ import {
   MiningTxAssets
 } from "./noir_codegen/index";
 
-import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree'
+import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 import { MiningResult } from "./mining";
