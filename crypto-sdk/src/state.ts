@@ -56,7 +56,7 @@ export function fileToNoir(file: File): NoirFile {
   return {
     expiration_time: fr_serialize(file.expiration_time),
     owner: fr_serialize(file.owner),
-    data: fr_serialize(file.data.root()),
+    data: fr_serialize(file.data_hash),
   };
 }
 
@@ -69,37 +69,34 @@ export function accountToNoir(acc: Account): NoirAccount {
   };
 }
 
+export function blank_file_contents(d: number): Tree<Fr> {
+  return Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
+}
+
 export class File {
   expiration_time: Fr;
   // Owner account pk
   owner: Fr;
-  // File contents serialized as a list of Fr. Null when file is not initialized
-  data: Tree<Fr>;
+  // Merkle hash of data
+  data_hash: Fr;
 
-  constructor(v: {expiration_time: Fr, owner: Fr, data: Tree<Fr>}) {
+  constructor(v: {expiration_time: Fr, owner: Fr, data_hash: Fr}) {
     this.expiration_time = v.expiration_time;
     this.owner = v.owner;
-    this.data = v.data;
+    this.data_hash = v.data_hash;
   }
 
   static blank(d: number): File {
-    const data = Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
+    const data = blank_file_contents(d);
     return new File({
       expiration_time: 0n,
       owner: 0n,
-      data: data,
+      data_hash: data.root(),
     });
   }
 
   hash(): Fr {
-    let to_hash: [Fr, Fr, Fr];
-    if (this.data == null) {
-        // Hash empty file
-        to_hash = [0n, 0n, 0n];
-    } else {
-        to_hash = [this.expiration_time, this.owner, this.data.root()];
-    }
-    return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
+    return fr_deserialize(poseidon2_bn256_hash([this.expiration_time, this.owner, this.data_hash].map(fr_serialize)));
   }
 };
 
@@ -228,12 +225,12 @@ export class State {
     const accounts = Tree.init(
       sett.acc_data_tree_depth,
       accs,
-      (acc) => acc.hash(),
+      (acc: Account) => acc.hash(),
     );
     const files = Tree.init(
       sett.acc_data_tree_depth,
       new Array(1 << sett.acc_data_tree_depth).fill(File.blank(sett.file_tree_depth)),
-      (file) => file.hash(),
+      (file: File) => file.hash(),
     );
     return new State(accounts, files);
   }
@@ -286,7 +283,7 @@ export class State {
 
   async build_file_txex(
     now: bigint,
-    data: Tree<Fr>,
+    data_hash: Fr,
     [tx, signature]: [FileTx, SignaturePacked]
   ): Promise<FileTxEx> {
 
@@ -318,7 +315,7 @@ export class State {
     let file_mod = new File({
       expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
       owner: sender.key,
-      data: data,
+      data_hash: data_hash,
     });
     await this.files.updateLeaf(Number(tx.data_index), file_mod);
 
@@ -338,7 +335,8 @@ export class State {
 
   async build_mining_txex(
     mi: MiningResult,
-    [tx, signature]: [MiningTx, SignaturePacked]
+    [proof_word, word]: [MerkleProof, Fr],
+    [tx, signature]: [MiningTx, SignaturePacked],
   ): Promise<MiningTxEx> {
 
     const sett = defShardedStorageSettings; 
@@ -356,7 +354,7 @@ export class State {
     await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     const [proof_file, file] = this.files.readLeaf(Number(mi.file_in_storage_index));
-    const [proof_word, word] = file.data.readLeaf(Number(mi.word_in_file_index));
+    // const [proof_word, word] = file.data.readLeaf(Number(mi.word_in_file_index));
 
     const assets: MiningTxAssets = {
       proof_sender: proof_to_noir(sender_prf),

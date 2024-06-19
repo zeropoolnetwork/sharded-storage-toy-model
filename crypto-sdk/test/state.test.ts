@@ -1,6 +1,6 @@
 import { Tree } from './../src/merkle-tree';
 import { bigIntToFr, frAdd, Fr, fr_serialize, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
-import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
+import { Account, State, blank_account_tx, blank_file_contents, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx, mine } from '../src/mining';
@@ -71,15 +71,22 @@ describe('State', () => {
     // ===== File transactions =====
 
     const now = 0n;
+    // These are all files contents stored by a storage node. Initially all contain zeroes
+    let files_stored: Tree<Fr>[] = pad_array([], 1 << sett.acc_data_tree_depth, blank_file_contents(sett.file_tree_depth));
 
     // File Transcation #1: master creates a file #0 with all 5s
+    // 
+    // this is file contents, seen only by user and the storage node
     const fives: Tree<Fr> = Tree.init(
       sett.file_tree_depth,
       pad_array([], 1 << sett.file_tree_depth, BigInt(5)),
       id
     );
+    // file tx is formed and signed by the user (doesn't need full state)
     const ftx1 = await prep_file_tx(10n, 0, 0, fives.root(), sk, nonce++);
-    const ftxex1 = await st.build_file_txex(now, fives, ftx1);
+    // txex is built by the sequencer (needs full state)
+    const ftxex1 = await st.build_file_txex(now, fives.root(), ftx1);
+    files_stored[0] = fives;
 
     // File Transcation #2: user-2 adds another file #1 that contains sequence of numbers 0, 1, …
     const count_file: Tree<Fr> = await Tree.init(
@@ -91,7 +98,8 @@ describe('State', () => {
       id
     );
     const ftx2 = await prep_file_tx(100n, 2, 1, count_file.root(), rec2_sk, nonce2++);
-    const ftxex2 = await st.build_file_txex(now, count_file, ftx2);
+    const ftxex2 = await st.build_file_txex(now, count_file.root(), ftx2);
+    files_stored[1] = count_file;
 
     // Collect file transactions
     const file_txs = pad_array([ftxex1, ftxex2], sett.file_tx_per_block, blank_file_tx(sett));
@@ -101,8 +109,8 @@ describe('State', () => {
     let ro_offset= 0n;
     const ro_values = Array.from({length: sett.oracle_len}, (_, index) => BigInt(index));
     const file_reader = (file_id: bigint, word_id: bigint): Fr => {
-      const [_f_prf, f] = st.files.readLeaf(Number(file_id));
-      const [_w_prf, w] = f.data.readLeaf(Number(word_id));
+      // const [_f_prf, f] = st.files.readLeaf(Number(file_id));
+      const [_w_prf, w] = files_stored[Number(file_id)].readLeaf(Number(word_id));
       return w;
     };
 
@@ -111,7 +119,9 @@ describe('State', () => {
     const ro_val1 = ro_values[ro_off1];
     const mres1 = await mine(sett, rec2_pk[0], ro_val1, file_reader);
     const mtx1 = await prep_mining_tx(2, mres1, rec2_sk, nonce2++, ro_offset + BigInt(ro_off1));
-    const mtxex1 = await st.build_mining_txex(mres1, mtx1);
+    const word = files_stored[Number(mres1.file_in_storage_index)].readLeaf(Number(mres1.word_in_file_index));
+    // everyting above here was done by storage node. the next operation is done by sequencer
+    const mtxex1 = await st.build_mining_txex(mres1, word, mtx1);
 
     // // Mining Transcation #2, (new) master mines
     // // const rec4_sk = "user-4 password";
