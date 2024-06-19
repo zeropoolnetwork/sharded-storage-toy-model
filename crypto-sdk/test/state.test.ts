@@ -1,5 +1,5 @@
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, Fr, frToNoir, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
+import { bigIntToFr, frAdd, Fr, fr_serialize, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
 import { Account, State, blank_account_tx, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
@@ -41,8 +41,8 @@ describe('State', () => {
     let st = await State.genesisState(first_acc, sett);
     const st_hash = st.hash();
     const st_root: Root = {
-      acc: frToNoir(st.accounts.root()),
-      data: frToNoir(st.files.root()),
+      acc: fr_serialize(st.accounts.root()),
+      data: fr_serialize(st.files.root()),
     };
 
     // ===== Account transactions =====
@@ -128,15 +128,15 @@ describe('State', () => {
 
     // Compute the new hash
     const new_st_root: Root = {
-      acc: frToNoir(await st.accounts.root()),
-      data: frToNoir(await st.files.root()),
+      acc: fr_serialize(await st.accounts.root()),
+      data: fr_serialize(await st.files.root()),
     };
     const new_st_hash = await st.hash();
 
     // Public input known to contract
     const pubInput: RollupPubInput = {
-      old_root: frToNoir(st_hash),
-      new_root: frToNoir(new_st_hash),
+      old_root: fr_serialize(st_hash),
+      new_root: fr_serialize(new_st_hash),
       now: now.toString(),
       oracle: {
         offset: ro_offset.toString(),
@@ -199,13 +199,13 @@ describe('State', () => {
     let st = await State.genesisState(first_acc, sett);
     const st_hash = await st.hash();
     const st_root: Root = {
-      acc: frToNoir(await st.accounts.root()),
-      data: frToNoir(await st.files.root()),
+      acc: fr_serialize(await st.accounts.root()),
+      data: fr_serialize(await st.files.root()),
     };
 
     const pubInput: RollupPubInput = {
-      old_root: frToNoir(st_hash),
-      new_root: frToNoir(st_hash),
+      old_root: fr_serialize(st_hash),
+      new_root: fr_serialize(st_hash),
       now: "0",
       oracle: {
         offset: "0",

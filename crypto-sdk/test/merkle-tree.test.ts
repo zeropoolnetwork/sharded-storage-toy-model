@@ -1,5 +1,5 @@
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, Fr, frToNoir, noirToFr } from '../src/util';
+import { bigIntToFr, frAdd, Fr, fr_serialize, fr_deserialize } from '../src/util';
 import { cpus } from 'os';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 
@@ -19,9 +19,9 @@ describe('Merkle Tree', () => {
 
     let exp_nodes = [0n, 0n, 0n, 0n, 1n, 2n, 3n, 4n];
     for (let i = (2 ** depth) - 1; i >= 1; --i)
-      exp_nodes[i] = noirToFr(poseidon2_bn256_hash([
-        frToNoir(exp_nodes[i*2]),
-        frToNoir(exp_nodes[i*2 + 1])
+      exp_nodes[i] = fr_deserialize(poseidon2_bn256_hash([
+        fr_serialize(exp_nodes[i*2]),
+        fr_serialize(exp_nodes[i*2 + 1])
       ]));
 
 
@@ -38,9 +38,9 @@ describe('Merkle Tree', () => {
 
   test('Compute Poseidon2 hash with WASM', async () => {
 
-    expect(noirToFr(poseidon2_bn256_hash([frToNoir(0n)])))
+    expect(fr_deserialize(poseidon2_bn256_hash([fr_serialize(0n)])))
       .toEqual(17668610518173883319035856328661308815933580113901672897605691629848497347345n);
-    expect(noirToFr(poseidon2_bn256_hash([frToNoir(1n)])))
+    expect(fr_deserialize(poseidon2_bn256_hash([fr_serialize(1n)])))
       .toEqual(10190015755989328289879378487807721086446093622177241109507523918927702106995n);
   });
 
@@ -67,7 +67,7 @@ describe('Merkle Tree', () => {
     const [two_proof, two] = tree.readLeaf(1);
     expect(two).toEqual(2n);
     expect(two_proof).toEqual([
-      [false, noirToFr(poseidon2_bn256_hash([frToNoir(3n), frToNoir(4n)]))],
+      [false, fr_deserialize(poseidon2_bn256_hash([fr_serialize(3n), fr_serialize(4n)]))],
       [true, 1n]
     ]);
     expect(two_proof.length).toBe(depth);
