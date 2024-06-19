@@ -35,7 +35,7 @@ pub fn decode_f(x: FEnc) -> F {
 /// Version of [[poseidon2_bn256_internal]] that can be called from TS
 ///
 /// ```
-/// use poseidon2_bn256::poseidon2_bn256_hash;
+/// use zpst_poseidon2_bn256::poseidon2_bn256_hash;
 ///
 /// assert_eq!(poseidon2_bn256_hash(vec!["0".to_string()]),
 ///   "17668610518173883319035856328661308815933580113901672897605691629848497347345".to_string());
@@ -54,7 +54,7 @@ pub fn poseidon2_bn256_hash(vals: Vec<FEnc>) -> FEnc {
 /// The test below uses the same tree as in [[merkle_tree]].
 ///
 /// ```
-/// use poseidon2_bn256::merkle_branch;
+/// use zpst_poseidon2_bn256::merkle_branch;
 ///
 /// assert_eq!(
 ///   merkle_branch("2".to_string(), vec![0, 1], vec![
@@ -78,7 +78,7 @@ pub fn merkle_branch(leaf: FEnc, proof_path: Vec<usize>, proof: Vec<FEnc>) -> Ve
 
 #[wasm_bindgen]
 /// ```
-/// use poseidon2_bn256::merkle_tree;
+/// use zpst_poseidon2_bn256::merkle_tree;
 ///
 /// assert_eq!(
 ///   merkle_tree(2, vec!["1", "2", "3", "4"].into_iter().map(|x| x.to_string()).collect(), "1000000".to_string()),

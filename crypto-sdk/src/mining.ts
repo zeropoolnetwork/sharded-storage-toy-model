@@ -15,7 +15,7 @@ import {
   FileTxAssets
 } from "./noir_codegen/index";
 import { Fr, bigIntToFr, frToBigInt, frToNoir, noirToFr } from './util';
-import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree';
+import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 
 export type MiningResult = {
   random_oracle_value: Fr,

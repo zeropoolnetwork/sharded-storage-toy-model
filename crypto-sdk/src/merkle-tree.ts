@@ -5,6 +5,7 @@ import { frToNoir, Fr, noirToFr } from './util';
 
 import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
 
+
 export type MerkleProof = [Boolean, Fr][];
 
 export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {

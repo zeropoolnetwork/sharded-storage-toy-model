@@ -98,8 +98,8 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1
       zpst-poseidon2-bn256:
-        specifier: workspace:../poseidon2-bn256/
-        version: link:../poseidon2-bn256
+        specifier: workspace:../poseidon2-bn256/pkg
+        version: link:../poseidon2-bn256/pkg
     devDependencies:
       '@noir-lang/noir_codegen':
         specifier: ^0.30.0
