@@ -569,21 +569,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
-name = "poseidon2-merkle-tree"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ff",
- "console_error_panic_hook",
- "getrandom",
- "lazy_static",
- "num-bigint",
- "wasm-bindgen",
- "wasm-bindgen-test",
- "zkhash",
-]
-
-[[package]]
 name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -969,4 +954,19 @@ dependencies = [
  "sha2",
  "sha3",
  "subtle",
+]
+
+[[package]]
+name = "zpst-poseidon2-bn256"
+version = "0.1.0"
+dependencies = [
+ "ark-bn254",
+ "ark-ff",
+ "console_error_panic_hook",
+ "getrandom",
+ "lazy_static",
+ "num-bigint",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "zkhash",
 ]

@@ -24,6 +24,7 @@
   "dependencies": {
     "@noir-lang/noir_js": "0.30.0",
     "@zk-kit/eddsa-poseidon": "^1.0.1",
+    "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256",
     "smol-toml": "^1.2.1"
   },
   "scripts": {

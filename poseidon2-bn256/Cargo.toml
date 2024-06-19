@@ -1,5 +1,5 @@
 [package]
-name = "poseidon2-merkle-tree"
+name = "zpst-poseidon2-bn256"
 version = "0.1.0"
 authors = ["Ivan Oleynikov <ivan.oleynikov95@gmail.com>"]
 edition = "2018"

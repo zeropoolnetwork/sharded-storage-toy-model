@@ -3,7 +3,7 @@
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
 import { frToNoir, Fr, noirToFr } from './util';
 
-import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree'
+import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
 
 export type MerkleProof = [Boolean, Fr][];
 
