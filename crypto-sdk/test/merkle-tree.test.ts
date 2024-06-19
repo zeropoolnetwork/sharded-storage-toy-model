@@ -1,7 +1,7 @@
 import { Tree } from './../src/merkle-tree';
 import { bigIntToFr, frAdd, frToBigInt, Fr, frToNoir, noirToFr } from '../src/util';
 import { cpus } from 'os';
-import { poseidon2_bn256_hash } from '../poseidon2-merkle-tree/pkg/poseidon2_merkle_tree';
+import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 
 function id<T>(x: T): T { return x }
 
