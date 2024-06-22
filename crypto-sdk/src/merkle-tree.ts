@@ -1,7 +1,8 @@
 // This module implements a non-sparse, severely limited in size Merkle tree
 
-import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
-import { fr_serialize, Fr, fr_deserialize } from './util';
+import { BinaryReader, BinaryWriter } from 'zpst-common/src/binary.js';
+import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js";
+import { fr_serialize, Fr, fr_deserialize, bigIntToBytes, bigintToBuffer, bufferToBigint, Serde } from './util';
 
 import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
 
@@ -16,13 +17,13 @@ export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
   } as NoirMerkleProof;
 }
 
-export class Tree<T> {
+export class Tree<T> implements Serde {
   depth: number = 0;
   nodes: Fr[] = [];
   values: T[] = [];
   hash_cb: (x: T) => Fr;
 
-  private constructor (depth: number, nodes: Fr[], values: T[], hash_cb: (x: T) => Fr) {
+  constructor(depth: number, nodes: Fr[], values: T[], hash_cb: (x: T) => Fr) {
     this.depth = depth;
     this.nodes = nodes;
     this.values = values;
@@ -51,6 +52,11 @@ export class Tree<T> {
 
   root(): Fr {
     return this.nodes[1];
+  }
+
+  leaf(i: number): Fr {
+    const index = i + (1 << this.depth);
+    return this.nodes[index];
   }
 
   readLeaf(i: number): [MerkleProof, T] {
@@ -83,4 +89,48 @@ export class Tree<T> {
     }
   }
 
+  clone(): Tree<T> {
+    return new Tree(this.depth, this.nodes.slice(), this.values.slice(), this.hash_cb);
+  }
+
+  serialize(): Buffer {
+    const size = 4 + (1 << (this.depth + 1) + 1 << this.depth) * 32;
+    const w = new BinaryWriter(size);
+
+    w.writeU32(this.depth);
+    for (const node of this.nodes) {
+      w.writeBuffer(bigintToBuffer(node));
+    }
+
+    for (const value of this.values) {
+      // FIXME: Can't implement Serde for bigint, can't constrain T by Serde OR bigint. Need to fix this.
+      if (typeof value === 'bigint') {
+        w.writeU256(value);
+      } else {
+        w.writeBuffer((value as unknown as Serde).serialize());
+      }
+    }
+
+    return w.toBuffer();
+  }
+
+  deserialize(bytes: Buffer, defaultValue: () => T): void {
+    const r = new BinaryReader(bytes);
+    this.depth = r.readU32();
+
+    for (let i = 0; i < (1 << (this.depth + 1)); i++) {
+      this.nodes.push(r.readU256());
+    }
+
+    for (let i = 0; i < (1 << this.depth); i++) {
+      const value = defaultValue();
+      if (typeof value == 'bigint') {
+        this.values.push(r.readU256() as unknown as T);
+      } else {
+        (value as unknown as Serde).deserialize(r.buf.subarray(r.offset));
+        this.values.push(value);
+      }
+    }
+  }
 };
+

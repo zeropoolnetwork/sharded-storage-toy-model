@@ -1,5 +1,5 @@
-import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { Fr, bigIntToFr, frAdd, frSub, fr_serialize, fr_deserialize } from "./util"; 
+import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree";
+import { Fr, bigIntToFr, frAdd, frSub, fr_serialize, fr_deserialize, Serde } from "./util";
 import { ShardedStorageSettings, defShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
@@ -19,11 +19,12 @@ import {
 } from "./noir_codegen/index";
 
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
+import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 import { MiningResult } from "./mining";
 
-export class Account {
+export class Account implements Serde {
   /// x coordinate of the owner account public key
   key: Fr;
   /// Balance
@@ -43,12 +44,30 @@ export class Account {
   hash(): Fr {
     let to_hash: [Fr, Fr, Fr, Fr];
     if (this.key == 0n) {
-        // Hash zero account
-        to_hash = [0n, 0n, 0n, 0n];
+      // Hash zero account
+      to_hash = [0n, 0n, 0n, 0n];
     } else {
-        to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
+      to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
     }
     return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter(32 * 4);
+    w.writeU256(this.key);
+    w.writeU256(this.balance);
+    w.writeU256(this.nonce);
+    w.writeU256(this.random_oracle_nonce);
+
+    return w.toBuffer();
+  }
+
+  deserialize(buf: Buffer) {
+    const r = new BinaryReader(buf);
+    this.key = r.readU256();
+    this.balance = r.readU256();
+    this.nonce = r.readU256();
+    this.random_oracle_nonce = r.readU256();
   }
 };
 
@@ -73,17 +92,19 @@ export function blank_file_contents(d: number): Tree<Fr> {
   return Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
 }
 
-export class File {
+export class File implements Serde {
   expiration_time: Fr;
   // Owner account pk
   owner: Fr;
   // Merkle hash of data
   data_hash: Fr;
 
-  constructor(v: {expiration_time: Fr, owner: Fr, data_hash: Fr}) {
-    this.expiration_time = v.expiration_time;
-    this.owner = v.owner;
-    this.data_hash = v.data_hash;
+  constructor();
+  constructor(v: { expiration_time: Fr, owner: Fr, data_hash: Fr });
+  constructor(v?: { expiration_time: Fr, owner: Fr, data_hash: Fr }) {
+    this.expiration_time = v?.expiration_time ?? 0n;
+    this.owner = v?.owner ?? 0n;
+    this.data_hash = v?.data_hash ?? 0n;
   }
 
   static blank(d: number): File {
@@ -97,6 +118,22 @@ export class File {
 
   hash(): Fr {
     return fr_deserialize(poseidon2_bn256_hash([this.expiration_time, this.owner, this.data_hash].map(fr_serialize)));
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter(32 * 3);
+    w.writeU256(this.expiration_time);
+    w.writeU256(this.owner);
+    w.writeU256(this.data_hash);
+
+    return w.toBuffer();
+  }
+
+  deserialize(buf: Buffer) {
+    const r = new BinaryReader(buf);
+    this.expiration_time = r.readU256();
+    this.owner = r.readU256();
+    this.data_hash = r.readU256();
   }
 };
 
@@ -380,4 +417,7 @@ export class State {
     ].map(fr_serialize)));
   }
 
+  clone(): State {
+    return new State(this.accounts.clone(), this.files.clone());
+  }
 }

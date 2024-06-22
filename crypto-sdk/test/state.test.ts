@@ -106,9 +106,9 @@ describe('State', () => {
 
     // ===== Mining transactions =====
 
-    let ro_offset= 0n;
-    const ro_values = Array.from({length: sett.oracle_len}, (_, index) => BigInt(index));
-    const file_reader = (file_id: bigint, word_id: bigint): Fr => {
+    let ro_offset = 0n;
+    const ro_values = Array.from({ length: sett.oracle_len }, (_, index) => BigInt(index));
+    const file_reader = async (file_id: bigint, word_id: bigint) => {
       // const [_f_prf, f] = st.files.readLeaf(Number(file_id));
       const [_w_prf, w] = files_stored[Number(file_id)].readLeaf(Number(word_id));
       return w;

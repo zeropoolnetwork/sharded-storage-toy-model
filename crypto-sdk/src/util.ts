@@ -72,13 +72,35 @@ export function pad_array<T>(arr: T[], length: number, def: T): T[] {
 }
 
 // Helper function to convert bigint to byte array
-function bigIntToBytes(value: bigint, length: number): number[] {
+export function bigIntToBytes(value: bigint, length: number): number[] {
   const hex = value.toString(16).padStart(length * 2, '0');
   const bytes = [];
   for (let i = 0; i < hex.length; i += 2) {
     bytes.push(parseInt(hex.slice(i, i + 2), 16));
   }
   return bytes; // use BE for Ethereum compatibility
+}
+
+export function bigintToBuffer(value: bigint): Buffer {
+  const buffer = Buffer.alloc(32);
+  const hex = value.toString(16);
+  const paddedHex = hex.padStart(64, '0');
+  const valueBuffer = Buffer.from(paddedHex, 'hex');
+
+  valueBuffer.copy(buffer, 32 - valueBuffer.length);
+
+  return buffer;
+}
+
+export function bufferToBigint(buffer: Buffer): bigint {
+  if (buffer.length !== 32) {
+    throw new Error("Buffer must be exactly 32 bytes");
+  }
+
+  const hex = buffer.toString('hex');
+  const value = BigInt('0x' + hex);
+
+  return value;
 }
 
 export function frAdd(x: Fr, y: Fr): Fr {
@@ -197,4 +219,10 @@ export async function prep_account_tx(
   };
 
   return [tx, sign];
+}
+
+export interface Serde {
+  serialize(): Buffer;
+  // TODO: A static method on an abstract class wouldn't work here. Have to find a better way.
+  deserialize(data: Buffer, ...args: any[]): void;
 }

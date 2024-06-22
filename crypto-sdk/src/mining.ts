@@ -54,7 +54,7 @@ export async function mine(
   random_oracle_value: Fr,
   // file_id is a leaf index (path) in data Merkle tree
   // word_id is a leaf index in Merkle tree of this file
-  storage_read: (file_id: bigint, word_id: bigint) => Fr,
+  storage_read: (file_id: bigint, word_id: bigint) => Promise<Fr>,
 ): Promise<MiningResult> {
 
   for (let mining_nonce = 0; mining_nonce < sett.mining_max_nonce; ++mining_nonce) {
@@ -70,7 +70,7 @@ export async function mine(
     const file_in_storage_index = trimLower(index, sett.file_tree_depth);
     const word_in_file_index = keepLower(index, sett.file_tree_depth);
 
-    const data = storage_read(file_in_storage_index, word_in_file_index);
+    const data = await storage_read(file_in_storage_index, word_in_file_index);
 
     const mining_hash =
       poseidon2_bn256_hash([bruteforce_hash, fr_serialize(data)]);
