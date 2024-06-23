@@ -9,13 +9,15 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
-    "@aztec/bb.js": "^0.41.0",
+    "@zk-kit/eddsa-poseidon": "^1.0.1",
     "commander": "^12.1.0",
     "cors": "^2.8.5",
     "ethers": "^6.12.1",
     "express": "^4.19.2",
     "level": "^8.0.1",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "poseidon2-merkle-tree": "workspace:../poseidon2-merkle-tree",
+    "zpst-crypto-sdk": "workspace:../crypto-sdk"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
