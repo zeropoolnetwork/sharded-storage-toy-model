@@ -9,7 +9,7 @@ import { UltraVerifier } from "./UltraVerifier.sol";
 
 
 contract Rollup {
-    uint256 constant GENESIS_ROOT_STATE = 0; // TODO: Define it
+    uint256 constant GENESIS_ROOT_STATE = 19871422421421646937344925797383409458572221364445359412877539941584804856579; 
     uint256 constant RANDOM_ORACLE_SIZE = 10;
 
     // BN256 group order

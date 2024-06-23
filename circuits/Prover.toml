@@ -1,594 +1,594 @@
-pubhash = "602553387949470750594511273396490299548949981251778541381794331133460415703"
-
-[input.public]
-old_root = "14549430161668819174367687045193236134328868030804612193732634858347281983336"
-new_root = "14549430161668819174367687045193236134328868030804612193732634858347281983336"
-now = "0"
-
-  [input.public.oracle]
-  offset = "0"
-  data = [
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0",
-  "0"
-]
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
-
-[[input.tx.txs]]
-[input.tx.txs.tx]
-sender_index = "0"
-receiver_index = "0"
-receiver_key = "0"
-amount = "0"
-nonce = "0"
-
-[input.tx.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.proof_receiver]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.tx.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.account_receiver]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-
-[input.tx.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+pubhash = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.file.txs]]
-[input.file.txs.tx]
-sender_index = "0"
-data_index = "0"
-time_interval = "0"
-data = "0"
-nonce = "0"
-
-[input.file.txs.assets.proof_sender]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-
-[input.file.txs.assets.proof_file]
-index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
 
 [input.file.txs.assets.account_sender]
-key = "0"
-balance = "0"
-nonce = "0"
-random_oracle_nonce = "0"
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
 [input.file.txs.assets.file]
-expiration_time = "0"
-owner = "0"
-data = "0"
+data = ""
+expiration_time = ""
+owner = ""
+
+[input.file.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.file.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
 [input.file.txs.assets.signature]
-a = "0"
-s = "0"
-r8 = "0"
+a = ""
+r8 = ""
+s = ""
+
+[input.file.txs.tx]
+data = ""
+data_index = ""
+nonce = ""
+sender_index = ""
+time_interval = ""
 
 [[input.mining.txs]]
-[input.mining.txs.tx]
-sender_index = "0"
-nonce = "0"
-random_oracle_nonce = "0"
-mining_nonce = "0"
 
 [input.mining.txs.assets]
-random_oracle_value = "0"
-data_in_file = "0"
+data_in_file = ""
+random_oracle_value = ""
 
-  [input.mining.txs.assets.proof_sender]
-  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+[input.mining.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
 
-  [input.mining.txs.assets.account_sender]
-  key = "0"
-  balance = "0"
-  nonce = "0"
-  random_oracle_nonce = "0"
+[input.mining.txs.assets.file]
+data = ""
+expiration_time = ""
+owner = ""
 
-  [input.mining.txs.assets.proof_file]
-  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+[input.mining.txs.assets.proof_data_in_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
-  [input.mining.txs.assets.file]
-  expiration_time = "0"
-  owner = "0"
-  data = "0"
+[input.mining.txs.assets.proof_file]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
-  [input.mining.txs.assets.proof_data_in_file]
-  index_bits = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
-  hash_path = [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ]
+[input.mining.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
 
-  [input.mining.txs.assets.signature]
-  a = "0"
-  s = "0"
-  r8 = "0"
+[input.mining.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
 
-[input.old_root]
-acc = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
-data = "820977286390674538425862012493542916279341100017457750366535111511456236832"
+[input.mining.txs.tx]
+mining_nonce = ""
+nonce = ""
+random_oracle_nonce = ""
+sender_index = ""
 
 [input.new_root]
-acc = "11487528682305961401473309877471642447232578731758593718090665024687659047906"
-data = "820977286390674538425862012493542916279341100017457750366535111511456236832"
+acc = ""
+data = ""
+
+[input.old_root]
+acc = ""
+data = ""
+
+[input.public]
+new_root = ""
+now = ""
+old_root = ""
+
+[input.public.oracle]
+data = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+offset = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
+
+[[input.tx.txs]]
+
+[input.tx.txs.assets.account_receiver]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.account_sender]
+balance = ""
+key = ""
+nonce = ""
+random_oracle_nonce = ""
+
+[input.tx.txs.assets.proof_receiver]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.proof_sender]
+hash_path = ["", "", "", "", "", "", "", "", "", ""]
+index_bits = ["", "", "", "", "", "", "", "", "", ""]
+
+[input.tx.txs.assets.signature]
+a = ""
+r8 = ""
+s = ""
+
+[input.tx.txs.tx]
+amount = ""
+nonce = ""
+receiver_index = ""
+receiver_key = ""
+sender_index = ""
