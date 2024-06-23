@@ -1,10 +1,10 @@
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, Fr, fr_serialize, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx } from '../src/util';
+import { bigIntToFr, frAdd, Fr, fr_serialize, pub_input_hash, pad_array, prep_account_tx, prep_file_tx, prep_mining_tx, pack_tx } from '../src/util';
 import { Account, State, blank_account_tx, blank_file_contents, blank_file_tx, new_account_tx } from '../src/state';
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx, mine } from '../src/mining';
-import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx } from '../src/noir_codegen';
+import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
 
 import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
 
@@ -70,6 +70,9 @@ describe('State', () => {
 
     // ===== File transactions =====
 
+    // reserve the master nonce for special 0th file
+    const self_file_tx_nonce = nonce++;
+
     const now = 0n;
     // These are all files contents stored by a storage node. Initially all contain zeroes
     let files_stored: Tree<Fr>[] = pad_array([], 1 << sett.acc_data_tree_depth, blank_file_contents(sett.file_tree_depth));
@@ -101,8 +104,9 @@ describe('State', () => {
     const ftxex2 = await st.build_file_txex(now, count_file.root(), ftx2);
     files_stored[1] = count_file;
 
-    // Collect file transactions
-    const file_txs = pad_array([ftxex1, ftxex2], sett.file_tx_per_block, blank_file_tx(sett));
+    // Collect file transactions. One transaction that saves the txes is
+    // missing
+    const file_txs_incomplete = pad_array([ftxex1, ftxex2], sett.file_tx_per_block - 1, blank_file_tx(sett));
 
     // ===== Mining transactions =====
 
@@ -135,6 +139,45 @@ describe('State', () => {
 
     // const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
     const mining_txs = [mtxex1];
+
+    // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
+    const self_file_index = (1 << sett.acc_data_tree_depth) - 1; // say, we put our data in the last slot
+    const self_file_duration = 100n; // store the file for 100 ticks
+    const self_file_sender = 0; // master account owns the data
+    const placeholder_file_tx: FileTx = {
+      sender_index: self_file_sender.toString(),
+      data_index: self_file_index.toString(),
+      time_interval: fr_serialize(self_file_duration),
+      data: undefined as never,
+      nonce: undefined as never,
+    };
+    const self_tx_data = Tree.init(
+      sett.file_tree_depth,
+      pad_array(
+        pack_tx(
+          acc_txs.map((x) => x.tx),
+          [placeholder_file_tx, ...file_txs_incomplete.map((x) => x.tx)],
+          mining_txs.map((x) => x.tx),
+        ),
+        1 << sett.file_tree_depth,
+        0n,
+      ),
+      id
+    );
+    const ftx_self = await prep_file_tx(
+      self_file_duration,
+      self_file_sender,
+      self_file_index,
+      self_tx_data.root(),
+      sk,
+      self_file_tx_nonce);
+    const ftxex_self = await st.build_file_txex(now, count_file.root(), ftx_self);
+    files_stored[self_file_index] = self_tx_data;
+
+    // prepend the special file tx to the all transactions
+    const file_txs = [
+      ftxex_self,
+      ...file_txs_incomplete];
 
     // Compute the new hash
     const new_st_root: Root = {

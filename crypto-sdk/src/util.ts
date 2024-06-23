@@ -4,6 +4,8 @@ import { keccak256 } from '@noir-lang/noir_js';
 
 import { merkle_tree, poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
 
+import { defShardedStorageSettings } from "./settings"; 
+
 export type Fr = bigint;
 const FR_MODULUS = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n;
 
@@ -219,6 +221,57 @@ export async function prep_account_tx(
   };
 
   return [tx, sign];
+}
+
+
+/// Packs all user-created transactions into a buffer to be stored inside Sharded Storage itself
+export function pack_tx(
+  acc_txs: AccountTx[],
+  file_txs: FileTx[],
+  mining_txs: MiningTx[],
+): Fr[] {
+  const sett = defShardedStorageSettings;
+
+  let block_data: string[] = new Array(
+    4*sett.file_tx_per_block
+    + 2*sett.mining_tx_per_block
+    + 4*sett.account_tx_per_block
+  ).fill("0");
+
+  for (let i = 0; i < sett.account_tx_per_block; ++i) {
+      let offset = 4*i;
+      block_data[offset] = acc_txs[i].sender_index;
+      block_data[offset+1] = acc_txs[i].receiver_index;
+      block_data[offset+2] = acc_txs[i].receiver_key;
+      block_data[offset+3] = acc_txs[i].amount;
+  }
+
+  for (let i = 0; i < sett.mining_tx_per_block; ++i) {
+      let offset = 4*sett.account_tx_per_block + 2*i;
+      block_data[offset] = mining_txs[i].sender_index;
+      block_data[offset+1] = mining_txs[i].random_oracle_nonce;
+  }
+
+
+  (() => { // i = 0
+      let i = 0;
+      let offset = 4*sett.account_tx_per_block + 2*sett.mining_tx_per_block + 4*i;
+      block_data[offset] = file_txs[i].sender_index;
+      block_data[offset+1] = file_txs[i].data_index;
+      block_data[offset+2] = file_txs[i].time_interval;
+      block_data[offset+3] = "0";
+  })();
+
+
+  for (let i = 1; i < sett.file_tx_per_block; ++i) {
+      let offset = 4*sett.account_tx_per_block + 2*sett.mining_tx_per_block + 4*i;
+      block_data[offset] = file_txs[i].sender_index;
+      block_data[offset+1] = file_txs[i].data_index;
+      block_data[offset+2] = file_txs[i].time_interval;
+      block_data[offset+3] = file_txs[i].data;
+  }
+
+  return block_data.map(fr_deserialize);
 }
 
 export interface Serde {
