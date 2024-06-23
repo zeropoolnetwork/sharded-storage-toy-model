@@ -1,18 +1,25 @@
 {
-    "compilerOptions": {
-      "outDir": "tsc-output",
-      "allowJs": true,
-      "checkJs": true,
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "resolveJsonModule": true,
-      "skipLibCheck": true,
-      "sourceMap": true,
-      "strict": true,
-      "module": "preserve",
-      "moduleResolution": "bundler"
-    },
-    "extends": "@tsconfig/node22/tsconfig.json",
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "tests"]
+  "compilerOptions": {
+    "outDir": "tsc-output",
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "module": "preserve",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler"
+  },
+  "extends": "@tsconfig/node22/tsconfig.json",
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests"
+  ]
 }

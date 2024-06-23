@@ -1,6 +1,5 @@
-import { Barretenberg, Fr } from '@aztec/bb.js';
 import { Tree } from './../src/merkle-tree';
-import { bigIntToFr, frAdd, frToBigInt, FrHashed, pub_input_hash } from '../src/util';
+import { Fr, pub_input_hash } from '../src/util';
 import { cpus } from 'os';
 import { RollupPubInput } from '../src/noir_codegen';
 import { defShardedStorageSettings } from '../src/settings';
@@ -38,7 +37,7 @@ describe('Rollup Public Input Hash', () => {
     let pubhash = "3948662352623793037980422332430756023521811098554192536177723934080377254970";
 
     expect(pubhash).toEqual(
-      frToBigInt(pub_input_hash(defShardedStorageSettings, rollup_input)).toString()
+      (pub_input_hash(defShardedStorageSettings, rollup_input)).toString()
     );
   });
 

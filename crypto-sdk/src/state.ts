@@ -1,7 +1,6 @@
-import { Barretenberg, Fr } from "@aztec/bb.js";
-import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree"; 
-import { FrHashed, Hashable, frToBigInt, frToNoir, noirToFr } from "./util"; 
-import { ShardedStorageSettings } from "./settings";
+import { MerkleProof, Tree, proof_to_noir } from "./merkle-tree";
+import { Fr, bigIntToFr, frAdd, frSub, fr_serialize, fr_deserialize, Serde } from "./util";
+import { ShardedStorageSettings, defShardedStorageSettings } from "./settings";
 import {
   Field as NoirFr,
   Account as NoirAccount,
@@ -13,12 +12,19 @@ import {
   AccountTxEx,
   FileTxEx,
   FileTx,
-  FileTxAssets
+  FileTxAssets,
+  MiningTx,
+  MiningTxEx,
+  MiningTxAssets
 } from "./noir_codegen/index";
 
-import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
+import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
+import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
 
-export class Account implements Hashable {
+import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
+import { MiningResult } from "./mining";
+
+export class Account implements Serde {
   /// x coordinate of the owner account public key
   key: Fr;
   /// Balance
@@ -29,55 +35,105 @@ export class Account implements Hashable {
   random_oracle_nonce: Fr;
 
   constructor() {
-    this.key = Fr.ZERO;
-    this.balance = Fr.ZERO;
-    this.nonce = Fr.ZERO;
-    this.random_oracle_nonce = Fr.ZERO;
+    this.key = 0n;
+    this.balance = 0n;
+    this.nonce = 0n;
+    this.random_oracle_nonce = 0n;
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
+  hash(): Fr {
     let to_hash: [Fr, Fr, Fr, Fr];
-    if (this.key == Fr.ZERO) {
-        // Hash zero account
-        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO, Fr.ZERO];
+    if (this.key == 0n) {
+      // Hash zero account
+      to_hash = [0n, 0n, 0n, 0n];
     } else {
-        to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
+      to_hash = [this.key, this.balance, this.nonce, this.random_oracle_nonce];
     }
-    return bb.poseidon2Hash(to_hash);
+    return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter(32 * 4);
+    w.writeU256(this.key);
+    w.writeU256(this.balance);
+    w.writeU256(this.nonce);
+    w.writeU256(this.random_oracle_nonce);
+
+    return w.toBuffer();
+  }
+
+  deserialize(buf: Buffer) {
+    const r = new BinaryReader(buf);
+    this.key = r.readU256();
+    this.balance = r.readU256();
+    this.nonce = r.readU256();
+    this.random_oracle_nonce = r.readU256();
   }
 };
 
-export function accountToNoir(acc: Account): NoirAccount {
+export function fileToNoir(file: File): NoirFile {
   return {
-    key: frToNoir(acc.key),
-    balance: frToNoir(acc.balance),
-    nonce: frToNoir(acc.nonce),
-    random_oracle_nonce: frToNoir(acc.random_oracle_nonce),
-  } as NoirAccount;
+    expiration_time: fr_serialize(file.expiration_time),
+    owner: fr_serialize(file.owner),
+    data: fr_serialize(file.data_hash),
+  };
 }
 
-export class File implements Hashable {
+export function accountToNoir(acc: Account): NoirAccount {
+  return {
+    key: fr_serialize(acc.key),
+    balance: fr_serialize(acc.balance),
+    nonce: fr_serialize(acc.nonce),
+    random_oracle_nonce: fr_serialize(acc.random_oracle_nonce),
+  };
+}
+
+export function blank_file_contents(d: number): Tree<Fr> {
+  return Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
+}
+
+export class File implements Serde {
   expiration_time: Fr;
   // Owner account pk
   owner: Fr;
-  // File contents serialized as a list of Fr. Null when file is not initialized
-  data: null | Tree<FrHashed>;
+  // Merkle hash of data
+  data_hash: Fr;
 
-  constructor() {
-    this.expiration_time = Fr.ZERO;
-    this.owner = Fr.ZERO;
-    this.data = null;
+  constructor();
+  constructor(v: { expiration_time: Fr, owner: Fr, data_hash: Fr });
+  constructor(v?: { expiration_time: Fr, owner: Fr, data_hash: Fr }) {
+    this.expiration_time = v?.expiration_time ?? 0n;
+    this.owner = v?.owner ?? 0n;
+    this.data_hash = v?.data_hash ?? 0n;
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
-    let to_hash: [Fr, Fr, Fr];
-    if (this.data == null) {
-        // Hash empty file
-        to_hash = [Fr.ZERO, Fr.ZERO, Fr.ZERO];
-    } else {
-        to_hash = [this.expiration_time, this.owner, await this.data.hash(bb)];
-    }
-    return bb.poseidon2Hash(to_hash);
+  static blank(d: number): File {
+    const data = blank_file_contents(d);
+    return new File({
+      expiration_time: 0n,
+      owner: 0n,
+      data_hash: data.root(),
+    });
+  }
+
+  hash(): Fr {
+    return fr_deserialize(poseidon2_bn256_hash([this.expiration_time, this.owner, this.data_hash].map(fr_serialize)));
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter(32 * 3);
+    w.writeU256(this.expiration_time);
+    w.writeU256(this.owner);
+    w.writeU256(this.data_hash);
+
+    return w.toBuffer();
+  }
+
+  deserialize(buf: Buffer) {
+    const r = new BinaryReader(buf);
+    this.expiration_time = r.readU256();
+    this.owner = r.readU256();
+    this.data_hash = r.readU256();
   }
 };
 
@@ -165,7 +221,6 @@ export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
 }
 
 export async function new_account_tx(
-  bb: Barretenberg,
   sender_index: number,
   sender_sk: EdDSAPoseidon,
   receiver_index: number,
@@ -175,15 +230,14 @@ export async function new_account_tx(
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
-    receiver_key: frToNoir(receiver_pk),
-    amount: frToNoir(amount),
-    nonce: frToNoir(Fr.random()),
+    receiver_key: fr_serialize(receiver_pk),
+    amount: fr_serialize(amount),
+    nonce: fr_serialize(0n),
   };
-  const hash = await bb.poseidon2Hash(
+  const hash = poseidon2_bn256_hash(
     [tx.sender_index, tx.receiver_index, tx.receiver_key, tx.amount, tx.nonce]
-      .map(noirToFr)
   );
-  const signature = sender_sk.signMessage(frToBigInt(hash));
+  const signature = sender_sk.signMessage(fr_deserialize(hash));
   const packed = {
     a: sender_sk.publicKey[0].toString(),
     s: signature.S.toString(),
@@ -193,7 +247,7 @@ export async function new_account_tx(
 }
 
 
-export class State implements Hashable {
+export class State {
   accounts: Tree<Account>;
   files: Tree<File>;
 
@@ -202,45 +256,168 @@ export class State implements Hashable {
     this.files = files;
   }
 
-  static async genesisState(bb: Barretenberg, sett: ShardedStorageSettings): Promise<State> {
-    const accounts = await Tree.init(
-      bb,
+  static genesisState(first_acc: Account, sett: ShardedStorageSettings): State {
+    let accs = new Array(1 << sett.acc_data_tree_depth).fill(new Account());
+    accs[0] = first_acc;
+    const accounts = Tree.init(
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(new Account())
+      accs,
+      (acc: Account) => acc.hash(),
     );
-    const files = await Tree.init(
-      bb,
+    const files = Tree.init(
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(new File())
+      new Array(1 << sett.acc_data_tree_depth).fill(File.blank(sett.file_tree_depth)),
+      (file: File) => file.hash(),
     );
     return new State(accounts, files);
   }
 
-  async build_account_assets(tx: AccountTx, signature: SignaturePacked): Promise<AccountTxAssets> {
+  async build_account_txex([tx, signature]: [AccountTx, SignaturePacked]): Promise<AccountTxEx> {
+
+    // calculate proof for the sender and update tree
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let sender_mod = new Account();
+    sender_mod.balance = frSub(
+      sender.balance,
+      fr_deserialize(tx.amount)
+    );
+    if (sender_mod.balance == 0n) {
+      sender_mod.nonce = 0n;
+      sender_mod.random_oracle_nonce = 0n;
+      sender_mod.key = 0n;
+    } else {
+      sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+      sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
+      sender_mod.key = sender.key;
+    }
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    // calculate proof for the receiver and update proof
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
+    let receiver_mod = new Account();
+    receiver_mod.key = fr_deserialize(tx.receiver_key);
+    receiver_mod.balance = frAdd(
+      fr_deserialize(tx.amount),
+      receiver.balance
+    );
+    receiver_mod.nonce = receiver.nonce;
+    receiver_mod.random_oracle_nonce = receiver.random_oracle_nonce;
+    await this.accounts.updateLeaf(Number(tx.receiver_index), receiver_mod);
 
-    let acc = new Account();
-    acc.key = noirToFr(tx.receiver_key);
-    acc.balance = noirToFr(tx.amount);
-    acc.nonce = noirToFr(tx.nonce);
-    acc.random_oracle_nonce = Fr.ZERO;
-    this.accounts.updateLeaf(Number(tx.receiver_index), acc);
-
-    return {
+    const assets: AccountTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
       proof_receiver: proof_to_noir(receiver_prf),
       account_sender: accountToNoir(sender),
       account_receiver: accountToNoir(receiver),
       signature: signature,
     };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
   }
 
-  async hash(bb: Barretenberg): Promise<Fr> {
-    return bb.poseidon2Hash([
-      await this.accounts.hash(bb),
-      await this.files.hash(bb),
-    ]);
+  async build_file_txex(
+    now: bigint,
+    data_hash: Fr,
+    [tx, signature]: [FileTx, SignaturePacked]
+  ): Promise<FileTxEx> {
+
+    const sett = defShardedStorageSettings; 
+
+    const fee = sett.storage_fee * BigInt(tx.time_interval);
+
+    // calculate proof for the sender and update tree
+    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let sender_mod = new Account();
+    sender_mod.balance = frSub(
+      sender.balance,
+      fee
+    );
+    if (sender_mod.balance == 0n) {
+      sender_mod.nonce = 0n;
+      sender_mod.random_oracle_nonce = 0n;
+      sender_mod.key = 0n;
+    } else {
+      sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+      sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
+      sender_mod.key = sender.key;
+    }
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    // calculate proof for the receiver and update proof
+    const [file_prf, file] = this.files.readLeaf(Number(tx.data_index));
+    const exp_time = file.expiration_time;
+    let file_mod = new File({
+      expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
+      owner: sender.key,
+      data_hash: data_hash,
+    });
+    await this.files.updateLeaf(Number(tx.data_index), file_mod);
+
+    const assets: FileTxAssets = {
+      proof_sender: proof_to_noir(sender_prf),
+      proof_file: proof_to_noir(file_prf),
+      account_sender: accountToNoir(sender),
+      file: fileToNoir(file),
+      signature: signature,
+    };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
   }
 
+  async build_mining_txex(
+    mi: MiningResult,
+    [proof_word, word]: [MerkleProof, Fr],
+    [tx, signature]: [MiningTx, SignaturePacked],
+  ): Promise<MiningTxEx> {
+
+    const sett = defShardedStorageSettings; 
+
+    // calculate proof for the sender and update tree
+    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
+    let sender_mod = new Account();
+    sender_mod.balance = frAdd(
+      sender.balance,
+      sett.mining_reward
+    );
+    sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
+    sender_mod.random_oracle_nonce = fr_deserialize(tx.random_oracle_nonce);
+    sender_mod.key = sender.key;
+    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+
+    const [proof_file, file] = this.files.readLeaf(Number(mi.file_in_storage_index));
+    // const [proof_word, word] = file.data.readLeaf(Number(mi.word_in_file_index));
+
+    const assets: MiningTxAssets = {
+      proof_sender: proof_to_noir(sender_prf),
+      account_sender: accountToNoir(sender),
+      random_oracle_value: fr_serialize(mi.random_oracle_value),
+      proof_file: proof_to_noir(proof_file),
+      file: fileToNoir(file),
+      proof_data_in_file: proof_to_noir(proof_word),
+      data_in_file: fr_serialize(word),
+      signature: signature,
+    };
+
+    return {
+      tx: tx,
+      assets: assets
+    }
+  }
+
+  hash(): Fr {
+    return fr_deserialize(poseidon2_bn256_hash([
+      this.accounts.root(),
+      this.files.root(),
+    ].map(fr_serialize)));
+  }
+
+  clone(): State {
+    return new State(this.accounts.clone(), this.files.clone());
+  }
 }

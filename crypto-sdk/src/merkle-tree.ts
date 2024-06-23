@@ -1,66 +1,62 @@
 // This module implements a non-sparse, severely limited in size Merkle tree
 
-import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js"; 
-import { Barretenberg, Fr } from '@aztec/bb.js';
-import { Hashable, frToNoir } from './util';
+import { BinaryReader, BinaryWriter } from 'zpst-common/src/binary.js';
+import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js";
+import { fr_serialize, Fr, fr_deserialize, bigIntToBytes, bigintToBuffer, bufferToBigint, Serde } from './util';
+
+import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
+
 
 export type MerkleProof = [Boolean, Fr][];
 
 export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
+  // Noir code uses little-endian (LSB) for some reason
   return {
-    index_bits: prf.map(([i, h]) => Number(i)),
-    hash_path: prf.map(([i, h]) => frToNoir(h)),
+    index_bits: prf.map(([i, h]) => Number(i)).reverse(),
+    hash_path: prf.map(([i, h]) => fr_serialize(h)).reverse(),
   } as NoirMerkleProof;
 }
 
-export class Tree<T extends Hashable> implements Hashable {
-  bb: Barretenberg;
+export class Tree<T> implements Serde {
   depth: number = 0;
   nodes: Fr[] = [];
   values: T[] = [];
+  hash_cb: (x: T) => Fr;
 
-  private constructor (bb: Barretenberg, depth: number, nodes: Fr[], values: T[]) {
-    this.bb = bb;
+  constructor(depth: number, nodes: Fr[], values: T[], hash_cb: (x: T) => Fr) {
     this.depth = depth;
     this.nodes = nodes;
     this.values = values;
+    this.hash_cb = hash_cb;
   }
 
-  static node_hash(bb: Barretenberg, left: Fr, right: Fr): Promise<Fr> {
-    return bb.poseidon2Hash([left, right]);
+  static node_hash(left: Fr, right: Fr): Fr {
+    return fr_deserialize(poseidon2_bn256_hash([left, right].map(fr_serialize)));
   }
 
   // Creates a new tree of given depth. If given leaves do not fill up all the
   // available ones, pads the remaining ones with zeroes
-  static async init<T extends Hashable>(
-    bb: Barretenberg,
+  static init<T>(
     depth: number,
-    values: T[]
-  ): Promise<Tree<T>> {
+    values: T[],
+    hash_cb: (x: T) => Fr,
+  ): Tree<T> {
     if (values.length != 1 << depth)
       throw new Error("incorrect number of values");
 
-    const ps = new Array(1 << (depth + 1));
-    ps[0] = Promise.resolve(Fr.ZERO);
-    for (let node_i = ps.length - 1; node_i >= 1; --node_i) {
-      if (node_i >= (1 << depth)) {
-        // leaf
-        const leaf_i = node_i - (1 << depth);
-        ps[node_i] = values[leaf_i].hash(bb);
-      } else {
-        // inner node
-        ps[node_i] = Tree.node_hash(bb,
-          await ps[node_i * 2],
-          await ps[node_i * 2 + 1],
-        );
-      }
-    }
+    const nodes = merkle_tree(depth, values.map((x, i, ar) => fr_serialize(hash_cb(x))), "0")
+      .map(fr_deserialize);
 
-    return new Tree(bb, depth, await Promise.all(ps), values);
+    return new Tree(depth, nodes, values, hash_cb);
   }
 
   root(): Fr {
     return this.nodes[1];
+  }
+
+  leaf(i: number): Fr {
+    const index = i + (1 << this.depth);
+    return this.nodes[index];
   }
 
   readLeaf(i: number): [MerkleProof, T] {
@@ -76,23 +72,65 @@ export class Tree<T extends Hashable> implements Hashable {
     return [prf, this.values[i]];
   }
 
-  async updateLeaf(i: number, x: T): Promise<void> {
+  updateLeaf(i: number, x: T) {
     let node = i + (1 << this.depth);
     this.values[i] = x;
-    this.nodes[node] = await x.hash(this.bb);
+    this.nodes[node] = this.hash_cb(x);
     node = node >> 1;
+    // const branch = merkle_branch
     while (node >= 1) {
       const left_child = node << 1;
       const right_child = left_child ^ 1;
-      this.nodes[node] = await Tree.node_hash(this.bb,
+      this.nodes[node] = Tree.node_hash(
         this.nodes[left_child],
         this.nodes[right_child]
       );
+      node = node >> 1;
     }
   }
 
-  async hash(_: Barretenberg): Promise<Fr> {
-    return this.root();
+  clone(): Tree<T> {
+    return new Tree(this.depth, this.nodes.slice(), this.values.slice(), this.hash_cb);
   }
 
+  serialize(): Buffer {
+    const size = 4 + (1 << (this.depth + 1) + 1 << this.depth) * 32;
+    const w = new BinaryWriter(size);
+
+    w.writeU32(this.depth);
+    for (const node of this.nodes) {
+      w.writeBuffer(bigintToBuffer(node));
+    }
+
+    for (const value of this.values) {
+      // FIXME: Can't implement Serde for bigint, can't constrain T by Serde OR bigint. Need to fix this.
+      if (typeof value === 'bigint') {
+        w.writeU256(value);
+      } else {
+        w.writeBuffer((value as unknown as Serde).serialize());
+      }
+    }
+
+    return w.toBuffer();
+  }
+
+  deserialize(bytes: Buffer, defaultValue: () => T): void {
+    const r = new BinaryReader(bytes);
+    this.depth = r.readU32();
+
+    for (let i = 0; i < (1 << (this.depth + 1)); i++) {
+      this.nodes.push(r.readU256());
+    }
+
+    for (let i = 0; i < (1 << this.depth); i++) {
+      const value = defaultValue();
+      if (typeof value == 'bigint') {
+        this.values.push(r.readU256() as unknown as T);
+      } else {
+        (value as unknown as Serde).deserialize(r.buf.subarray(r.offset));
+        this.values.push(value);
+      }
+    }
+  }
 };
+
