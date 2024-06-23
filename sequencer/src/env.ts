@@ -1,6 +1,6 @@
 export const OPERATOR_SK: string = required('OPERATOR_SK', str);
 export const RPC_URL: string = required('RPC_URL', str);
-export const MASTER_SK: Buffer = required('MASTER_SK', buffer);
+export const MASTER_SK: string = required('MASTER_SK', str);
 export const ROLLUP_CONTRACT_ADDRESS: string = required('ROLLUP_CONTRACT_ADDRESS', str);
 export const BLOCK_TIME_INTERVAL: number = parseInt(process.env.BLOCK_TIME_INTERVAL || '10000');
 export const GENESIS_BALANCE: bigint = BigInt(process.env.GENESIS_BALANCE || 10n ** 50n);
