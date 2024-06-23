@@ -39,14 +39,18 @@ services:
       context: .
       dockerfile: storage-node/Dockerfile
     depends_on:
-      - rollup-node
+      - sequencer-node
     networks:
       - app-network
     environment:
       - PORT=3001
-      - MASTER=http://rollup-node:3000
+      - SEQUENCER_URL=http://sequencer-node:3000
+      - NODE_SK=
+      - VIRTUAL_HOST=node.ss.testnet.zeropool.network
+      - LETSENCRYPT_HOST=node.ss.testnet.zeropool.network
+      - LETSENCRYPT_EMAIL=mail@test.com
     volumes:
-      - files:/app/storage-node/files
+      - node_data:/app/storage-node/data
 
   sequencer:
     container_name: sequencer
@@ -58,26 +62,34 @@ services:
       - app-network
     environment:
       - PORT=3000
+      - OPERATOR_SK=
+      - RPC_UR=
+      - MASTER_SK=
+      - ROLLUP_CONTRACT_ADDRESS=
+      - MOCK_BLOCKCHAIN=false
+      - VIRTUAL_HOST=sequencer.ss.testnet.zeropool.network
+      - LETSENCRYPT_HOST=sequencer.ss.testnet.zeropool.network
+      - LETSENCRYPT_EMAIL=mail@test.com
     volumes:
-      - accounts:/app/sequencer/accounts
+      - sequencer_data:/app/sequencer/data
 
   client-app:
     container_name: client-app
     depends_on:
       - storage-node
-      - rollup-node
+      - sequencer-node
     restart: always
     build:
       context: .
       dockerfile: client-app/Dockerfile
       args:
-        - PUBLIC_ROLLUP_API_URL=https://insideout.codes/api/rollup
-        - PUBLIC_NODE_API_URL=https://insideout.codes/api/storage
+        - PUBLIC_SEQUENCER_API_URL=https://sequencer.ss.testnet.zeropool.network/
+        - PUBLIC_NODE_API_URL=https://node.ss.testnet.zeropool.network/
     networks:
       - app-network
     environment:
-      - VIRTUAL_HOST=insideout.codes
-      - LETSENCRYPT_HOST=insideout.codes
+      - VIRTUAL_HOST=ss.testnet.zeropool.network
+      - LETSENCRYPT_HOST=ss.testnet.zeropool.network
       - LETSENCRYPT_EMAIL=mail@test.com
 
 volumes:
@@ -87,7 +99,8 @@ volumes:
   acme:
   conf:
   files:
-  accounts:
+  sequencer_data:
+  node_data:
 
 
 networks:

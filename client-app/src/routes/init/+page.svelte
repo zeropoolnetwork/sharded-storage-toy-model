@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { initHDWallet, initWeb3Modal } from '$lib';
+	import { onMount } from 'svelte';
 
 	let mnemonic = '';
 
@@ -24,6 +25,14 @@
 </script>
 
 <div class="border rounded-lg p-4 w-1/3">
+	<div class="flex justify-center mt-4">
+		<button
+			on:click={connectWallet}
+			class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+		>
+			Connect Wallet
+		</button>
+	</div>
 	<div class="flex space-x-2">
 		<input
 			bind:value={mnemonic}
@@ -36,14 +45,6 @@
 			class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded"
 		>
 			Init
-		</button>
-	</div>
-	<div class="flex space-x-2 mt-4">
-		<button
-			on:click={connectWallet}
-			class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-		>
-			Connect Wallet
 		</button>
 	</div>
 </div>
