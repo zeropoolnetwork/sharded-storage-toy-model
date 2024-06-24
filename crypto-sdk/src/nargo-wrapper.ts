@@ -35,12 +35,15 @@ export function prove(nargo_project_path: string, inputs: ProverToml): string {
   } catch (e) {
     throw e;
   } finally {
-    execSync("rm -rf ${tempDirPath}");
+    execSync(`
+      set -xefu
+      rm -r ${tempDirPath}
+    `);
   }
 }
 
 export function verify(nargo_project_path: string, inputs: VerifierToml, proof: string): Boolean {
-  const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-prover-'));
+  const tempDirPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sharded-storage-verifier-'));
   const tempFilePath = path.join(tempDirPath, 'Verifier.toml');
 
   try {
@@ -65,6 +68,9 @@ export function verify(nargo_project_path: string, inputs: VerifierToml, proof: 
   } catch (e) {
     throw e;
   } finally {
-    execSync("rm -rf ${tempDirPath}");
+    execSync(`
+      set -xefu
+      rm -r ${tempDirPath}
+    `);
   }
 }
