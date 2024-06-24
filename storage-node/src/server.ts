@@ -1,98 +1,68 @@
 import { program } from 'commander';
 import io from 'socket.io-client';
-import { SparseMerkleTree, MapNodeStorage } from './sparse-merkle-tree';
-import { MerkleTree } from './merkle-tree';
-import { Fr } from '@aztec/bb.js';
-import { FileMetadata, FileStorage } from './file-storage';
-import express, { Express, Request, Response } from 'express';
-import cors from 'cors';
+import { AccountData, init, storage, updateAccountData } from './state';
+
+import { UploadAndMineResponse, mineSegment, uploadSegments } from './handlers';
+import { MiningResult } from 'zpst-crypto-sdk/src/mining';
+import { startHttpServer } from './http-server';
+import { SEQUENCER_URL } from './env';
+
+async function main() {
+  await init();
+
+  program
+    .option('-p, --port <port>', 'Port to listen on', '3001')
+    .option('-s, --sequencer <address>', 'Sequencer URL');
+
+  program.parse();
+  const options = program.opts();
+
+  await startHttpServer(options.port);
+
+  const seqUrl = options.sequencer || SEQUENCER_URL;
+  console.log('Connecting to master node:', seqUrl);
+  const socket = io(seqUrl, { autoConnect: true });
+
+  socket.on('connect', () => {
+    console.log('Connected to master node');
 
 
-// async function test() {
-//   const leaves = [];
-//   for (let i = 0; i < 2 ** 10; i++) {
-//     leaves.push(Fr.random());
-//   }
+    socket.emit('register', '0x' + BigInt(0).toString(16), (res: AccountData | undefined) => {
+      if (res) {
+        console.log('Account data:', res);
+        updateAccountData(res);
+      } else {
+        console.error('Account not found');
+      }
+    });
+  });
 
-//   console.log('Start');
-//   const start = Date.now();
-//   const tree = await MerkleTree.new(leaves);
-//   const end = Date.now();
-//   console.log('End:', end - start, 'ms');
+  socket.on('disconnect', () => {
+    console.log('Disconnected from master node');
+  });
 
-//   console.log('Root:', tree.getRoot().toString());
-// }
+  socket.on('error', (err) => {
+    console.error('Socket error:', err);
+  });
 
-// test();
+  socket.on('uploadAndMine', async (segments: { id: string, data: Buffer }[], roValues: bigint[], roOffset: bigint, cb: (res: UploadAndMineResponse | { error: string }) => void) => {
+    try {
+      console.log('Uploading segments:', segments);
 
-const storage = new FileStorage(2 ** 12);
+      for (const seg of segments) {
+        await storage.write(seg.id, seg.data);
+      }
 
-program
-  .option('-p, --port <port>', 'Port to listen on', '3001')
-  .option('-m, --master <address>', 'Master node (coordinator) URL');
+      const res = await mineSegment(roValues, roOffset);
+      cb(res);
+    } catch (err) {
+      console.error('Mining error:', err);
+      cb({ error: String(err) });
+    }
+  });
+}
 
-program.parse();
-const options = program.opts();
-
-console.log('Connecting to master node:', options.master || process.env.MASTER);
-const socket = io(options.master || process.env.MASTER, { autoConnect: true });
-
-socket.on('connect', () => {
-  console.log('Connected to master node');
-});
-
-socket.on('disconnect', () => {
-  console.log('Disconnected from master node');
-});
-
-socket.on('error', (err) => {
-  console.error('Socket error:', err);
-});
-
-// socket.on('reqFile', async (fileId: string, callback: (data: Buffer | undefined) => void) => {
-//   console.log('Requested file:', fileId);
-
-//   const data = await storage.read(fileId);
-
-//   callback(data);
-// });
-
-socket.on('uploadFile', async (data: Buffer, name: string, metadata: FileMetadata) => {
-  console.log('Saving file:', name, metadata);
-  try {
-    await storage.reserve(name, metadata);
-    await storage.write(name, data);
-  } catch (err) {
-    console.error('Error uploading file:', err);
-    return;
-  }
-});
-
-const app: Express = express();
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.raw({ type: '*/*' }));
-app.use(cors())
-
-app.get('/files/:id', async (req: Request, res: Response) => {
-  const data = await storage.read(req.params.id);
-
-  if (!data) {
-    res.status(404).send('File not found');
-    return;
-  }
-
-  // FIXME: only supports JPEG for now
-  res.setHeader('Content-Type', 'image/jpeg');
-
-  res.send(data);
-});
-
-app.get('/status', async (req: Request, res: Response) => {
-  res.send({ status: 'OK' });
-});
-
-app.listen(process.env.PORT || options.port, () => {
-  console.log('Listening on port', options.port);
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });

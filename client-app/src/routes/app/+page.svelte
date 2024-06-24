@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { initHDWallet, getAddress } from '$lib';
+	import { initHDWallet, isWalletInitialized } from '$lib';
 	import { getLatestBlocks } from '$lib/api';
 	import {
 		uploadFile,
-		mint,
+		faucet,
 		getAccount,
 		checkStatus,
-		ROLLUP_API_URL,
+		SEQUENCER_API_URL,
 		NODE_API_URL
 	} from '$lib/api';
 	import type { Block } from 'zpst-common';
@@ -23,30 +23,30 @@
 		input.onchange = async (_) => {
 			// @ts-ignore
 			let files = Array.from(input.files);
-			await uploadFile(files[0] as File, getAddress());
+
+			// FIXME: Replace with signature
+			await uploadFile(files[0] as File, 'FIXME');
 			await update();
 		};
 		input.click();
 	};
 
 	const handleMint = async () => {
-		await mint(getAddress(), 100);
-		balance += 100;
+		await faucet(0, 100n);
+		balance += 100.0;
 	};
 
 	async function load() {
-		try {
-			await initHDWallet();
+		if (isWalletInitialized()) {
 			await update();
-		} catch (err) {
-			console.error(err);
+		} else {
 			return goto('/init');
 		}
 	}
 
 	// TODO: Proper state management
 	async function update() {
-		const account = await getAccount(getAddress());
+		const account = await getAccount('FIXME');
 		blocks = await getLatestBlocks();
 		files = account.files.map((name: string) => ({
 			name,
@@ -81,7 +81,7 @@
 		<div class="mb-4">
 			<div class="flex justify-between">
 				<p class="text-sm text-gray-300">
-					Rollup: {ROLLUP_API_URL}
+					Sequencer: {SEQUENCER_API_URL}
 					{#if rollupStatus}
 						<span class="text-green-500">✅</span>
 					{:else}
@@ -100,7 +100,7 @@
 		</div>
 		<div class="mb-4">
 			<div class="mb-4">
-				<p class="text-sm text-gray-600 overflow-hidden">Address: {getAddress()}</p>
+				<p class="text-sm text-gray-600 overflow-hidden">Address: {'FIXME'}</p>
 			</div>
 			<div class="flex flex-row items-baseline space-x-2">
 				<span class="text-sm text-gray-600">Balance: {balance}</span>
