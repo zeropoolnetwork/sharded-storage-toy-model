@@ -45,6 +45,10 @@ describe('State', () => {
       data: fr_serialize(st.files.root()),
     };
 
+    const now = 0n;
+    // These are all files contents stored by a storage node. Initially all contain zeroes
+    let files_stored: Tree<Fr>[] = pad_array([], 1 << sett.acc_data_tree_depth, blank_file_contents(sett.file_tree_depth));
+
     // ===== Account transactions =====
 
     // Transcation #1: master 10 tokens → user-1
@@ -67,46 +71,6 @@ describe('State', () => {
 
     // Collect account transactions into one array
     const acc_txs = pad_array([txex1, txex2, txex3], sett.account_tx_per_block, blank_account_tx(sett));
-
-    // ===== File transactions =====
-
-    // reserve the master nonce for special 0th file
-    const self_file_tx_nonce = nonce++;
-
-    const now = 0n;
-    // These are all files contents stored by a storage node. Initially all contain zeroes
-    let files_stored: Tree<Fr>[] = pad_array([], 1 << sett.acc_data_tree_depth, blank_file_contents(sett.file_tree_depth));
-
-    // File Transcation #1: master creates a file #0 with all 5s
-    // 
-    // this is file contents, seen only by user and the storage node
-    const fives: Tree<Fr> = Tree.init(
-      sett.file_tree_depth,
-      pad_array([], 1 << sett.file_tree_depth, BigInt(5)),
-      id
-    );
-    // file tx is formed and signed by the user (doesn't need full state)
-    const ftx1 = await prep_file_tx(10n, 0, 0, fives.root(), sk, nonce++);
-    // txex is built by the sequencer (needs full state)
-    const ftxex1 = await st.build_file_txex(now, fives.root(), ftx1);
-    files_stored[0] = fives;
-
-    // File Transcation #2: user-2 adds another file #1 that contains sequence of numbers 0, 1, …
-    const count_file: Tree<Fr> = await Tree.init(
-      sett.file_tree_depth,
-      Array.from(
-        { length: 1 << sett.file_tree_depth },
-        (_, i) => BigInt(i),
-      ),
-      id
-    );
-    const ftx2 = await prep_file_tx(100n, 2, 1, count_file.root(), rec2_sk, nonce2++);
-    const ftxex2 = await st.build_file_txex(now, count_file.root(), ftx2);
-    files_stored[1] = count_file;
-
-    // Collect file transactions. One transaction that saves the txes is
-    // missing
-    const file_txs_incomplete = pad_array([ftxex1, ftxex2], sett.file_tx_per_block - 1, blank_file_tx(sett));
 
     // ===== Mining transactions =====
 
@@ -140,6 +104,39 @@ describe('State', () => {
     // const mining_txs = pad_array([mtxex1], sett.mining_tx_per_block, blank_mining_tx(sett));
     const mining_txs = [mtxex1];
 
+    // ===== File transactions =====
+
+    // File Transcation #1: master creates a file #0 with all 5s
+    // 
+    // this is file contents, seen only by user and the storage node
+    const fives: Tree<Fr> = Tree.init(
+      sett.file_tree_depth,
+      pad_array([], 1 << sett.file_tree_depth, BigInt(5)),
+      id
+    );
+    // file tx is formed and signed by the user (doesn't need full state)
+    const ftx1 = await prep_file_tx(10n, 0, 0, fives.root(), sk, nonce++);
+    // txex is built by the sequencer (needs full state)
+    const ftxex1 = await st.build_file_txex(now, fives.root(), ftx1);
+    files_stored[0] = fives;
+
+    // File Transcation #2: user-2 adds another file #1 that contains sequence of numbers 0, 1, …
+    const count_file: Tree<Fr> = await Tree.init(
+      sett.file_tree_depth,
+      Array.from(
+        { length: 1 << sett.file_tree_depth },
+        (_, i) => BigInt(i),
+      ),
+      id
+    );
+    const ftx2 = await prep_file_tx(100n, 2, 1, count_file.root(), rec2_sk, nonce2++);
+    const ftxex2 = await st.build_file_txex(now, count_file.root(), ftx2);
+    files_stored[1] = count_file;
+
+    // Collect file transactions. One transaction that saves the txes is
+    // missing
+    const file_txs_incomplete = pad_array([ftxex1, ftxex2], sett.file_tx_per_block - 1, blank_file_tx(sett));
+
     // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
     const self_file_index = (1 << sett.acc_data_tree_depth) - 1; // say, we put our data in the last slot
     const self_file_duration = 100n; // store the file for 100 ticks
@@ -156,8 +153,8 @@ describe('State', () => {
       pad_array(
         pack_tx(
           acc_txs.map((x) => x.tx),
-          [placeholder_file_tx, ...file_txs_incomplete.map((x) => x.tx)],
           mining_txs.map((x) => x.tx),
+          [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
         ),
         1 << sett.file_tree_depth,
         0n,
@@ -170,14 +167,15 @@ describe('State', () => {
       self_file_index,
       self_tx_data.root(),
       sk,
-      self_file_tx_nonce);
-    const ftxex_self = await st.build_file_txex(now, count_file.root(), ftx_self);
+      nonce++);
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
     files_stored[self_file_index] = self_tx_data;
 
     // prepend the special file tx to the all transactions
     const file_txs = [
+      ...file_txs_incomplete,
       ftxex_self,
-      ...file_txs_incomplete];
+    ];
 
     // Compute the new hash
     const new_st_root: Root = {
@@ -241,12 +239,13 @@ describe('State', () => {
 
     const sk = "mypassword";
     const pk = derivePublicKey(sk);
+    let nonce = 0n;
 
     let first_acc = new Account();
 
     first_acc.key = pk[0];
     first_acc.balance = bigIntToFr(1000000n);
-    first_acc.nonce = 0n;
+    first_acc.nonce = nonce;
     first_acc.random_oracle_nonce = 0n;
 
     let st = await State.genesisState(first_acc, sett);
@@ -256,9 +255,66 @@ describe('State', () => {
       data: fr_serialize(await st.files.root()),
     };
 
+    const now = 0n;
+    // These are all files contents stored by a storage node. Initially all contain zeroes
+    let files_stored: Tree<Fr>[] = pad_array([], 1 << sett.acc_data_tree_depth, blank_file_contents(sett.file_tree_depth));
+
+    const acc_txs = new Array(sett.account_tx_per_block).fill(blank_account_tx(sett));
+    const mining_txs = new Array(sett.mining_tx_per_block).fill(blank_mining_tx(sett));
+
+    // Collect file transactions. One transaction that saves the txes is
+    // missing
+    const file_txs_incomplete = pad_array([], sett.file_tx_per_block - 1, blank_file_tx(sett));
+
+    // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
+    const self_file_index = (1 << sett.acc_data_tree_depth) - 1; // say, we put our data in the last slot
+    const self_file_duration = 100n; // store the file for 100 ticks
+    const self_file_sender = 0; // master account owns the data
+    const placeholder_file_tx: FileTx = {
+      sender_index: self_file_sender.toString(),
+      data_index: self_file_index.toString(),
+      time_interval: fr_serialize(self_file_duration),
+      data: undefined as never,
+      nonce: undefined as never,
+    };
+    const self_tx_data = Tree.init(
+      sett.file_tree_depth,
+      pad_array(
+        pack_tx(
+          acc_txs.map((x) => x.tx),
+          mining_txs.map((x) => x.tx),
+          [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
+        ),
+        1 << sett.file_tree_depth,
+        0n,
+      ),
+      id
+    );
+    const ftx_self = await prep_file_tx(
+      self_file_duration,
+      self_file_sender,
+      self_file_index,
+      self_tx_data.root(),
+      sk,
+      nonce++);
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
+    files_stored[self_file_index] = self_tx_data;
+
+    // prepend the special file tx to the all transactions
+    const file_txs = [
+      ...file_txs_incomplete,
+      ftxex_self,
+    ];
+
+    const new_st_hash = await st.hash();
+    const new_st_root: Root = {
+      acc: fr_serialize(await st.accounts.root()),
+      data: fr_serialize(await st.files.root()),
+    };
+
     const pubInput: RollupPubInput = {
       old_root: fr_serialize(st_hash),
-      new_root: fr_serialize(st_hash),
+      new_root: fr_serialize(new_st_hash),
       now: "0",
       oracle: {
         offset: "0",
@@ -267,19 +323,20 @@ describe('State', () => {
     };
     const pubInputHash = pub_input_hash(sett, pubInput).toString();
 
+
     let input: RollupInput = {
       public: pubInput,
       tx: {
-        txs: new Array(sett.account_tx_per_block).fill(blank_account_tx(sett)),
+        txs: acc_txs,
       },
       file: {
-        txs: new Array(sett.file_tx_per_block).fill(blank_file_tx(sett)),
+        txs: file_txs,
       },
       mining: {
-        txs: new Array(sett.mining_tx_per_block).fill(blank_mining_tx(sett)),
+        txs: mining_txs,
       },
       old_root: st_root,
-      new_root: st_root,
+      new_root: new_st_root,
     };
 
     const prover_data: ProverToml = {

@@ -227,8 +227,8 @@ export async function prep_account_tx(
 /// Packs all user-created transactions into a buffer to be stored inside Sharded Storage itself
 export function pack_tx(
   acc_txs: AccountTx[],
-  file_txs: FileTx[],
   mining_txs: MiningTx[],
+  file_txs: FileTx[],
 ): Fr[] {
   const sett = defShardedStorageSettings;
 
@@ -253,8 +253,16 @@ export function pack_tx(
   }
 
 
-  (() => { // i = 0
-      let i = 0;
+  for (let i = 0; i < sett.file_tx_per_block - 1; ++i) {
+      let offset = 4*sett.account_tx_per_block + 2*sett.mining_tx_per_block + 4*i;
+      block_data[offset] = file_txs[i].sender_index;
+      block_data[offset+1] = file_txs[i].data_index;
+      block_data[offset+2] = file_txs[i].time_interval;
+      block_data[offset+3] = file_txs[i].data;
+  }
+
+  (() => { // i = last
+      let i = sett.file_tx_per_block - 1;
       let offset = 4*sett.account_tx_per_block + 2*sett.mining_tx_per_block + 4*i;
       block_data[offset] = file_txs[i].sender_index;
       block_data[offset+1] = file_txs[i].data_index;
@@ -262,14 +270,6 @@ export function pack_tx(
       block_data[offset+3] = "0";
   })();
 
-
-  for (let i = 1; i < sett.file_tx_per_block; ++i) {
-      let offset = 4*sett.account_tx_per_block + 2*sett.mining_tx_per_block + 4*i;
-      block_data[offset] = file_txs[i].sender_index;
-      block_data[offset+1] = file_txs[i].data_index;
-      block_data[offset+2] = file_txs[i].time_interval;
-      block_data[offset+3] = file_txs[i].data;
-  }
 
   return block_data.map(fr_deserialize);
 }

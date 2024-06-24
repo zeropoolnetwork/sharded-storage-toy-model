@@ -26,8 +26,16 @@ def gen_block_compute_root():
 
 
 
+    for i in range(0,MAX_FILE_PER_BLOCK - 1):
+        offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i
+        block_data[offset] = f"input.file.txs[{i}].tx.sender_index"
+        block_data[offset+1] = f"input.file.txs[{i}].tx.data_index"
+        block_data[offset+2] = f"input.file.txs[{i}].tx.time_interval"
+        block_data[offset+3] = f"input.file.txs[{i}].tx.data"
     
-    i = 0
+
+    
+    i = MAX_FILE_PER_BLOCK - 1
     offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i
     block_data[offset] = f"input.file.txs[{i}].tx.sender_index"
     block_data[offset+1] = f"input.file.txs[{i}].tx.data_index"
@@ -35,14 +43,6 @@ def gen_block_compute_root():
     block_data[offset+3] = "0";
     
 
-
-    for i in range(1,MAX_FILE_PER_BLOCK):
-        offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i
-        block_data[offset] = f"input.file.txs[{i}].tx.sender_index"
-        block_data[offset+1] = f"input.file.txs[{i}].tx.data_index"
-        block_data[offset+2] = f"input.file.txs[{i}].tx.time_interval"
-        block_data[offset+3] = f"input.file.txs[{i}].tx.data"
-    
 
     return gen_mt_compute_root(block_data)
 
@@ -80,5 +80,5 @@ rows, root = gen_block_compute_root()
 
 print("fn assert_block_data_generated(input: RollupInput) {")
 print("\t"+"\n\t".join(rows))
-print(f"\tassert(input.file.txs[0].tx.data == {root});")
+print(f"\tassert(input.file.txs[{MAX_FILE_PER_BLOCK - 1}].tx.data == {root});")
 print("}\n")

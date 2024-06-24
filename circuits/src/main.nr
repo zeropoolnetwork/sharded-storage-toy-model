@@ -105,7 +105,7 @@ fn assert_block_data_generated(input: RollupInput) {
 	let cell_0_15 = poseidon2([input.tx.txs[7].tx.receiver_key, input.tx.txs[7].tx.amount]);
 	let cell_0_16 = poseidon2([input.mining.txs[0].tx.sender_index, input.mining.txs[0].tx.random_oracle_nonce]);
 	let cell_0_17 = poseidon2([input.file.txs[0].tx.sender_index, input.file.txs[0].tx.data_index]);
-	let cell_0_18 = poseidon2([input.file.txs[0].tx.time_interval, 0]);
+	let cell_0_18 = poseidon2([input.file.txs[0].tx.time_interval, input.file.txs[0].tx.data]);
 	let cell_0_19 = poseidon2([input.file.txs[1].tx.sender_index, input.file.txs[1].tx.data_index]);
 	let cell_0_20 = poseidon2([input.file.txs[1].tx.time_interval, input.file.txs[1].tx.data]);
 	let cell_0_21 = poseidon2([input.file.txs[2].tx.sender_index, input.file.txs[2].tx.data_index]);
@@ -119,7 +119,7 @@ fn assert_block_data_generated(input: RollupInput) {
 	let cell_0_29 = poseidon2([input.file.txs[6].tx.sender_index, input.file.txs[6].tx.data_index]);
 	let cell_0_30 = poseidon2([input.file.txs[6].tx.time_interval, input.file.txs[6].tx.data]);
 	let cell_0_31 = poseidon2([input.file.txs[7].tx.sender_index, input.file.txs[7].tx.data_index]);
-	let cell_0_32 = poseidon2([input.file.txs[7].tx.time_interval, input.file.txs[7].tx.data]);
+	let cell_0_32 = poseidon2([input.file.txs[7].tx.time_interval, 0]);
 	let cell_1_0 = poseidon2([cell_0_0, cell_0_1]);
 	let cell_1_1 = poseidon2([cell_0_2, cell_0_3]);
 	let cell_1_2 = poseidon2([cell_0_4, cell_0_5]);
@@ -160,7 +160,7 @@ fn assert_block_data_generated(input: RollupInput) {
 	let cell_7_0 = poseidon2([cell_6_0, empty_cells_7]);
 	let cell_8_0 = poseidon2([cell_7_0, empty_cells_8]);
 	let cell_9_0 = poseidon2([cell_8_0, empty_cells_9]);
-	assert(input.file.txs[0].tx.data == cell_9_0);
+	assert(input.file.txs[7].tx.data == cell_9_0);
 }
 
 
@@ -246,9 +246,9 @@ fn main(
 
     let acc_root = input.tx.apply(acc_root);
 
-    let (acc_root, data_root) = input.file.apply(acc_root, data_root, input.public.now);
-
     let acc_root = input.mining.apply(acc_root, data_root, input.public.oracle);
+
+    let (acc_root, data_root) = input.file.apply(acc_root, data_root, input.public.now);
 
     // check the new roots
     assert_eq(
