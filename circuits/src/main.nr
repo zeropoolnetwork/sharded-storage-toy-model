@@ -76,6 +76,93 @@ impl RollupPubInput {
     }
 }
 
+fn assert_block_data_generated(input: RollupInput) {
+	let empty_cells_0 = 0;
+	let empty_cells_1 = poseidon2([empty_cells_0, empty_cells_0]);
+	let empty_cells_2 = poseidon2([empty_cells_1, empty_cells_1]);
+	let empty_cells_3 = poseidon2([empty_cells_2, empty_cells_2]);
+	let empty_cells_4 = poseidon2([empty_cells_3, empty_cells_3]);
+	let empty_cells_5 = poseidon2([empty_cells_4, empty_cells_4]);
+	let empty_cells_6 = poseidon2([empty_cells_5, empty_cells_5]);
+	let empty_cells_7 = poseidon2([empty_cells_6, empty_cells_6]);
+	let empty_cells_8 = poseidon2([empty_cells_7, empty_cells_7]);
+	let empty_cells_9 = poseidon2([empty_cells_8, empty_cells_8]);
+	let cell_0_0 = poseidon2([input.tx.txs[0].tx.sender_index, input.tx.txs[0].tx.receiver_index]);
+	let cell_0_1 = poseidon2([input.tx.txs[0].tx.receiver_key, input.tx.txs[0].tx.amount]);
+	let cell_0_2 = poseidon2([input.tx.txs[1].tx.sender_index, input.tx.txs[1].tx.receiver_index]);
+	let cell_0_3 = poseidon2([input.tx.txs[1].tx.receiver_key, input.tx.txs[1].tx.amount]);
+	let cell_0_4 = poseidon2([input.tx.txs[2].tx.sender_index, input.tx.txs[2].tx.receiver_index]);
+	let cell_0_5 = poseidon2([input.tx.txs[2].tx.receiver_key, input.tx.txs[2].tx.amount]);
+	let cell_0_6 = poseidon2([input.tx.txs[3].tx.sender_index, input.tx.txs[3].tx.receiver_index]);
+	let cell_0_7 = poseidon2([input.tx.txs[3].tx.receiver_key, input.tx.txs[3].tx.amount]);
+	let cell_0_8 = poseidon2([input.tx.txs[4].tx.sender_index, input.tx.txs[4].tx.receiver_index]);
+	let cell_0_9 = poseidon2([input.tx.txs[4].tx.receiver_key, input.tx.txs[4].tx.amount]);
+	let cell_0_10 = poseidon2([input.tx.txs[5].tx.sender_index, input.tx.txs[5].tx.receiver_index]);
+	let cell_0_11 = poseidon2([input.tx.txs[5].tx.receiver_key, input.tx.txs[5].tx.amount]);
+	let cell_0_12 = poseidon2([input.tx.txs[6].tx.sender_index, input.tx.txs[6].tx.receiver_index]);
+	let cell_0_13 = poseidon2([input.tx.txs[6].tx.receiver_key, input.tx.txs[6].tx.amount]);
+	let cell_0_14 = poseidon2([input.tx.txs[7].tx.sender_index, input.tx.txs[7].tx.receiver_index]);
+	let cell_0_15 = poseidon2([input.tx.txs[7].tx.receiver_key, input.tx.txs[7].tx.amount]);
+	let cell_0_16 = poseidon2([input.mining.txs[0].tx.sender_index, input.mining.txs[0].tx.random_oracle_nonce]);
+	let cell_0_17 = poseidon2([input.file.txs[0].tx.sender_index, input.file.txs[0].tx.data_index]);
+	let cell_0_18 = poseidon2([input.file.txs[0].tx.time_interval, 0]);
+	let cell_0_19 = poseidon2([input.file.txs[1].tx.sender_index, input.file.txs[1].tx.data_index]);
+	let cell_0_20 = poseidon2([input.file.txs[1].tx.time_interval, input.file.txs[1].tx.data]);
+	let cell_0_21 = poseidon2([input.file.txs[2].tx.sender_index, input.file.txs[2].tx.data_index]);
+	let cell_0_22 = poseidon2([input.file.txs[2].tx.time_interval, input.file.txs[2].tx.data]);
+	let cell_0_23 = poseidon2([input.file.txs[3].tx.sender_index, input.file.txs[3].tx.data_index]);
+	let cell_0_24 = poseidon2([input.file.txs[3].tx.time_interval, input.file.txs[3].tx.data]);
+	let cell_0_25 = poseidon2([input.file.txs[4].tx.sender_index, input.file.txs[4].tx.data_index]);
+	let cell_0_26 = poseidon2([input.file.txs[4].tx.time_interval, input.file.txs[4].tx.data]);
+	let cell_0_27 = poseidon2([input.file.txs[5].tx.sender_index, input.file.txs[5].tx.data_index]);
+	let cell_0_28 = poseidon2([input.file.txs[5].tx.time_interval, input.file.txs[5].tx.data]);
+	let cell_0_29 = poseidon2([input.file.txs[6].tx.sender_index, input.file.txs[6].tx.data_index]);
+	let cell_0_30 = poseidon2([input.file.txs[6].tx.time_interval, input.file.txs[6].tx.data]);
+	let cell_0_31 = poseidon2([input.file.txs[7].tx.sender_index, input.file.txs[7].tx.data_index]);
+	let cell_0_32 = poseidon2([input.file.txs[7].tx.time_interval, input.file.txs[7].tx.data]);
+	let cell_1_0 = poseidon2([cell_0_0, cell_0_1]);
+	let cell_1_1 = poseidon2([cell_0_2, cell_0_3]);
+	let cell_1_2 = poseidon2([cell_0_4, cell_0_5]);
+	let cell_1_3 = poseidon2([cell_0_6, cell_0_7]);
+	let cell_1_4 = poseidon2([cell_0_8, cell_0_9]);
+	let cell_1_5 = poseidon2([cell_0_10, cell_0_11]);
+	let cell_1_6 = poseidon2([cell_0_12, cell_0_13]);
+	let cell_1_7 = poseidon2([cell_0_14, cell_0_15]);
+	let cell_1_8 = poseidon2([cell_0_16, cell_0_17]);
+	let cell_1_9 = poseidon2([cell_0_18, cell_0_19]);
+	let cell_1_10 = poseidon2([cell_0_20, cell_0_21]);
+	let cell_1_11 = poseidon2([cell_0_22, cell_0_23]);
+	let cell_1_12 = poseidon2([cell_0_24, cell_0_25]);
+	let cell_1_13 = poseidon2([cell_0_26, cell_0_27]);
+	let cell_1_14 = poseidon2([cell_0_28, cell_0_29]);
+	let cell_1_15 = poseidon2([cell_0_30, cell_0_31]);
+	let cell_1_16 = poseidon2([cell_0_32, empty_cells_1]);
+	let cell_2_0 = poseidon2([cell_1_0, cell_1_1]);
+	let cell_2_1 = poseidon2([cell_1_2, cell_1_3]);
+	let cell_2_2 = poseidon2([cell_1_4, cell_1_5]);
+	let cell_2_3 = poseidon2([cell_1_6, cell_1_7]);
+	let cell_2_4 = poseidon2([cell_1_8, cell_1_9]);
+	let cell_2_5 = poseidon2([cell_1_10, cell_1_11]);
+	let cell_2_6 = poseidon2([cell_1_12, cell_1_13]);
+	let cell_2_7 = poseidon2([cell_1_14, cell_1_15]);
+	let cell_2_8 = poseidon2([cell_1_16, empty_cells_2]);
+	let cell_3_0 = poseidon2([cell_2_0, cell_2_1]);
+	let cell_3_1 = poseidon2([cell_2_2, cell_2_3]);
+	let cell_3_2 = poseidon2([cell_2_4, cell_2_5]);
+	let cell_3_3 = poseidon2([cell_2_6, cell_2_7]);
+	let cell_3_4 = poseidon2([cell_2_8, empty_cells_3]);
+	let cell_4_0 = poseidon2([cell_3_0, cell_3_1]);
+	let cell_4_1 = poseidon2([cell_3_2, cell_3_3]);
+	let cell_4_2 = poseidon2([cell_3_4, empty_cells_4]);
+	let cell_5_0 = poseidon2([cell_4_0, cell_4_1]);
+	let cell_5_1 = poseidon2([cell_4_2, empty_cells_5]);
+	let cell_6_0 = poseidon2([cell_5_0, cell_5_1]);
+	let cell_7_0 = poseidon2([cell_6_0, empty_cells_7]);
+	let cell_8_0 = poseidon2([cell_7_0, empty_cells_8]);
+	let cell_9_0 = poseidon2([cell_8_0, empty_cells_9]);
+	assert(input.file.txs[0].tx.data == cell_9_0);
+}
+
 
 #[export]
 fn main(
@@ -103,48 +190,52 @@ fn main(
     
     
     // compute block data
-    {
-        let mut block_data = [0; 4*MAX_FILE_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*MAX_TX_PER_BLOCK];
+    // {
+    //     let mut block_data = [0; 4*MAX_FILE_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*MAX_TX_PER_BLOCK];
 
-        for i in 0..MAX_TX_PER_BLOCK {
-            let offset = 4*i;
-            block_data[offset] = input.tx.txs[i].tx.sender_index;
-            block_data[offset+1] = input.tx.txs[i].tx.receiver_index;
-            block_data[offset+2] = input.tx.txs[i].tx.receiver_key;
-            block_data[offset+3] = input.tx.txs[i].tx.amount;
-        }
+    //     for i in 0..MAX_TX_PER_BLOCK {
+    //         let offset = 4*i;
+    //         block_data[offset] = input.tx.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.tx.txs[i].tx.receiver_index;
+    //         block_data[offset+2] = input.tx.txs[i].tx.receiver_key;
+    //         block_data[offset+3] = input.tx.txs[i].tx.amount;
+    //     }
 
-        for i in 0..MAX_MINING_PER_BLOCK {
-            let offset = 4*MAX_TX_PER_BLOCK + 2*i;
-            block_data[offset] = input.mining.txs[i].tx.sender_index;
-            block_data[offset+1] = input.mining.txs[i].tx.random_oracle_nonce;
-        }
-
-
-        { // i = 0
-            let i = 0;
-            let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
-            block_data[offset] = input.file.txs[i].tx.sender_index;
-            block_data[offset+1] = input.file.txs[i].tx.data_index;
-            block_data[offset+2] = input.file.txs[i].tx.time_interval;
-            block_data[offset+3] = 0;
-        }
+    //     for i in 0..MAX_MINING_PER_BLOCK {
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*i;
+    //         block_data[offset] = input.mining.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.mining.txs[i].tx.random_oracle_nonce;
+    //     }
 
 
-        for i in 1..MAX_FILE_PER_BLOCK {
-            let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
-            block_data[offset] = input.file.txs[i].tx.sender_index;
-            block_data[offset+1] = input.file.txs[i].tx.data_index;
-            block_data[offset+2] = input.file.txs[i].tx.time_interval;
-            block_data[offset+3] = input.file.txs[i].tx.data;
-        }
+    //     { // i = 0
+    //         let i = 0;
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
+    //         block_data[offset] = input.file.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.file.txs[i].tx.data_index;
+    //         block_data[offset+2] = input.file.txs[i].tx.time_interval;
+    //         block_data[offset+3] = 0;
+    //     }
 
-        let empty_cells = [0; FILE_TREE_DEPTH];
 
-        let data_root = mt_compute_root(block_data, empty_cells);
+    //     for i in 1..MAX_FILE_PER_BLOCK {
+    //         let offset = 4*MAX_TX_PER_BLOCK + 2*MAX_MINING_PER_BLOCK + 4*i;
+    //         block_data[offset] = input.file.txs[i].tx.sender_index;
+    //         block_data[offset+1] = input.file.txs[i].tx.data_index;
+    //         block_data[offset+2] = input.file.txs[i].tx.time_interval;
+    //         block_data[offset+3] = input.file.txs[i].tx.data;
+    //     }
 
-        assert(input.file.txs[0].tx.data == data_root);
-    }
+    //     let empty_cells = [0; FILE_TREE_DEPTH];
+
+    //     let data_root = mt_compute_root(block_data, empty_cells);
+
+    //     assert(input.file.txs[0].tx.data == data_root);
+    // }
+
+
+    // Replace the above code with the generated one, because of nargo bugs
+    assert_block_data_generated(input);
 
 
 
