@@ -220,13 +220,13 @@ export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
   return { tx, assets };
 }
 
-export async function new_account_tx(
+export function new_account_tx(
   sender_index: number,
   sender_sk: EdDSAPoseidon,
   receiver_index: number,
   receiver_pk: Fr,
   amount: Fr
-): Promise<[AccountTx, SignaturePacked]> {
+): [AccountTx, SignaturePacked] {
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
     receiver_index: receiver_index.toString(),
@@ -272,7 +272,7 @@ export class State {
     return new State(accounts, files);
   }
 
-  async build_account_txex([tx, signature]: [AccountTx, SignaturePacked]): Promise<AccountTxEx> {
+  build_account_txex([tx, signature]: [AccountTx, SignaturePacked]): AccountTxEx {
 
     // calculate proof for the sender and update tree
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
@@ -290,7 +290,7 @@ export class State {
       sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
       sender_mod.key = sender.key;
     }
-    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+    this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     // calculate proof for the receiver and update proof
     const [receiver_prf, receiver] = this.accounts.readLeaf(Number(tx.receiver_index));
@@ -302,7 +302,7 @@ export class State {
     );
     receiver_mod.nonce = receiver.nonce;
     receiver_mod.random_oracle_nonce = receiver.random_oracle_nonce;
-    await this.accounts.updateLeaf(Number(tx.receiver_index), receiver_mod);
+    this.accounts.updateLeaf(Number(tx.receiver_index), receiver_mod);
 
     const assets: AccountTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
@@ -318,13 +318,13 @@ export class State {
     }
   }
 
-  async build_file_txex(
+  build_file_txex(
     now: bigint,
     data_hash: Fr,
     [tx, signature]: [FileTx, SignaturePacked]
-  ): Promise<FileTxEx> {
+  ): FileTxEx {
 
-    const sett = defShardedStorageSettings; 
+    const sett = defShardedStorageSettings;
 
     const fee = sett.storage_fee * BigInt(tx.time_interval);
 
@@ -344,7 +344,7 @@ export class State {
       sender_mod.random_oracle_nonce = sender.random_oracle_nonce;
       sender_mod.key = sender.key;
     }
-    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+    this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     // calculate proof for the receiver and update proof
     const [file_prf, file] = this.files.readLeaf(Number(tx.data_index));
@@ -354,7 +354,7 @@ export class State {
       owner: sender.key,
       data_hash: data_hash,
     });
-    await this.files.updateLeaf(Number(tx.data_index), file_mod);
+    this.files.updateLeaf(Number(tx.data_index), file_mod);
 
     const assets: FileTxAssets = {
       proof_sender: proof_to_noir(sender_prf),
@@ -370,13 +370,13 @@ export class State {
     }
   }
 
-  async build_mining_txex(
+  build_mining_txex(
     mi: MiningResult,
     [proof_word, word]: [MerkleProof, Fr],
     [tx, signature]: [MiningTx, SignaturePacked],
-  ): Promise<MiningTxEx> {
+  ): MiningTxEx {
 
-    const sett = defShardedStorageSettings; 
+    const sett = defShardedStorageSettings;
 
     // calculate proof for the sender and update tree
     const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
@@ -388,7 +388,7 @@ export class State {
     sender_mod.nonce = bigIntToFr(BigInt(tx.nonce) + 1n);
     sender_mod.random_oracle_nonce = fr_deserialize(tx.random_oracle_nonce);
     sender_mod.key = sender.key;
-    await this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
+    this.accounts.updateLeaf(Number(tx.sender_index), sender_mod);
 
     const [proof_file, file] = this.files.readLeaf(Number(mi.file_in_storage_index));
     // const [proof_word, word] = file.data.readLeaf(Number(mi.word_in_file_index));

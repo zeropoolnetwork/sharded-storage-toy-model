@@ -1,9 +1,9 @@
 {
   "name": "zpst-crypto-sdk",
-  "type": "module",
   "version": "1.0.0",
   "description": "My New Project description.",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "repository": {
     "url": "https://example.com/your-username/my-new-project",
     "type": "git"
@@ -30,6 +30,7 @@
   },
   "scripts": {
     "noir-gen-circuits": "noir-codegen ../circuits/target/circuits.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts",
+    "build": "tsc --outDir lib",
     "test": "jest"
   },
   "jest": {

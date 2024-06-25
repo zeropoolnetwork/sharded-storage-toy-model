@@ -1,21 +1,21 @@
-import { AccountTx, Field, FileTx, MiningTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index"; 
+import { AccountTx, Field, FileTx, MiningTx, Field as NoirFr, RollupPubInput, SignaturePacked } from "./noir_codegen/index";
 import { ShardedStorageSettings } from './settings';
-import { keccak256 } from '@noir-lang/noir_js'; 
+import { keccak256 } from '@noir-lang/noir_js';
 
 import { merkle_tree, poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
 
-import { defShardedStorageSettings } from "./settings"; 
+import { defShardedStorageSettings } from "./settings";
 
 export type Fr = bigint;
 const FR_MODULUS = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n;
 
 import {
-    derivePublicKey,
-    signMessage,
-    verifySignature,
-    deriveSecretScalar,
-    packPublicKey,
-    unpackPublicKey
+  derivePublicKey,
+  signMessage,
+  verifySignature,
+  deriveSecretScalar,
+  packPublicKey,
+  unpackPublicKey
 } from "@zk-kit/eddsa-poseidon"
 import { MiningResult } from './mining';
 
@@ -114,7 +114,7 @@ export function frSub(x: Fr, y: Fr): Fr {
 }
 
 /// Same as prep_account_tx, but for mining transactions.
-export async function prep_mining_tx(
+export function prep_mining_tx(
   /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
   sender_index: number,
   /// Mining result
@@ -125,7 +125,7 @@ export async function prep_mining_tx(
   nonce: bigint,
   /// RO nonce
   random_oracle_nonce: bigint,
-): Promise<[MiningTx, SignaturePacked]> {
+): [MiningTx, SignaturePacked] {
 
   const tx: MiningTx = {
     sender_index: sender_index.toString(),
@@ -148,7 +148,7 @@ export async function prep_mining_tx(
 }
 
 /// Same as prep_account_tx, but for file transactions.
-export async function prep_file_tx(
+export function prep_file_tx(
   time_interval: bigint,
   /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
   sender_index: number,
@@ -159,7 +159,7 @@ export async function prep_file_tx(
   sender_sk: string,
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
-): Promise<[FileTx, SignaturePacked]> {
+): [FileTx, SignaturePacked] {
 
   const tx: FileTx = {
     sender_index: sender_index.toString(),
