@@ -1,25 +1,16 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "tsc-output",
-    "allowJs": true,
-    "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "strict": true,
-    "module": "preserve",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "bundler"
+    "moduleResolution": "node",
+    // "target": "ES2020",
+    "module": "CommonJS",
+    "declaration": true,
   },
-  "extends": "@tsconfig/node22/tsconfig.json",
   "include": [
-    "src/**/*"
+    "src/**/*.ts",
   ],
-  "exclude": [
-    "node_modules",
-    "tests"
-  ]
+  // "ts-node": {
+  //   "experimentalResolver": true,
+  //   "esm": true
+  // }
 }

@@ -5,6 +5,8 @@ import { MiningResult } from 'zpst-crypto-sdk/src/mining';
 import { MiningTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 import { AccountData, appState } from './state';
 
+// TODO: Wrap in a class
+
 const io = new SocketIOServer(server);
 const nodes = new Map<string, Socket>();
 
@@ -58,5 +60,21 @@ export async function uploadAndMine(segments: { id: string, data: Buffer }[], ro
   });
 
   return res;
+}
+
+export async function upload(segments: { id: string, data: Buffer }[]): Promise<void> {
+  for (const [id, socket] of nodes) {
+    console.log('Sending upload to', id);
+
+    await new Promise((resolve, reject) => {
+      socket.emit('upload', segments, (res: { error: string } | { success: boolean }) => {
+        if (res.hasOwnProperty('error')) {
+          reject((res as { error: string }).error);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }
 }
 

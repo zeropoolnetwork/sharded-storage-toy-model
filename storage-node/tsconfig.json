@@ -1,14 +1,14 @@
 {
-    "extends": "@tsconfig/node22/tsconfig.json",
-    "compilerOptions": {
-        "module": "esnext",
-        "moduleResolution": "bundler",
-    },
-    "include": [
-        "src/**/*",
-        "tests/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "CommonJS",
+  },
+  "include": [
+    "src/**/*.ts",
+  ],
+  // "ts-node": {
+  //   "experimentalResolver": true,
+  //   "esm": true
+  // }
 }

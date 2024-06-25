@@ -36,7 +36,7 @@ export type FileTx = {
 ///
 /// Outputs of this function should be passed to Tree.build_account_tx_assets
 /// (by sequencer) to make a full transaction to be passed to contract.
-export async function prep_account_tx(
+export function prep_account_tx(
   amount: bigint,
   /// Account leaf indices in global merkle tree, from 0 to 2^depth-1
   sender_index: number,
@@ -47,7 +47,7 @@ export async function prep_account_tx(
   receiver_pk: bigint,
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
-): Promise<[AccountTx, SignaturePacked]> {
+): [AccountTx, SignaturePacked] {
 
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
@@ -71,7 +71,7 @@ export async function prep_account_tx(
 }
 
 /// Same as prep_account_tx, but for file transactions.
-export async function prep_file_tx(
+export function prep_file_tx(
   time_interval: bigint,
   /// Sender leaf indices in accounts merkle tree and file index in files merkle tree
   sender_index: number,
@@ -82,7 +82,7 @@ export async function prep_file_tx(
   sender_sk: string,
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
-): Promise<[FileTx, SignaturePacked]> {
+): [FileTx, SignaturePacked] {
 
   const tx: FileTx = {
     sender_index: sender_index.toString(),

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "node build/index.js",
+    "build": "tsc --outDir build",
+    "dev": "ts-node src/index.ts"
   },
   "author": "Dmitry Vdovin <voidxnull@gmail.com>",
   "license": "MIT",
@@ -15,8 +17,9 @@
     "ethers": "^6.12.1",
     "express": "^4.19.2",
     "level": "^8.0.1",
-    "socket.io": "^4.7.5",
     "poseidon2-merkle-tree": "workspace:../poseidon2-merkle-tree",
+    "socket.io": "^4.7.5",
+    "tsx": "^4.15.7",
     "zpst-crypto-sdk": "workspace:../crypto-sdk"
   },
   "devDependencies": {

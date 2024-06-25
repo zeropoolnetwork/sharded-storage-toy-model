@@ -1,13 +1,18 @@
 {
-    "extends": "@tsconfig/node22/tsconfig.json",
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ],
-    "compilerOptions": {
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-    }
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // "emitDecoratorMetadata": true,
+    // "experimentalDecorators": true,
+    "moduleResolution": "node",
+    // "target": "ES2020",
+    "module": "CommonJS",
+    "declaration": true,
+  },
+  "include": [
+    "src/**/*.ts",
+  ],
+  // "ts-node": {
+  //   "experimentalResolver": true,
+  //   "esm": true
+  // }
 }

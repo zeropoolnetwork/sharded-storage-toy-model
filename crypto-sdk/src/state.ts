@@ -19,7 +19,7 @@ import {
 } from "./noir_codegen/index";
 
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
-import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
+import { BinaryWriter, BinaryReader } from 'zpst-common/lib/binary';
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 import { MiningResult } from "./mining";

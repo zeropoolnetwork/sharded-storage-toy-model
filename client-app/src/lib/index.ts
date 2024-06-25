@@ -1,11 +1,12 @@
 // place files you want to import through the `$lib` alias in this folder.
-import { encodeData, decodeData } from 'zpst-common';
+import { encodeData, decodeData } from 'zpst-common/src/codec';
 import { ethers, Wallet, JsonRpcProvider, BrowserProvider, hashMessage } from 'ethers';
 import type { JsonRpcApiProvider, HDNodeWallet } from 'ethers';
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
-import { Fr } from 'zpst-common';
+import { Fr } from 'zpst-common/src/fields';
 import { browser } from '$app/environment';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
+import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
 
 // TODO: Get rid of global variables
 // let wallet: Wallet;
@@ -13,6 +14,7 @@ let provider: JsonRpcApiProvider;
 let signer: ethers.Signer;
 let address: string;
 export let sk: any;
+export let pk: any;
 export async function initHDWallet(mnemonic: string) {
   if (signer) {
     return;
@@ -68,6 +70,7 @@ export async function initWeb3Modal() {
   const sigHash = hashMessage(sig);
 
   sk = Fr.fromBufferReduce(Buffer.from(sigHash.replace(/^0x/i, ''), 'hex'));
+  pk = derivePublicKey(sk.toString())[0];
 }
 
 export function isWalletInitialized() {

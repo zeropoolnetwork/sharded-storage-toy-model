@@ -95,10 +95,10 @@ export class Fq {
     }
   }
 
-  static random() {
-    const r = toBigIntBE(randomBytes(64)) % Fq.MODULUS;
-    return new this(r);
-  }
+  // static random() {
+  //   const r = toBigIntBE(randomBytes(64)) % Fq.MODULUS;
+  //   return new this(r);
+  // }
 
   static fromBuffer(buffer: Uint8Array) {
     return new this(toBigIntBE(buffer.slice(0, this.SIZE_IN_BYTES)));

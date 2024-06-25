@@ -2,7 +2,7 @@ import type { Block } from 'zpst-common';
 
 import { PUBLIC_SEQUENCER_API_URL, PUBLIC_NODE_API_URL } from '$env/static/public';
 import { prep_account_tx, prep_file_tx, type AccountTx } from './tx';
-import { sk } from '$lib';
+import { pk, sk } from '$lib';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
 
 export const SEQUENCER_API_URL = PUBLIC_SEQUENCER_API_URL || 'http://localhost:3000';
@@ -13,12 +13,16 @@ interface FileMetadata {
   size: number;
 }
 
-export async function uploadFile(file: File, ownerId: string): Promise<string> {
+export async function uploadFile(file: File): Promise<string> {
   const data = await file.arrayBuffer();
   const fileName = file.name;
   const dataBase64 = btoa(String.fromCharCode(...new Uint8Array(data))); // FIXME: Serialize and split into multiple txs
 
-  const [tx, signature] = await prep_file_tx(0n, 0, 0, BigInt(data.byteLength), sk, 0n); // FIXME
+  const indices = await vacantIndices();
+  const account = await getAccount(pk);
+
+  const hash = BigInt(0); // FIXME
+  const [tx, signature] = prep_file_tx(BigInt(7149 * 10), Number(account.index), indices.vacantFileIndex, hash, sk, account.nonce); // FIXME
 
   const response = await fetch(`${SEQUENCER_API_URL}/files`, {
     method: 'POST',
@@ -34,8 +38,7 @@ export async function uploadFile(file: File, ownerId: string): Promise<string> {
 }
 
 export async function faucet(accountId: number, amount: bigint) {
-  const pk = derivePublicKey(sk)[0];
-  const [account, signature] = await prep_account_tx(amount, 0, accountId, sk, pk, 0n); // FIXME: mainain account state
+  const [account, signature] = prep_account_tx(amount, 0, accountId, sk, pk, 0n); // FIXME: mainain account state
 
   const response = await fetch(`${SEQUENCER_API_URL}/faucet`, {
     method: 'POST',
@@ -48,14 +51,26 @@ export async function faucet(accountId: number, amount: bigint) {
   return response.json();
 }
 
+export async function vacantIndices(): Promise<{ vacantAccountIndex: number, vacantFileIndex: number }> {
+  const response = await fetch(`${SEQUENCER_API_URL}/vacant-indices`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return response.json();
+}
+
 export type AccountState = {
-  id: string;
-  balance: number;
-  files: string[];
+  index: bigint;
+  balance: bigint;
+  nonce: bigint;
+  random_oracle_nonce: bigint;
 };
 
-export async function getAccount(accountId: string): Promise<AccountState> {
-  const response = await fetch(`${SEQUENCER_API_URL}/accounts/${accountId}`);
+export async function getAccount(publicKey: string | bigint): Promise<AccountState> {
+  const response = await fetch(`${SEQUENCER_API_URL}/accounts/${publicKey}`);
   return response.json();
 }
 

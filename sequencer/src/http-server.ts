@@ -50,6 +50,12 @@ app.get('/blocks', async (req: Request, res: Response) => {
   res.send(b);
 });
 
+app.get('/vacant-indices', async (req: Request, res: Response) => {
+  const indices = await appState.getVacantIndices();
+
+  res.send(indices);
+});
+
 app.get('/status', async (req: Request, res: Response) => {
   res.send({ status: 'OK' });
 });

@@ -25,7 +25,7 @@
 </script>
 
 <div class="border rounded-lg p-4 w-1/3">
-	<div class="flex justify-center mt-4">
+	<div class="flex justify-center">
 		<button
 			on:click={connectWallet}
 			class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
@@ -33,7 +33,7 @@
 			Connect Wallet
 		</button>
 	</div>
-	<div class="flex space-x-2">
+	<div class="flex space-x-2 mt-4">
 		<input
 			bind:value={mnemonic}
 			type="text"

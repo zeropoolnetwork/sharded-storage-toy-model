@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "start": "node build/index.js",
+    "build": "tsc --outDir build",
     "test": "jest"
   },
   "author": "Dmitry Vdovin <voidxnull@gmail.com>",

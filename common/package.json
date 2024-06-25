@@ -1,9 +1,9 @@
 {
   "name": "zpst-common",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "build": "tsc --outDir lib"
   },
   "author": "Dmitry Vdovin <voidxnull@gmail.com>",
   "license": "MIT",

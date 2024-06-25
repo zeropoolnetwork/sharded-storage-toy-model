@@ -1,7 +1,17 @@
 import { ethers } from 'ethers';
 import { OPERATOR_SK, ROLLUP_CONTRACT_ADDRESS, RPC_URL } from './env';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 
-export class RollupContract {
+export interface IRollupContract {
+  latestBlockNumber: number; // FIXME 
+  publishBlock(newRoot: bigint, now: bigint, proof: string): Promise<void>;
+  getRoot(): Promise<number>;
+  getLastCommittedBlockNumber(): Promise<number>;
+  getOwner(): Promise<string>;
+  getRandomOracleValues(randomOracleSize: number): Promise<[bigint, bigint[]]>;
+}
+
+export class RollupContract implements IRollupContract {
   private contract: ethers.Contract;
   private signer: ethers.Signer;
   private provider: ethers.Provider;
@@ -38,16 +48,14 @@ export class RollupContract {
     return contract;
   }
 
-  async publishBlock(newRoot: bigint, now: bigint, proof: string): Promise<ethers.ContractTransaction> {
+  async publishBlock(newRoot: bigint, now: bigint, proof: string): Promise<void> {
     const connectedContract = this.contract.connect(this.signer);
     // @ts-ignore
     const res = await connectedContract.publish_block(newRoot, now, proof);
 
-    // TODO: Check if the transaction was successful
+    // TODO: Check if the transaction was successful    
 
     this.latestBlockNumber = await this.provider.getBlockNumber();
-
-    return res;
   }
 
   async getRoot(): Promise<number> {
@@ -62,7 +70,7 @@ export class RollupContract {
     return await this.contract.owner();
   }
 
-  async getRandomOracleValues(randomOracleSize: number): Promise<bigint[]> {
+  async getRandomOracleValues(randomOracleSize: number): Promise<[bigint, bigint[]]> {
     const blockNumber = this.latestBlockNumber || await this.provider.getBlockNumber();
 
     const promises: Promise<ethers.Block | null>[] = [];
@@ -74,6 +82,35 @@ export class RollupContract {
       return BigInt(b?.hash ?? '0');
     });
 
-    return values;
+    return [BigInt(blockNumber - defShardedStorageSettings.oracle_len), values];
+  }
+}
+
+export class RollupContractMock implements IRollupContract {
+  latestBlockNumber: number = 0;
+
+  constructor() { }
+
+
+  async publishBlock(newRoot: bigint, now: bigint, proof: string): Promise<void> {
+    this.latestBlockNumber++;
+
+    return;
+  }
+
+  async getRoot(): Promise<number> {
+    return 0;
+  }
+
+  async getLastCommittedBlockNumber(): Promise<number> {
+    return this.latestBlockNumber;
+  }
+
+  async getOwner(): Promise<string> {
+    return '';
+  }
+
+  async getRandomOracleValues(randomOracleSize: number): Promise<[bigint, bigint[]]> {
+    return [0n, Array(randomOracleSize).fill(0n)];
   }
 }

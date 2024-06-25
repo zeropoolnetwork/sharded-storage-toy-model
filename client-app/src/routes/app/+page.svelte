@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { initHDWallet, isWalletInitialized } from '$lib';
+	import { initHDWallet, isWalletInitialized, pk } from '$lib';
 	import { getLatestBlocks } from '$lib/api';
 	import {
 		uploadFile,
@@ -25,7 +25,7 @@
 			let files = Array.from(input.files);
 
 			// FIXME: Replace with signature
-			await uploadFile(files[0] as File, 'FIXME');
+			await uploadFile(files[0] as File);
 			await update();
 		};
 		input.click();
@@ -46,13 +46,13 @@
 
 	// TODO: Proper state management
 	async function update() {
-		const account = await getAccount('FIXME');
+		const account = await getAccount(pk);
 		blocks = await getLatestBlocks();
-		files = account.files.map((name: string) => ({
-			name,
-			url: `${NODE_API_URL}/files/${name}`
-		}));
-		balance = account.balance;
+		// files = account.files.map((name: string) => ({
+		// 	name,
+		// 	url: `${NODE_API_URL}/files/${name}`
+		// }));
+		// balance = account.balance;
 	}
 
 	let nodeStatus = true;

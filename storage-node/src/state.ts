@@ -1,4 +1,4 @@
-import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/lib/settings';
 import { FileStorage } from './file-storage';
 import { NODE_SK } from './env';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';

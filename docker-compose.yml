@@ -39,7 +39,7 @@ services:
       context: .
       dockerfile: storage-node/Dockerfile
     depends_on:
-      - sequencer-node
+      - sequencer
     networks:
       - app-network
     environment:
@@ -77,7 +77,7 @@ services:
     container_name: client-app
     depends_on:
       - storage-node
-      - sequencer-node
+      - sequencer
     restart: always
     build:
       context: .

@@ -32,7 +32,7 @@ COPY --from=poseidon2-bn256 /usr/src/poseidon2-bn256/bundler poseidon2-bn256/bun
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY client-app client-app
 RUN pnpm install --recursive --frozen-lockfile
-RUN pnpm --recursive build 
+RUN pnpm -r build
 
 FROM nginx:alpine
 COPY client-app/nginx/nginx.conf /etc/nginx/conf.d/default.conf
