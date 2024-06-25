@@ -1,12 +1,12 @@
-import { MerkleProof, Tree } from 'zpst-crypto-sdk/src/merkle-tree';
+import { MerkleProof, Tree } from 'zpst-crypto-sdk/lib/merkle-tree';
 import { accountData, nodePk, storage } from './state';
 import { bufferToFrElements } from 'zpst-common';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 import { mine } from 'zpst-crypto-sdk';
-import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
-import { MiningResult } from 'zpst-crypto-sdk/src/mining';
-import { prep_mining_tx } from 'zpst-crypto-sdk/src/util';
-import { MiningTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/lib/settings';
+import { MiningResult } from 'zpst-crypto-sdk/lib/mining';
+import { prep_mining_tx } from 'zpst-crypto-sdk/lib/util';
+import { MiningTx, SignaturePacked } from 'zpst-crypto-sdk/lib/noir_codegen';
 import { NODE_SK } from './env';
 
 export async function uploadSegments(segments: Buffer[]): Promise<void> {

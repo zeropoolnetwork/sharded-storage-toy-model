@@ -14,7 +14,6 @@ WORKDIR /usr/src/poseidon2-bn256
 COPY poseidon2-bn256 .
 RUN sh build.sh
 
-
 FROM node:22-alpine
 WORKDIR /app
 

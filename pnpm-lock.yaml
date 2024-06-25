@@ -6,6 +6,8 @@ settings:
 
 importers:
 
+  .: {}
+
   client-app:
     dependencies:
       '@aztec/bb.js':
@@ -150,8 +152,6 @@ importers:
         specifier: ^5.4.5
         version: 5.4.5
 
-  poseidon2-bn256/pkg: {}
-
   sequencer:
     dependencies:
       '@zk-kit/eddsa-poseidon':
@@ -249,8 +249,8 @@ importers:
         specifier: workspace:../crypto-sdk
         version: link:../crypto-sdk
       zpst-poseidon2-bn256:
-        specifier: workspace:../poseidon2-bn256/pkg
-        version: link:../poseidon2-bn256/pkg
+        specifier: workspace:../poseidon2-bn256/nodejs
+        version: link:../poseidon2-bn256/nodejs
     devDependencies:
       '@tsconfig/node22':
         specifier: ^22.0.0

@@ -20,7 +20,7 @@
     "socket.io-client": "^4.7.5",
     "zpst-common": "workspace:../common",
     "zpst-crypto-sdk": "workspace:../crypto-sdk",
-    "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256/pkg"
+    "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256/nodejs"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

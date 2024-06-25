@@ -2,7 +2,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 
-import { Tree } from 'zpst-crypto-sdk/src/merkle-tree';
+import { Tree } from 'zpst-crypto-sdk/lib/merkle-tree';
 import { storage } from './state';
 import { PORT } from './env';
 
