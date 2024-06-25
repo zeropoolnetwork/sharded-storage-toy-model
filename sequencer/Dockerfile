@@ -25,6 +25,7 @@ COPY common common
 COPY crypto-sdk crypto-sdk
 COPY circuits circuits
 COPY poseidon2-bn256 poseidon2-bn256
+COPY tsconfig.json tsconfig.json
 COPY --from=poseidon2-bn256 /usr/src/poseidon2-bn256/nodejs poseidon2-bn256/nodejs
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY sequencer sequencer
