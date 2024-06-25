@@ -30,6 +30,8 @@ COPY --from=poseidon2-bn256 /usr/src/poseidon2-bn256/nodejs poseidon2-bn256/node
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY sequencer sequencer
 RUN pnpm install --recursive --frozen-lockfile
+RUN pnpm --filter zpst-common build
+RUN pnpm --filter zpst-crypto-sdk build
 RUN pnpm -r build
 
 EXPOSE 3000

@@ -13,3 +13,7 @@
 /**/*/test
 /**/*/dist
 /**/*/target
+/**/*/lib
+/**/*/build
+
+!/client-app/src/lib
