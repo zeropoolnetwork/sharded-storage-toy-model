@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "node build/index.js",
+    "start": "node build/server.js",
     "build": "tsc --outDir build",
     "test": "jest"
   },
