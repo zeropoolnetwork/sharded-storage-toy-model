@@ -22,6 +22,8 @@ Worker.setMaxListeners(2000);
 
 function id(x: Fr): Fr { return x }
 
+const circuits_path = "../circuits/";
+
 describe('State', () => {
 
   test('Run meaningful transactions on genesis state', async () => {
@@ -224,10 +226,10 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove("../circuits/", prover_data);
+    const proof = prove(circuits_path, prover_data);
 
     expect(
-      verify("../circuits/", verifier_data, proof)
+      verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     // TODO: chage now value here and verify another transaction, making sure
@@ -350,16 +352,24 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove("../circuits/", prover_data);
+    const proof = prove(circuits_path, prover_data);
 
     expect(
-      verify("../circuits/", verifier_data, proof)
+      verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     const corrupted_proof = "deadbeef" + proof;
     expect(
-      verify("../circuits/", verifier_data, corrupted_proof)
+      verify(circuits_path, verifier_data, corrupted_proof)
     ).toEqual(false);
+
+    // Prover must throw an exception when invoked with wrong data
+    await expect(async () => {
+      let prover_data_wrong = prover_data;
+      prover_data_wrong.pubhash = (BigInt(prover_data_wrong.pubhash) + 1n).toString();
+      prove(circuits_path, prover_data_wrong);
+    }).rejects.toThrow();
+
   }, 10 * 60 * 1000); // 10 minutes
 
 });
