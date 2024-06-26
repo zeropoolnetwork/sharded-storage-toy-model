@@ -28,7 +28,7 @@ export type ShardedStorageSettings = {
 };
 
 export const defShardedStorageSettings : ShardedStorageSettings = {
-  acc_data_tree_depth: 10,
+  acc_data_tree_depth: 20,
   file_tree_depth: 10,
   oracle_len: 16,
   pub_len: 4 + 16,
