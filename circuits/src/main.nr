@@ -22,6 +22,9 @@ global MAX_TX_PER_BLOCK:u32=8;
 global MAX_FILE_PER_BLOCK:u32=8;
 global MAX_MINING_PER_BLOCK:u32=1;
 
+// The last transaction is always storing sharded storage transaction itself
+global TRANSACTION_DATA_FILE:u32 = MAX_FILE_PER_BLOCK - 1;
+
 
 #[export]
 struct RollupPubInput {
@@ -237,7 +240,8 @@ fn main(
     // Replace the above code with the generated one, because of nargo bugs
     assert_block_data_generated(input);
 
-
+    // make sure that the file with Sharded Storage block data is locked
+    assert(input.file.txs[TRANSACTION_DATA_FILE].tx.locked == true);
 
     // apply blocks
     let acc_root = input.old_root.acc;

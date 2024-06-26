@@ -145,6 +145,7 @@ describe('State', () => {
       sender_index: self_file_sender.toString(),
       data_index: self_file_index.toString(),
       time_interval: fr_serialize(self_file_duration),
+      locked: true,
       data: undefined as never,
       nonce: undefined as never,
     };
@@ -167,7 +168,9 @@ describe('State', () => {
       self_file_index,
       self_tx_data.root(),
       sk,
-      nonce++);
+      nonce++,
+      true
+    );
     const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
     files_stored[self_file_index] = self_tx_data;
 
@@ -274,6 +277,7 @@ describe('State', () => {
       sender_index: self_file_sender.toString(),
       data_index: self_file_index.toString(),
       time_interval: fr_serialize(self_file_duration),
+      locked: true,
       data: undefined as never,
       nonce: undefined as never,
     };
@@ -296,7 +300,9 @@ describe('State', () => {
       self_file_index,
       self_tx_data.root(),
       sk,
-      nonce++);
+      nonce++,
+      true,
+    );
     const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
     files_stored[self_file_index] = self_tx_data;
 

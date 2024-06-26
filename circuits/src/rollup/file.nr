@@ -11,6 +11,9 @@ global PRICE: Field = 1;
 struct File {
     /// Until when was it paid for
     expiration_time: Field,
+    /// A locked file can't be changed by its owner and must be kept until it
+    /// expires
+    locked: bool,
     /// Who owns it (and has the right to delete/modify).
     /// `owner == 0` means that the file was erased
     owner: Field,
@@ -25,11 +28,16 @@ impl File {
         let empty = self.owner == 0;
         let owned = self.owner == sender;
 
-        expired | empty | owned
+        expired | empty | (owned & ! self.locked)
     }
 
     pub fn hash(self) -> Field {
-        poseidon2([self.expiration_time, self.owner, self.data])
+        poseidon2([
+            self.expiration_time,
+            if self.locked { 1 } else { 0 },
+            self.owner,
+            self.data,
+        ])
     }
 }
 
@@ -38,8 +46,9 @@ struct FileTx {
     sender_index: Field,
     data_index: Field,
     time_interval: Field,
+    locked: bool,
     data: Field,
-    nonce: Field
+    nonce: Field,
 }
 
 #[export]
@@ -124,6 +133,7 @@ impl<N> FileTxEx<N> {
 
             File {
                 expiration_time,
+                locked: tx.locked,
                 owner: assets.account_sender.key,
                 data
             }

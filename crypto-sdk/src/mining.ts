@@ -123,6 +123,7 @@ export function blank_mining_tx(sett: ShardedStorageSettings): MiningTxEx {
 
   const dummy_file: NoirFile = {
     expiration_time: "0",
+    locked: false,
     owner: "0",
     data: "0",
   };
