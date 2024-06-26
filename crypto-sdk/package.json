@@ -29,7 +29,7 @@
     "smol-toml": "^1.2.1"
   },
   "scripts": {
-    "noir-gen-circuits": "noir-codegen ../circuits/target/circuits.json --out-dir ./src/noir_codegen/ && sed -i $'1i\\\n// @ts-nocheck' src/noir_codegen/index.ts",
+    "noir-gen-circuits": "./noir-codegen.sh",
     "build": "tsc --outDir lib",
     "test": "jest"
   },

@@ -4,7 +4,7 @@ import { Account, State, blank_account_tx, blank_file_contents, blank_file_tx, n
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx, mine } from '../src/mining';
-import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
+import { RandomOracle, Field, RollupInput, RollupPubInput, Root, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
 
 import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
 

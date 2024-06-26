@@ -5,7 +5,7 @@ import * as os from 'os';
 
 import { stringify } from 'smol-toml';
 
-import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit } from './noir_codegen';
+import { RandomOracle, Field, RollupInput, RollupPubInput, Root, } from './noir_codegen';
 
 export type ProverToml = {
   pubhash: Field,
