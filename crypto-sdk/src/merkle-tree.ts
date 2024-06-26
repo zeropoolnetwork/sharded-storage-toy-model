@@ -1,6 +1,6 @@
 // This module implements a non-sparse, severely limited in size Merkle tree
 
-import { BinaryWriter, BinaryReader } from 'zpst-common/lib/binary';
+import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js";
 import { fr_serialize, Fr, fr_deserialize, bigIntToBytes, bigintToBuffer, bufferToBigint, Serde } from './util';
 

@@ -19,7 +19,7 @@ import {
 } from "./noir_codegen/index";
 
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256'
-import { BinaryWriter, BinaryReader } from 'zpst-common/lib/binary';
+import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
 
 import { EdDSAPoseidon } from "@zk-kit/eddsa-poseidon";
 import { MiningResult } from "./mining";
@@ -74,6 +74,7 @@ export class Account implements Serde {
 export function fileToNoir(file: File): NoirFile {
   return {
     expiration_time: fr_serialize(file.expiration_time),
+    locked: file.locked,
     owner: fr_serialize(file.owner),
     data: fr_serialize(file.data_hash),
   };
@@ -94,15 +95,17 @@ export function blank_file_contents(d: number): Tree<Fr> {
 
 export class File implements Serde {
   expiration_time: Fr;
+  locked: boolean;
   // Owner account pk
   owner: Fr;
   // Merkle hash of data
   data_hash: Fr;
 
   constructor();
-  constructor(v: { expiration_time: Fr, owner: Fr, data_hash: Fr });
-  constructor(v?: { expiration_time: Fr, owner: Fr, data_hash: Fr }) {
+  constructor(v: { expiration_time: Fr, locked: boolean, owner: Fr, data_hash: Fr });
+  constructor(v?: { expiration_time: Fr, locked: boolean, owner: Fr, data_hash: Fr }) {
     this.expiration_time = v?.expiration_time ?? 0n;
+    this.locked = v?.locked ?? false;
     this.owner = v?.owner ?? 0n;
     this.data_hash = v?.data_hash ?? 0n;
   }
@@ -111,13 +114,21 @@ export class File implements Serde {
     const data = blank_file_contents(d);
     return new File({
       expiration_time: 0n,
+      locked: false,
       owner: 0n,
       data_hash: data.root(),
     });
   }
 
   hash(): Fr {
-    return fr_deserialize(poseidon2_bn256_hash([this.expiration_time, this.owner, this.data_hash].map(fr_serialize)));
+    return fr_deserialize(
+      poseidon2_bn256_hash([
+        this.expiration_time,
+        this.locked ? 1n : 0n,
+        this.owner,
+        this.data_hash,
+      ].map(fr_serialize))
+    );
   }
 
   serialize(): Buffer {
@@ -199,6 +210,7 @@ export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
 
   const dummy_file: NoirFile = {
     expiration_time: "0",
+    locked: false,
     owner: "0",
     data: "0",
   };
@@ -321,7 +333,9 @@ export class State {
   build_file_txex(
     now: bigint,
     data_hash: Fr,
-    [tx, signature]: [FileTx, SignaturePacked]
+    [tx, signature]: [FileTx, SignaturePacked],
+    /// Locked files can't be modified until they expire
+    locked?: boolean,
   ): FileTxEx {
 
     const sett = defShardedStorageSettings;
@@ -351,6 +365,7 @@ export class State {
     const exp_time = file.expiration_time;
     let file_mod = new File({
       expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
+      locked: locked ?? false,
       owner: sender.key,
       data_hash: data_hash,
     });

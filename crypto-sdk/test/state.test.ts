@@ -4,7 +4,7 @@ import { Account, State, blank_account_tx, blank_file_contents, blank_file_tx, n
 import { cpus } from 'os';
 import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settings';
 import { blank_mining_tx, mine } from '../src/mining';
-import { RandomOracle, Field, RollupInput, RollupPubInput, Root, circuits, circuits_circuit, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
+import { RandomOracle, Field, RollupInput, RollupPubInput, Root, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
 
 import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
 
@@ -21,6 +21,8 @@ import { Worker } from 'worker_threads';
 Worker.setMaxListeners(2000);
 
 function id(x: Fr): Fr { return x }
+
+const circuits_path = "../circuits/";
 
 describe('State', () => {
 
@@ -167,8 +169,9 @@ describe('State', () => {
       self_file_index,
       self_tx_data.root(),
       sk,
-      nonce++);
-    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
+      nonce++,
+    );
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self, true);
     files_stored[self_file_index] = self_tx_data;
 
     // prepend the special file tx to the all transactions
@@ -223,10 +226,10 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove("../circuits/", prover_data);
+    const proof = prove(circuits_path, prover_data);
 
     expect(
-      verify("../circuits/", verifier_data, proof)
+      verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     // TODO: chage now value here and verify another transaction, making sure
@@ -296,8 +299,9 @@ describe('State', () => {
       self_file_index,
       self_tx_data.root(),
       sk,
-      nonce++);
-    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
+      nonce++,
+    );
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self, true);
     files_stored[self_file_index] = self_tx_data;
 
     // prepend the special file tx to the all transactions
@@ -348,16 +352,24 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove("../circuits/", prover_data);
+    const proof = prove(circuits_path, prover_data);
 
     expect(
-      verify("../circuits/", verifier_data, proof)
+      verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     const corrupted_proof = "deadbeef" + proof;
     expect(
-      verify("../circuits/", verifier_data, corrupted_proof)
+      verify(circuits_path, verifier_data, corrupted_proof)
     ).toEqual(false);
+
+    // Prover must throw an exception when invoked with wrong data
+    await expect(async () => {
+      let prover_data_wrong = prover_data;
+      prover_data_wrong.pubhash = (BigInt(prover_data_wrong.pubhash) + 1n).toString();
+      prove(circuits_path, prover_data_wrong);
+    }).rejects.toThrow();
+
   }, 10 * 60 * 1000); // 10 minutes
 
 });
