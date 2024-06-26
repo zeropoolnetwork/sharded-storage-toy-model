@@ -192,7 +192,6 @@ export function blank_file_tx(sett: ShardedStorageSettings): FileTxEx {
     sender_index: "0",
     data_index: "0",
     time_interval: "0",
-    locked: false,
     data: "0",
     nonce: "0",
   };
@@ -334,7 +333,9 @@ export class State {
   build_file_txex(
     now: bigint,
     data_hash: Fr,
-    [tx, signature]: [FileTx, SignaturePacked]
+    [tx, signature]: [FileTx, SignaturePacked],
+    /// Locked files can't be modified until they expire
+    locked?: boolean,
   ): FileTxEx {
 
     const sett = defShardedStorageSettings;
@@ -364,7 +365,7 @@ export class State {
     const exp_time = file.expiration_time;
     let file_mod = new File({
       expiration_time: bigIntToFr((now > exp_time ? now : exp_time) + BigInt(tx.time_interval)),
-      locked: tx.locked,
+      locked: locked ?? false,
       owner: sender.key,
       data_hash: data_hash,
     });

@@ -74,7 +74,6 @@ export type FileTx = {
   sender_index: Field;
   data_index: Field;
   time_interval: Field;
-  locked: boolean;
   data: Field;
   nonce: Field;
 };

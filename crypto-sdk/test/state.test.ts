@@ -145,7 +145,6 @@ describe('State', () => {
       sender_index: self_file_sender.toString(),
       data_index: self_file_index.toString(),
       time_interval: fr_serialize(self_file_duration),
-      locked: true,
       data: undefined as never,
       nonce: undefined as never,
     };
@@ -169,9 +168,8 @@ describe('State', () => {
       self_tx_data.root(),
       sk,
       nonce++,
-      true
     );
-    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self, true);
     files_stored[self_file_index] = self_tx_data;
 
     // prepend the special file tx to the all transactions
@@ -277,7 +275,6 @@ describe('State', () => {
       sender_index: self_file_sender.toString(),
       data_index: self_file_index.toString(),
       time_interval: fr_serialize(self_file_duration),
-      locked: true,
       data: undefined as never,
       nonce: undefined as never,
     };
@@ -301,9 +298,8 @@ describe('State', () => {
       self_tx_data.root(),
       sk,
       nonce++,
-      true,
     );
-    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self);
+    const ftxex_self = await st.build_file_txex(now, self_tx_data.root(), ftx_self, true);
     files_stored[self_file_index] = self_tx_data;
 
     // prepend the special file tx to the all transactions

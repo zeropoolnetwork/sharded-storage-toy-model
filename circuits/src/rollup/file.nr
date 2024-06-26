@@ -46,7 +46,6 @@ struct FileTx {
     sender_index: Field,
     data_index: Field,
     time_interval: Field,
-    locked: bool,
     data: Field,
     nonce: Field,
 }
@@ -74,7 +73,7 @@ impl FileTx {
 }
 
 impl<N> FileTxEx<N> {
-    pub fn apply(self, acc_root:Field, data_root:Field, now:Field) -> (Field, Field) {
+    pub fn apply(self, acc_root:Field, data_root:Field, now:Field, locked: bool) -> (Field, Field) {
         let FileTxEx{tx, assets} = self;
         let is_blank = assets.signature.a == 0;
         
@@ -133,7 +132,7 @@ impl<N> FileTxEx<N> {
 
             File {
                 expiration_time,
-                locked: tx.locked,
+                locked: locked,
                 owner: assets.account_sender.key,
                 data
             }
@@ -156,11 +155,17 @@ impl<M,N> FileBlock<M,N> {
         let mut cur_acc = acc_root;
         let mut cur_data = data_root;
 
-        for i in 0..M {
-            let (acc, data) = self.txs[i].apply(cur_acc, cur_data, now);
+        // transactions from regular users
+        for i in 0..(M - 1) {
+            let (acc, data) = self.txs[i].apply(cur_acc, cur_data, now, false);
             cur_acc = acc;
             cur_data = data;
         }
+
+        // service transaction that stores transaction data in a file
+        let (acc, data) = self.txs[M-1].apply(cur_acc, cur_data, now, true);
+        cur_acc = acc;
+        cur_data = data;
         
         (cur_acc, cur_data)
     }

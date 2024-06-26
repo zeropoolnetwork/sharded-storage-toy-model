@@ -159,15 +159,12 @@ export function prep_file_tx(
   sender_sk: string,
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
-  /// Locked files can't be modified until they expire
-  locked?: boolean,
 ): [FileTx, SignaturePacked] {
 
   const tx: FileTx = {
     sender_index: sender_index.toString(),
     data_index: data_index.toString(),
     time_interval: time_interval.toString(),
-    locked: locked ?? false,
     data: data.toString(),
     nonce: nonce.toString(),
   };

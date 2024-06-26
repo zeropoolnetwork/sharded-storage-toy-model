@@ -240,9 +240,6 @@ fn main(
     // Replace the above code with the generated one, because of nargo bugs
     assert_block_data_generated(input);
 
-    // make sure that the file with Sharded Storage block data is locked
-    assert(input.file.txs[TRANSACTION_DATA_FILE].tx.locked == true);
-
     // apply blocks
     let acc_root = input.old_root.acc;
     let data_root = input.old_root.data;
