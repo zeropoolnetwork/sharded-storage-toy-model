@@ -75,16 +75,23 @@ export class Tree<T> implements Serde {
   updateLeaf(i: number, x: T) {
     let node = i + (1 << this.depth);
     this.values[i] = x;
-    this.nodes[node] = this.hash_cb(x);
-    node = node >> 1;
-    // const branch = merkle_branch
+    const new_leaf = this.hash_cb(x);
+    this.nodes[node] = new_leaf;
+    const [prf, _] = this.readLeaf(i);
+    const proof_path = prf.map(([turn, _]) => Number(turn));
+    const proof = prf.map(([_, val]) => val.toString());
+    let branch = merkle_branch(
+      fr_serialize(new_leaf),
+      new Uint32Array(proof_path),
+      proof,
+    );
+
+    node >>= 1;
     while (node >= 1) {
-      const left_child = node << 1;
-      const right_child = left_child ^ 1;
-      this.nodes[node] = Tree.node_hash(
-        this.nodes[left_child],
-        this.nodes[right_child]
-      );
+      const val = branch.pop();
+      if (val == undefined)
+        throw Error("bad!");
+      this.nodes[node] = fr_deserialize(val);
       node = node >> 1;
     }
   }
