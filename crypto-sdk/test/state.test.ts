@@ -358,7 +358,8 @@ describe('State', () => {
       verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
-    const corrupted_proof = "deadbeef" + proof;
+    let corrupted_proof = proof;
+    proof[0] ^= 0xff;
     expect(
       verify(circuits_path, verifier_data, corrupted_proof)
     ).toEqual(false);
