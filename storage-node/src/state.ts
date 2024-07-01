@@ -1,7 +1,8 @@
-import { defShardedStorageSettings } from 'zpst-crypto-sdk/lib/settings';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 import { FileStorage } from './file-storage';
-import { NODE_SK } from './env';
+import { NODE_SK, SEQUENCER_URL } from './env';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
+import { SequencerClient } from 'zpst-common/src/api';
 
 export interface AccountData {
   index: bigint;
@@ -10,21 +11,29 @@ export interface AccountData {
   random_oracle_nonce: bigint;
 }
 
-// TODO: Wrap in a class
+export class AppState {
+  storage: FileStorage;
+  /** This node's account data */
+  accountData: AccountData;
+  sequencer: SequencerClient;
+  nodePk: bigint = derivePublicKey(NODE_SK)[0];
 
-export let storage: FileStorage;
-export let accountData: AccountData = {
-  index: BigInt(0),
-  balance: BigInt(0),
-  nonce: BigInt(0),
-  random_oracle_nonce: BigInt(0),
-};
-export let nodePk: bigint = derivePublicKey(NODE_SK)[0];
-
-export async function init() {
-  storage = await FileStorage.new(1 << defShardedStorageSettings.file_tree_depth, './data/segments');
+  constructor(storage: FileStorage, accountData: AccountData, sequencer: SequencerClient) {
+    this.storage = storage;
+    this.accountData = accountData;
+    this.sequencer = sequencer;
+  }
 }
 
-export function updateAccountData(data: AccountData) {
-  accountData = data;
+export let appState: AppState;
+
+export async function init(accountData: AccountData) {
+  const storage = await FileStorage.new(
+    1 << defShardedStorageSettings.file_tree_depth,
+    './data/segments',
+  );
+
+  const sequencer = new SequencerClient(SEQUENCER_URL);
+
+  appState = new AppState(storage, accountData, sequencer);
 }

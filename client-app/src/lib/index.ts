@@ -1,11 +1,8 @@
 // place files you want to import through the `$lib` alias in this folder.
-import { encodeData, decodeData } from 'zpst-common/src/codec';
 import { ethers, Wallet, JsonRpcProvider, BrowserProvider, hashMessage } from 'ethers';
 import type { JsonRpcApiProvider, HDNodeWallet } from 'ethers';
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import { Fr } from 'zpst-common/src/fields';
-import { browser } from '$app/environment';
-import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
 
 // TODO: Get rid of global variables

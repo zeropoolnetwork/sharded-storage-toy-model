@@ -20,7 +20,7 @@ io.on('connection', (socket) => {
     try {
       res = await appState.accounts.get(pk);
     } catch (err) {
-      console.error('Account not found:', pk);
+      console.error('Storage node\'s requested account not found:', pk);
     }
 
     cb(res);
@@ -39,42 +39,83 @@ io.on('connection', (socket) => {
 });
 
 export interface UploadAndMineResponse {
-  miningRes: MiningResult,
-  word: [MerkleProof, bigint],
-  tx: [MiningTx, SignaturePacked],
+  miningRes: MiningResult;
+  word: [MerkleProof, bigint];
+  tx: [MiningTx, SignaturePacked];
 }
 
-export async function uploadAndMine(segments: { id: string, data: Buffer }[], roValues: bigint[], roOffset: bigint): Promise<UploadAndMineResponse> {
+export async function uploadAndMine(
+  segments: { id: string; data: Buffer }[],
+  roValues: bigint[],
+  roOffset: bigint,
+): Promise<UploadAndMineResponse> {
   const res: UploadAndMineResponse = await new Promise((resolve, reject) => {
     for (const [id, socket] of nodes) {
       console.log('Sending uploadAndMine to', id);
 
-      socket.emit('uploadAndMine', segments, roValues, roOffset, (res: UploadAndMineResponse | { error: string }) => {
-        if (res.hasOwnProperty('error')) {
-          reject((res as { error: string }).error);
-        } else {
-          resolve(res as UploadAndMineResponse);
-        }
-      });
+      socket.emit(
+        'uploadAndMine',
+        segments,
+        roValues,
+        roOffset,
+        (res: UploadAndMineResponse | { error: string }) => {
+          if (res.hasOwnProperty('error')) {
+            reject((res as { error: string }).error);
+          } else {
+            resolve(res as UploadAndMineResponse);
+          }
+        },
+      );
     }
   });
 
   return res;
 }
 
-export async function upload(segments: { id: string, data: Buffer }[]): Promise<void> {
+export async function broadcastMiningChallenge(
+  roValues: bigint[],
+  roOffset: bigint,
+): Promise<UploadAndMineResponse> {
+  const res: UploadAndMineResponse = await new Promise((resolve, reject) => {
+    for (const [id, socket] of nodes) {
+      console.log('Sending mining challenge to', id);
+
+      socket.emit(
+        'mine',
+        roValues,
+        roOffset,
+        (res: UploadAndMineResponse | { error: string }) => {
+          if (res.hasOwnProperty('error')) {
+            reject((res as { error: string }).error);
+          } else {
+            resolve(res as UploadAndMineResponse);
+          }
+        },
+      );
+    }
+  });
+
+  return res;
+}
+
+export async function upload(
+  segments: { id: string; data: Buffer }[],
+): Promise<void> {
   for (const [id, socket] of nodes) {
     console.log('Sending upload to', id);
 
     await new Promise((resolve, reject) => {
-      socket.emit('upload', segments, (res: { error: string } | { success: boolean }) => {
-        if (res.hasOwnProperty('error')) {
-          reject((res as { error: string }).error);
-        } else {
-          resolve(null);
-        }
-      });
+      socket.emit(
+        'upload',
+        segments,
+        (res: { error: string } | { success: boolean }) => {
+          if (res.hasOwnProperty('error')) {
+            reject((res as { error: string }).error);
+          } else {
+            resolve(null);
+          }
+        },
+      );
     });
   }
 }
-

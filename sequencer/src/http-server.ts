@@ -1,9 +1,9 @@
 import express, { Express, Request, Response } from 'express';
 import http from 'node:http';
 import cors from 'cors';
+import { FileTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 
 import { FileData, FileMetadata, appState } from './state';
-import { FileTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 
 export const app: Express = express();
 export const server = new http.Server(app);
@@ -11,7 +11,7 @@ export const server = new http.Server(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: '*/*' }));
-app.use(cors())
+app.use(cors());
 
 interface FileRequest {
   segemnts: {
@@ -23,8 +23,6 @@ interface FileRequest {
 }
 
 app.post('/files', async (req: Request, res: Response) => {
-  console.log('Uploading file:', req.body.metadata);
-
   const file: FileRequest = req.body;
 
   for (const seg of file.segemnts) {
@@ -34,6 +32,7 @@ app.post('/files', async (req: Request, res: Response) => {
 
 app.post('/faucet', async (req: Request, res: Response) => {
   await appState.addAccountTransaction(req.body.account, req.body.signature);
+  res.send({ success: true });
 });
 
 app.get('/accounts/:id', async (req: Request, res: Response) => {

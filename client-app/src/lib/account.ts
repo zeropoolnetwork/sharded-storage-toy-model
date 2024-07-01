@@ -1,13 +1,6 @@
 import { Fr } from 'zpst-common/src/fields';
 import { signMessage } from '@zk-kit/eddsa-poseidon';
 import { sk } from '$lib';
-// import {
-//   derivePublicKey,
-//   verifySignature,
-//   deriveSecretScalar,
-//   packPublicKey,
-//   unpackPublicKey,
-// } from "@zk-kit/eddsa-poseidon"
 
 export class AccountData {
   /// x coordinate of the owner account public key

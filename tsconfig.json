@@ -8,7 +8,7 @@
     "noUnusedLocals": false,
     "skipLibCheck": true,
     "sourceMap": true,
-    // "moduleResolution": "node",
-    "target": "ESNext",
+    "moduleResolution": "NodeNext",
+    "target": "ESNext"
   }
 }

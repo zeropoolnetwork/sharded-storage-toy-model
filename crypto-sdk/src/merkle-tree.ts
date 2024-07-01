@@ -110,7 +110,7 @@ export class Tree<T> implements Serde {
 
     w.writeU32(this.depth);
     for (const node of this.nodes) {
-      w.writeBuffer(bigintToBuffer(node));
+      w.writeU256(node);
     }
 
     for (const value of this.values) {

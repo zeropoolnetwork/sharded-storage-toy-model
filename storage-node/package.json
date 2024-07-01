@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "node build/server.js",
-    "build": "tsc --outDir build",
+    "start": "tsx src/index.ts",
     "test": "jest"
   },
   "author": "Dmitry Vdovin <voidxnull@gmail.com>",
@@ -14,10 +13,12 @@
     "@zk-kit/eddsa-poseidon": "^1.0.1",
     "commander": "^12.1.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "level": "^8.0.1",
     "seedrandom": "^3.0.5",
     "socket.io-client": "^4.7.5",
+    "tsx": "^4.15.7",
     "zpst-common": "workspace:../common",
     "zpst-crypto-sdk": "workspace:../crypto-sdk",
     "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256/nodejs"

@@ -2,8 +2,7 @@
   "name": "zpst-crypto-sdk",
   "version": "1.0.0",
   "description": "My New Project description.",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "src/index.ts",
   "repository": {
     "url": "https://example.com/your-username/my-new-project",
     "type": "git"

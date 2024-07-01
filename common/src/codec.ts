@@ -1,10 +1,37 @@
-import { toBigIntBE } from 'bigint-buffer';
 import { Fr } from './fields';
 
-const FIELD_SIZE = Fr.SIZE_IN_BYTES;
+const FIELD_SIZE = 32;
 const CHUNK_SIZE = 31;
+// TODO: Extract settings from crypto-sdk to common
+// According to settings in the crypto-sdk
+const SEGMENT_SIZE = 1 << 10;
 
-export function encodeData(buffer: Uint8Array): Uint8Array {
+export function encodeFile(buffer: Uint8Array): Uint8Array[] {
+  const segments = [];
+  const numSegments = Math.ceil(buffer.length / SEGMENT_SIZE);
+
+  for (let i = 0; i < numSegments; i++) {
+    const start = i * SEGMENT_SIZE;
+    const end = Math.min((i + 1) * SEGMENT_SIZE, buffer.length);
+    const segment = buffer.subarray(start, end);
+    segments.push(encodeSegment(segment));
+  }
+
+  return segments;
+}
+
+export function decodeFile(segments: Uint8Array[], fileSize: number): Uint8Array {
+  const buffer = new Uint8Array(fileSize);
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = decodeSegment(segments[i]);
+    buffer.set(segment, i * CHUNK_SIZE);
+  }
+
+  return buffer;
+}
+
+export function encodeSegment(buffer: Uint8Array): Uint8Array {
   const elements = new Uint8Array(FIELD_SIZE * Math.ceil(buffer.length / CHUNK_SIZE));
 
   for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
@@ -19,7 +46,7 @@ export function encodeData(buffer: Uint8Array): Uint8Array {
   return elements;
 }
 
-export function decodeData(data: Fr[] | Uint8Array): Uint8Array {
+export function decodeSegment(data: Fr[] | Uint8Array): Uint8Array {
   let elements: Fr[];
   if (data instanceof Uint8Array) {
     elements = bufferToFrElements(data);
@@ -39,6 +66,7 @@ export function decodeData(data: Fr[] | Uint8Array): Uint8Array {
   return buffer.subarray(0, Number(fileSize));
 }
 
+/** Convert a buffer of Fr elements to Fr[] */
 export function bufferToFrElements(buffer: Uint8Array): Fr[] {
   if (buffer.length % CHUNK_SIZE !== 0) {
     throw new Error('Invalid buffer size');
@@ -58,6 +86,7 @@ export function bufferToFrElements(buffer: Uint8Array): Fr[] {
   return elements;
 }
 
+/** Convert Fr elements to a buffer */
 export function frElementsToBuffer(elements: Fr[]): Uint8Array {
   const buffer = new Uint8Array(elements.length * CHUNK_SIZE);
 

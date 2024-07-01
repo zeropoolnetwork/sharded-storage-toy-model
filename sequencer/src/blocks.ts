@@ -1,8 +1,10 @@
 import { Level } from 'level';
 
 export interface Block {
+  height: number;
   oldRoot: string;
   newRoot: string;
+  txHash: string;
 }
 
 export class Blocks {
@@ -20,8 +22,10 @@ export class Blocks {
       console.warn('No blocks found. Creating a new chain.');
 
       self.latestBlock = {
+        height: 0,
         oldRoot: '0',
         newRoot: '0',
+        txHash: '0x0',
       };
 
       await self.blocks.put('latest', self.latestBlock);
@@ -32,8 +36,10 @@ export class Blocks {
 
   createNewBlock(): Block {
     return {
+      height: this.latestBlock.height + 1,
       oldRoot: this.latestBlock.newRoot,
       newRoot: '',
+      txHash: '',
     };
   }
 

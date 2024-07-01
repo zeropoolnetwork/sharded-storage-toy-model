@@ -1,15 +1,13 @@
 <script>
-	import { goto } from '$app/navigation';
-	import { initHDWallet } from '$lib';
-	import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { isWalletInitialized } from '$lib';
+  import { onMount } from 'svelte';
 
-	onMount(async () => {
-		try {
-			await initHDWallet();
-			goto('/app');
-		} catch (err) {
-			console.error(err);
-			goto('/init');
-		}
-	});
+  onMount(async () => {
+    if (isWalletInitialized()) {
+      goto('/app');
+    } else {
+      goto('/init');
+    }
+  });
 </script>

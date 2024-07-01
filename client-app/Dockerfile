@@ -1,13 +1,13 @@
 FROM rustlang/rust:nightly as poseidon2-bn256
 
 RUN apt-get update && apt-get install -y \
-  binaryen \
-  curl \
-  build-essential \
-  pkg-config \
-  libssl-dev \
-  git \
-  && rm -rf /var/lib/apt/lists/*
+    binaryen \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 WORKDIR /usr/src/poseidon2-bn256
@@ -33,8 +33,7 @@ COPY --from=poseidon2-bn256 /usr/src/poseidon2-bn256/bundler poseidon2-bn256/bun
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY client-app client-app
 RUN pnpm install --recursive --frozen-lockfile
-RUN pnpm --filter zpst-common build
-RUN pnpm -r build
+RUN pnpm --filter client-app build
 
 FROM nginx:alpine
 COPY client-app/nginx/nginx.conf /etc/nginx/conf.d/default.conf

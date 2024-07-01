@@ -1,9 +1,8 @@
-
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 
-import { Tree } from 'zpst-crypto-sdk/lib/merkle-tree';
-import { storage } from './state';
+import { Tree } from 'zpst-crypto-sdk/src/merkle-tree';
+import { appState } from './state';
 import { PORT } from './env';
 
 export async function startHttpServer(port: number) {
@@ -15,7 +14,7 @@ export async function startHttpServer(port: number) {
   app.use(cors());
 
   app.get('/segment/:id', async (req: Request, res: Response) => {
-    const data = await storage.read(req.params.id);
+    const data = await appState.storage.read(req.params.id);
 
     if (!data) {
       res.status(404).send('Segment not found');
@@ -24,7 +23,9 @@ export async function startHttpServer(port: number) {
 
     const tree: Tree<bigint> = new Tree(0, [], [0n], (v) => v);
     tree.deserialize(data, () => 0n);
-    const bytes = tree.values.map((v) => v.toString(16).padStart(64, '0')).join('');
+    const bytes = tree.values
+      .map((v) => v.toString(16).padStart(64, '0'))
+      .join('');
     const buf = Buffer.from(bytes, 'hex');
 
     res.setHeader('Content-Type', 'application/octet-stream');

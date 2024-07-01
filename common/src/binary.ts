@@ -1,11 +1,11 @@
 // Original taken from https://github.com/near/borsh-js
 // Added support for configurable endianness, dynamic arrays and replaced BN with bigint.
 
-const textDecoder = new TextDecoder('utf-8', { fatal: true });
+const textDecoder = new TextDecoder("utf-8", { fatal: true });
 
 export enum Endianness {
-  LE = 'le',
-  BE = 'be',
+  LE = "le",
+  BE = "be",
 }
 
 /// Binary encoder.
@@ -34,7 +34,7 @@ export class BinaryWriter {
 
   public writeU16(value: number) {
     this.maybeResize();
-    if (this.endian == 'le') {
+    if (this.endian == "le") {
       this.buf.writeUInt16LE(value, this.length);
     } else {
       this.buf.writeUInt16BE(value, this.length);
@@ -44,7 +44,7 @@ export class BinaryWriter {
 
   public writeU32(value: number) {
     this.maybeResize();
-    if (this.endian == 'le') {
+    if (this.endian == "le") {
       this.buf.writeUInt32LE(value, this.length);
     } else {
       this.buf.writeUInt32BE(value, this.length);
@@ -73,7 +73,7 @@ export class BinaryWriter {
   }
 
   public writeBuffer(buffer: Buffer) {
-    this.buf = Buffer.concat([Buffer.from(this.buf.subarray(0, this.length)), buffer, Buffer.alloc(this.buf.length / 2)]);
+    buffer.copy(this.buf, this.length);
     this.length += buffer.length;
   }
 
@@ -84,7 +84,7 @@ export class BinaryWriter {
 
   public writeString(str: string) {
     this.maybeResize();
-    const b = Buffer.from(str, 'utf8');
+    const b = Buffer.from(str, "utf8");
     this.writeU32(b.length);
     this.writeBuffer(b);
   }
@@ -107,16 +107,17 @@ export class BinaryWriter {
   }
 }
 
-function handlingRangeError(target: any, propertyKey: string, propertyDescriptor: PropertyDescriptor) {
-  const originalMethod = propertyDescriptor.value;
-  propertyDescriptor.value = function (...args: any[]) {
+function handlingRangeError(originalMethod: Function) {
+  return function (this: any, ...args: any[]) {
     try {
       return originalMethod.apply(this, args);
     } catch (e) {
       if (e instanceof RangeError) {
         const code = (e as any).code;
-        if (['ERR_BUFFER_OUT_OF_BOUNDS', 'ERR_OUT_OF_RANGE'].indexOf(code) >= 0) {
-          throw new Error('Reached the end of buffer when deserializing');
+        if (
+          ["ERR_BUFFER_OUT_OF_BOUNDS", "ERR_OUT_OF_RANGE"].indexOf(code) >= 0
+        ) {
+          throw new Error("Reached the end of buffer when deserializing");
         }
       }
       throw e;
@@ -135,82 +136,71 @@ export class BinaryReader {
     this.endian = endian;
   }
 
-  @handlingRangeError
-  readU8(): number {
+  readU8 = handlingRangeError(function (this: BinaryReader): number {
     const value = this.buf.readUInt8(this.offset);
     this.offset += 1;
     return value;
-  }
+  });
 
-  @handlingRangeError
-  readU16(): number {
+  readU16 = handlingRangeError(function (this: BinaryReader): number {
     let value;
-    if (this.endian == 'le') {
+    if (this.endian == "le") {
       value = this.buf.readUInt16LE(this.offset);
     } else {
       value = this.buf.readUInt16BE(this.offset);
     }
     this.offset += 2;
     return value;
-  }
+  });
 
-  @handlingRangeError
-  readU32(): number {
+  readU32 = handlingRangeError(function (this: BinaryReader): number {
     let value;
-    if (this.endian == 'le') {
+    if (this.endian == "le") {
       value = this.buf.readUInt32LE(this.offset);
     } else {
       value = this.buf.readUInt32BE(this.offset);
     }
-
     this.offset += 4;
     return value;
-  }
+  });
 
-  @handlingRangeError
-  readU64(): bigint {
+  readU64 = handlingRangeError(function (this: BinaryReader): bigint {
     const buf = this.readBuffer(8);
     return arrayToBigint(buf, this.endian);
-  }
+  });
 
-  @handlingRangeError
-  readU128(): bigint {
+  readU128 = handlingRangeError(function (this: BinaryReader): bigint {
     const buf = this.readBuffer(16);
     return arrayToBigint(buf, this.endian);
-  }
+  });
 
-  @handlingRangeError
-  readU256(): bigint {
+  readU256 = handlingRangeError(function (this: BinaryReader): bigint {
     const buf = this.readBuffer(32);
     return arrayToBigint(buf, this.endian);
-  }
+  });
 
-  @handlingRangeError
-  readI256(): bigint {
+  readI256 = handlingRangeError(function (this: BinaryReader): bigint {
     const buf = this.readBuffer(32);
     return arrayToBigint(buf, this.endian, true);
-  }
+  });
 
-  @handlingRangeError
-  readU512(): bigint {
+  readU512 = handlingRangeError(function (this: BinaryReader): bigint {
     const buf = this.readBuffer(64);
     return arrayToBigint(buf, this.endian);
-  }
+  });
 
-  @handlingRangeError
-  readUint(size: number): bigint {
+  readUint = handlingRangeError(function (this: BinaryReader, size: number): bigint {
     const buf = this.readBuffer(size);
     return arrayToBigint(buf, this.endian);
-  }
+  });
 
-  @handlingRangeError
-  readInt(size: number): bigint {
+  readInt = handlingRangeError(function (this: BinaryReader, size: number): bigint {
     const buf = this.readBuffer(size);
     return arrayToBigint(buf, this.endian, true);
-  }
+  });
 
   readBuffer(len: number): Buffer {
-    if ((this.offset + len) > this.buf.length) {
+    if (this.offset + len > this.buf.length) {
       throw new Error(`Expected buffer length ${len} isn't within bounds`);
     }
     const result = this.buf.slice(this.offset, this.offset + len);
@@ -218,14 +208,12 @@ export class BinaryReader {
     return result;
   }
 
-  @handlingRangeError
-  public readDynamicBuffer(): Buffer {
+  readDynamicBuffer = handlingRangeError(function (this: BinaryReader): Buffer {
     const len = this.readU32();
     return this.readBuffer(len);
-  }
+  });
 
-  @handlingRangeError
-  readString(): string {
+  readString = handlingRangeError(function (this: BinaryReader): string {
     const len = this.readU32();
     const buf = this.readBuffer(len);
     try {
@@ -234,35 +222,31 @@ export class BinaryReader {
     } catch (e) {
       throw new Error(`Error decoding UTF-8 string: ${e}`);
     }
-  }
+  });
 
-  @handlingRangeError
-  readFixedArray(len: number, fn: any): any[] {
+  readFixedArray = handlingRangeError(function (this: BinaryReader, len: number, fn: any): any[] {
     const result = new Array(len);
     for (let i = 0; i < len; i++) {
       result.push(fn());
     }
     return result;
-  }
+  });
 
-  @handlingRangeError
-  readArray(fn: any): any[] {
+  readArray = handlingRangeError(function (this: BinaryReader, fn: any): any[] {
     const len = this.readU32();
     const result = Array<any>();
     for (let i = 0; i < len; ++i) {
       result.push(fn());
     }
     return result;
-  }
+  });
 
-  @handlingRangeError
-  skip(len: number) {
+  skip = handlingRangeError(function (this: BinaryReader, len: number) {
     this.offset += len;
     const _ = this.buf[this.offset]; // Check if offset is in bounds
-  }
+  });
 
-  @handlingRangeError
-  readBufferUntilEnd(): Buffer | null {
+  readBufferUntilEnd = handlingRangeError(function (this: BinaryReader): Buffer | null {
     const len = this.buf.length - this.offset;
 
     if (len <= 0) {
@@ -270,14 +254,20 @@ export class BinaryReader {
     }
 
     return this.readBuffer(len);
-  }
+  });
 
   isEmpty(): boolean {
     return this.offset === this.buf.length;
   }
 }
 
-export function bigintToArray(num: bigint | number, size: number, endian: Endianness): Uint8Array {
+// The rest of the code (bigintToArray and arrayToBigint functions) remains unchanged
+
+export function bigintToArray(
+  num: bigint | number,
+  size: number,
+  endian: Endianness,
+): Uint8Array {
   num = BigInt(num);
   const result = new Uint8Array(size);
   if (endian === Endianness.LE) {
@@ -294,7 +284,11 @@ export function bigintToArray(num: bigint | number, size: number, endian: Endian
   return result;
 }
 
-export function arrayToBigint(arr: Uint8Array | Buffer, endian: Endianness, signed = false): bigint {
+export function arrayToBigint(
+  arr: Uint8Array | Buffer,
+  endian: Endianness,
+  signed = false,
+): bigint {
   let result = BigInt(0);
   if (endian === Endianness.LE) {
     for (let i = arr.length - 1; i >= 0; i--) {
