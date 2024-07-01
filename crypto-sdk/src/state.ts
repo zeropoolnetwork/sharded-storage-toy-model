@@ -90,7 +90,7 @@ export function accountToNoir(acc: Account): NoirAccount {
 }
 
 export function blank_file_contents(d: number): Tree<Fr> {
-  return Tree.init(d, new Array(1 << d).fill(0n), (x) => x);
+  return Tree.init<bigint>(d, [], 0n, (x) => x);
 }
 
 export class File implements Serde {
@@ -269,16 +269,16 @@ export class State {
   }
 
   static genesisState(first_acc: Account, sett: ShardedStorageSettings): State {
-    let accs = new Array(1 << sett.acc_data_tree_depth).fill(new Account());
-    accs[0] = first_acc;
     const accounts = Tree.init(
       sett.acc_data_tree_depth,
-      accs,
+      [first_acc],
+      new Account(),
       (acc: Account) => acc.hash(),
     );
     const files = Tree.init(
       sett.acc_data_tree_depth,
-      new Array(1 << sett.acc_data_tree_depth).fill(File.blank(sett.file_tree_depth)),
+      [],
+      File.blank(sett.file_tree_depth),
       (file: File) => file.hash(),
     );
     return new State(accounts, files);

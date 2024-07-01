@@ -81,7 +81,7 @@ pub fn merkle_branch(leaf: FEnc, proof_path: Vec<usize>, proof: Vec<FEnc>) -> Ve
 /// use zpst_poseidon2_bn256::merkle_tree;
 ///
 /// assert_eq!(
-///   merkle_tree(2, vec!["1", "2", "3", "4"].into_iter().map(|x| x.to_string()).collect(), "1000000".to_string()),
+///   merkle_tree(2, vec!["1", "2", "3"].into_iter().map(|x| x.to_string()).collect(), "4".to_string()),
 ///   vec![
 ///   "0", // not used, always 0
 ///   "18145963038378645805713504092197197549342394757429773105454438568839292866655", // root = H(H(1, 2), H(3,4))
@@ -129,18 +129,30 @@ pub fn merkle_tree_internal(depth: usize, values: &[F], def: F) -> Vec<F> {
   let inner_nodes_len = 1usize << depth;
   let mut nodes = vec![F::from(0u64); nodes_len];
 
+  let mut last_nonconst_node = inner_nodes_len + values.len() - 1;
+  let mut current_def = def;
+
   for node in (1..nodes_len).rev() {
-    nodes[node] = if node >= inner_nodes_len {
-      let val_index = node - inner_nodes_len;
-      if val_index < values.len() {
-        values[val_index]
+    nodes[node] =
+      if node >= inner_nodes_len {
+        let val_index = node - inner_nodes_len;
+        if val_index < values.len() {
+          values[val_index]
+        } else {
+          def
+        }
       } else {
-        def
-      }
-    } else {
-      let left_child = node << 1;
-      let right_child = left_child ^ 1;
-      tree_node_hash(nodes[left_child], nodes[right_child])
+        if node <= last_nonconst_node {
+          let left_child = node << 1;
+          let right_child = left_child ^ 1;
+          tree_node_hash(nodes[left_child], nodes[right_child])
+        } else {
+          current_def
+        }
+      };
+    if node & (node - 1) == 0 {
+      last_nonconst_node >>= 1;
+      current_def = tree_node_hash(current_def, current_def);
     }
   }
 

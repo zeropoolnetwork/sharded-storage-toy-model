@@ -2,7 +2,7 @@
 
 import { BinaryWriter, BinaryReader } from 'zpst-common/src/binary';
 import { MerkleProof as NoirMerkleProof } from "./noir_codegen/index.js";
-import { fr_serialize, Fr, fr_deserialize, bigIntToBytes, bigintToBuffer, bufferToBigint, Serde } from './util';
+import { fr_serialize, Fr, fr_deserialize, bigIntToBytes, bigintToBuffer, bufferToBigint, Serde, pad_array } from './util';
 
 import { merkle_tree, poseidon2_bn256_hash, merkle_branch } from 'zpst-poseidon2-bn256';
 
@@ -39,15 +39,19 @@ export class Tree<T> implements Serde {
   static init<T>(
     depth: number,
     values: T[],
+    def: T,
     hash_cb: (x: T) => Fr,
   ): Tree<T> {
-    if (values.length != 1 << depth)
-      throw new Error("incorrect number of values");
+    if (values.length > 1 << depth)
+      throw Error("too many leaves");
 
-    const nodes = merkle_tree(depth, values.map((x, i, ar) => fr_serialize(hash_cb(x))), "0")
-      .map(fr_deserialize);
+    const nodes = merkle_tree(
+      depth,
+      values.map((x, i, ar) => fr_serialize(hash_cb(x))),
+      fr_serialize(hash_cb(def))
+    ).map(fr_deserialize);
 
-    return new Tree(depth, nodes, values, hash_cb);
+    return new Tree(depth, nodes, pad_array(values, 1 << depth, def), hash_cb);
   }
 
   root(): Fr {

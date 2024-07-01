@@ -10,7 +10,7 @@ describe('Merkle Tree', () => {
   test('creates a new tree with correct depth and values', async () => {
     const values = [1n, 2n, 3n, 4n];
     const depth = 2;
-    const tree = await Tree.init(depth, values, id);
+    const tree = await Tree.init(depth, values, 0n, id);
 
     expect(tree.depth).toBe(depth);
     expect(tree.values).toEqual(values);
@@ -24,15 +24,20 @@ describe('Merkle Tree', () => {
         fr_serialize(exp_nodes[i*2 + 1])
       ]));
 
-
     expect(tree.nodes).toEqual(exp_nodes);
   });
 
-  test('throws an error when creating a tree with incorrect number of values', async () => {
-    const values = [0n, 0n, 0n];
-    const depth = 2;
+  test('pad leaves when fewer values were provided', async () => {
+    expect(
+      Tree.init(2, [0n, 0n, 0n], 1n, id)
+    ).toEqual(
+      Tree.init(2, [0n, 0n, 0n, 1n], 0n, id)
+    );
+  });
 
-    await expect(async () => Tree.init(depth, values, id)).rejects.toThrow();
+
+  test('throw an exception when too many leaves were provided', async () => {
+    await expect(async () => Tree.init(2, [0n, 1n, 2n, 3n, 4n], 0n, id)).rejects.toThrow();
   });
 
 
@@ -45,9 +50,9 @@ describe('Merkle Tree', () => {
   });
 
   test('Read and update Merkle tree leaf', async () => {
-    const values = [1n, 2n, 3n, 4n];
+    const values = [1n, 2n, 3n];
     const depth = 2;
-    const tree = await Tree.init(depth, values, id);
+    const tree = await Tree.init(depth, values, 4n, id);
 
 
     expect(tree.nodes).toEqual(

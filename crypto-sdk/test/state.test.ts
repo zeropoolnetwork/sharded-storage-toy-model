@@ -113,7 +113,8 @@ describe('State', () => {
     // this is file contents, seen only by user and the storage node
     const fives: Tree<Fr> = Tree.init(
       sett.file_tree_depth,
-      pad_array([], 1 << sett.file_tree_depth, BigInt(5)),
+      [],
+      BigInt(5),
       id
     );
     // file tx is formed and signed by the user (doesn't need full state)
@@ -129,6 +130,7 @@ describe('State', () => {
         { length: 1 << sett.file_tree_depth },
         (_, i) => BigInt(i),
       ),
+      0n,
       id
     );
     const ftx2 = await prep_file_tx(100n, 2, 1, count_file.root(), rec2_sk, nonce2++);
@@ -152,15 +154,12 @@ describe('State', () => {
     };
     const self_tx_data = Tree.init(
       sett.file_tree_depth,
-      pad_array(
-        pack_tx(
-          acc_txs.map((x) => x.tx),
-          mining_txs.map((x) => x.tx),
-          [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
-        ),
-        1 << sett.file_tree_depth,
-        0n,
+      pack_tx(
+        acc_txs.map((x) => x.tx),
+        mining_txs.map((x) => x.tx),
+        [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
       ),
+      0n,
       id
     );
     const ftx_self = await prep_file_tx(
@@ -282,15 +281,12 @@ describe('State', () => {
     };
     const self_tx_data = Tree.init(
       sett.file_tree_depth,
-      pad_array(
-        pack_tx(
-          acc_txs.map((x) => x.tx),
-          mining_txs.map((x) => x.tx),
-          [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
-        ),
-        1 << sett.file_tree_depth,
-        0n,
+      pack_tx(
+        acc_txs.map((x) => x.tx),
+        mining_txs.map((x) => x.tx),
+        [...file_txs_incomplete.map((x) => x.tx), placeholder_file_tx],
       ),
+      0n,
       id
     );
     const ftx_self = await prep_file_tx(
