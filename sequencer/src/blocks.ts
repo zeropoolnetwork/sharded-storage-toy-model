@@ -1,10 +1,14 @@
 import { Level } from 'level';
 
 export interface Block {
-  height: number;
   oldRoot: string;
   newRoot: string;
+  /** Transaction hash of the published block */
   txHash: string;
+  /**  Block height on the rollup */
+  height: number;
+  /** Block height on the blockchain */
+  now: number;
 }
 
 export class Blocks {
@@ -26,6 +30,7 @@ export class Blocks {
         oldRoot: '0',
         newRoot: '0',
         txHash: '0x0',
+        now: 0,
       };
 
       await self.blocks.put('latest', self.latestBlock);
@@ -40,6 +45,7 @@ export class Blocks {
       oldRoot: this.latestBlock.newRoot,
       newRoot: '',
       txHash: '',
+      now: 0,
     };
   }
 
@@ -55,6 +61,10 @@ export class Blocks {
     } catch (error) {
       return undefined;
     }
+  }
+
+  count(): number {
+    return this.latestBlock.height;
   }
 
   getLatestBlock(): Block {

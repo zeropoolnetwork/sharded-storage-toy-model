@@ -33,14 +33,16 @@ import {
   RollupInput,
   RollupPubInput,
   Root,
-  // circuits,
-  // circuits_circuit,
+  Account as AccountType,
+  File as FileType,
   AccountTx,
   AccountTxEx,
   SignaturePacked,
   FileTx,
   MiningTx,
   FileTxEx,
+  MerkleProof,
+  MiningTxEx,
 } from 'zpst-crypto-sdk/src/noir_codegen';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
 import {
@@ -65,6 +67,8 @@ import {
   RollupContractMock,
 } from './contract';
 import { upload, broadcastMiningChallenge, UploadAndMineResponse } from './nodes';
+import { BinaryWriter } from 'zpst-common/src/binary';
+import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
 
 const FILES_TREE_PATH = './data/files_tree.bin';
 const ACCOUNT_TREE_PATH = './data/account_tree.bin';
@@ -355,19 +359,46 @@ export class AppState {
       blank_file_tx(ssConfig),
     );
 
+
+    const gatewayMetas = files.reduce((acc, seg) => {
+      let entry = acc.get(seg.data.metadata.path);
+      if (entry) {
+        entry.fileIndices.push(BigInt(seg.tx[0].data_index));
+      } else {
+        acc.set(seg.data.metadata.path, new GatewayMeta(seg.data.metadata.path, seg.data.metadata.size, [BigInt(seg.tx[0].data_index)]));
+      }
+
+      return acc;
+    }, new Map<string, GatewayMeta>());
+
+    const metaFile = new MetadataFile(accTxs, fileTxs, miningTxs, [...gatewayMetas.values()]);
+    const metaFileData = metaFile.serialize();
+    const encodedMetaFileSegments = encodeFile(metaFileData);
+
+    if (encodedMetaFileSegments.length > 1) {
+      throw new Error('Metadata file too large');
+    }
+
+    const metaFileSegment = encodedMetaFileSegments[0];
+    const metaFileElements = bufferToFrElements(metaFileSegment).map((el) => BigInt(el.toString()));
+    const metaFileTree = Tree.init(ssConfig.file_tree_depth, metaFileElements, 0n, (t: any) => t);
+
     // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
     const masterAccount: AccountData = await this.accounts.get(
       this.masterPk.toString(),
-    ); // Can't fail
-    const metaFileIndex = (1 << ssConfig.acc_data_tree_depth) - 1; // FIXME: apply offset
+    ); // Can't fail since we add the master account on start
+
+    const masterAccountNonce = BigInt(masterAccount.nonce);
+
+    const metaFileIndex = (1 << ssConfig.acc_data_tree_depth) - this.blocks.count() - 1;
     const metaFileDuration = 7149n * 1000n; // ~1000 days
     const metaFileSender = 0;
     const metaFileTxData: FileTx = {
       sender_index: metaFileSender.toString(),
       data_index: metaFileIndex.toString(),
       time_interval: fr_serialize(metaFileDuration),
-      data: undefined as never, // FIXME: Meta tx data
-      nonce: undefined as never,
+      data: metaFileTree.root().toString(),
+      nonce: masterAccountNonce.toString(),
     };
     const metaTxData = Tree.init(
       ssConfig.file_tree_depth,
@@ -383,8 +414,6 @@ export class AppState {
       0n,
       (x: any) => x,
     );
-
-    const masterAccountNonce = BigInt(masterAccount.nonce);
 
     const metaFileTx = prep_file_tx(
       metaFileDuration,
@@ -456,11 +485,7 @@ export class AppState {
     );
 
     // Upload the meta file to storage nodes
-    await upload(
-      files
-        .slice(files.length - 1)
-        .map((f) => ({ id: f.tx[0].data_index, data: f.data.data })),
-    );
+    await upload([{ id: metaFileIndex.toString(), data: Buffer.from(metaFileSegment) }]);
 
     await Promise.all(
       files.map((f) => {
@@ -474,6 +499,7 @@ export class AppState {
     const block = this.blocks.createNewBlock();
     block.txHash = txHash;
     block.newRoot = newStateHash.toString(); // FIXME: hex?
+    block.now = Number(now);
 
     await this.blocks.addBlock(block);
 
@@ -534,4 +560,168 @@ async function checkFileExists(path: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// TODO: Move to a separate module
+class MetadataFile {
+  accountTxs: AccountTxEx[];
+  fileTxs: FileTxEx[];
+  miningTxs: MiningTxEx[];
+  meta: GatewayMeta[];
+
+  constructor(accountTxs: AccountTxEx[], fileTxs: FileTxEx[], miningTxs: MiningTxEx[], meta: GatewayMeta[]) {
+    this.accountTxs = accountTxs;
+    this.fileTxs = fileTxs;
+    this.miningTxs = miningTxs;
+    this.meta = meta;
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter();
+
+    w.writeArray(this.accountTxs, (tx: AccountTxEx) => {
+      // sender_index: Field;
+      // receiver_index: Field;
+      // receiver_key: Field;
+      // amount: Field;
+      // nonce: Field;
+      w.writeU256(BigInt(tx.tx.sender_index));
+      w.writeU256(BigInt(tx.tx.receiver_index));
+      w.writeU256(BigInt(tx.tx.receiver_key));
+      w.writeU256(BigInt(tx.tx.amount));
+      w.writeU256(BigInt(tx.tx.nonce));
+
+      // proof_sender: MerkleProof;
+      // proof_receiver: MerkleProof;
+      // account_sender: Account;
+      // account_receiver: Account;
+      // signature: SignaturePacked;
+      serializeMerkleProof(w, tx.assets.proof_sender);
+      serializeMerkleProof(w, tx.assets.proof_receiver);
+      serializeAccount(w, tx.assets.account_sender);
+      serializeAccount(w, tx.assets.account_receiver);
+      serializeSignature(w, tx.assets.signature);
+    });
+
+    w.writeArray(this.fileTxs, (tx: FileTxEx) => {
+      // sender_index: Field;
+      // data_index: Field;
+      // time_interval: Field;
+      // data: Field;
+      // nonce: Field;
+      w.writeU256(BigInt(tx.tx.sender_index));
+      w.writeU256(BigInt(tx.tx.data_index));
+      w.writeU256(BigInt(tx.tx.time_interval));
+      w.writeU256(BigInt(tx.tx.data));
+      w.writeU256(BigInt(tx.tx.nonce));
+
+      // proof_sender: MerkleProof;
+      // proof_file: MerkleProof;
+      // account_sender: Account;
+      // file: File;
+      // signature: SignaturePacked;
+      serializeMerkleProof(w, tx.assets.proof_sender);
+      serializeMerkleProof(w, tx.assets.proof_file);
+      serializeAccount(w, tx.assets.account_sender);
+      serializeFile(w, tx.assets.file);
+      serializeSignature(w, tx.assets.signature);
+    });
+
+    w.writeArray(this.miningTxs, (tx: MiningTxEx) => {
+      // sender_index: Field;
+      // nonce: Field;
+      // random_oracle_nonce: Field;
+      // mining_nonce: Field;
+      w.writeU256(BigInt(tx.tx.sender_index));
+      w.writeU256(BigInt(tx.tx.nonce));
+      w.writeU256(BigInt(tx.tx.random_oracle_nonce));
+      w.writeU256(BigInt(tx.tx.mining_nonce));
+
+      // proof_sender: MerkleProof;
+      // account_sender: Account;
+      // random_oracle_value: Field;
+      // proof_file: MerkleProof;
+      // file: File;
+      // proof_data_in_file: MerkleProof;
+      // data_in_file: Field;
+      // signature: SignaturePacked;
+      serializeMerkleProof(w, tx.assets.proof_sender);
+      serializeAccount(w, tx.assets.account_sender);
+      w.writeU256(BigInt(tx.assets.random_oracle_value));
+      serializeMerkleProof(w, tx.assets.proof_file);
+      serializeFile(w, tx.assets.file);
+      serializeMerkleProof(w, tx.assets.proof_data_in_file);
+      w.writeU256(BigInt(tx.assets.data_in_file));
+      serializeSignature(w, tx.assets.signature);
+    });
+
+    w.writeArray(this.meta, (m: GatewayMeta) => {
+      w.writeBuffer(m.serialize());
+    });
+
+    return w.toBuffer();
+  }
+}
+
+function serializeMerkleProof(w: BinaryWriter, proof: MerkleProof) {
+  // index_bits: u1[];
+  // hash_path: Field[];
+
+  w.writeArray(proof.index_bits, (b: boolean) => w.writeU8(b ? 1 : 0));
+  w.writeArray(proof.hash_path, (h: string) => w.writeU256(BigInt(h)));
+}
+
+function serializeAccount(w: BinaryWriter, acc: AccountType) {
+  // key: Field;
+  // balance: Field;
+  // nonce: Field;
+  // random_oracle_nonce: Field;
+
+  w.writeU256(BigInt(acc.key));
+  w.writeU256(BigInt(acc.balance));
+  w.writeU256(BigInt(acc.nonce));
+  w.writeU256(BigInt(acc.random_oracle_nonce));
+}
+
+function serializeFile(w: BinaryWriter, file: FileType) {
+  // expiration_time: Field;
+  // locked: boolean;
+  // owner: Field;
+  // data: Field;
+
+  w.writeU256(BigInt(file.expiration_time));
+  w.writeU8(file.locked ? 1 : 0);
+  w.writeU256(BigInt(file.owner));
+  w.writeU256(BigInt(file.data));
+}
+
+function serializeSignature(w: BinaryWriter, sig: SignaturePacked) {
+  // a: Field;
+  // s: Field;
+  // r8: Field;
+  w.writeU256(BigInt(sig.a));
+  w.writeU256(BigInt(sig.s));
+  w.writeU256(BigInt(sig.r8));
+}
+
+class GatewayMeta {
+  filePath: string;
+  fileSize: number;
+  fileIndices: bigint[];
+
+  constructor(filePath: string, fileSize: number, fileIndices: bigint[]) {
+    this.filePath = filePath;
+    this.fileSize = fileSize;
+    this.fileIndices = fileIndices;
+  }
+
+  serialize(): Buffer {
+    const w = new BinaryWriter();
+
+    w.writeString(this.filePath);
+    w.writeU64(this.fileSize);
+    w.writeArray(this.fileIndices, (n: bigint) => w.writeU64(n));
+
+    return w.toBuffer();
+  }
 }
