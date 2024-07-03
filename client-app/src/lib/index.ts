@@ -20,14 +20,14 @@ export let sk: bigint;
 export let skBuf: Buffer;
 export let pk: bigint;
 export let pkBuf: Buffer;
+
 export async function initHDWallet(mnemonic: string) {
   if (signer) {
     return;
   }
 
-  const p = new JsonRpcProvider('https://rpc.sepolia.org', 'sepolia');
-  const wallet = Wallet.fromPhrase(mnemonic).connect(p);
-  console.log('Wallet:', wallet.address);
+  // const p = new JsonRpcProvider('https://rpc.sepolia.org', 'sepolia');
+  const wallet = Wallet.fromPhrase(mnemonic);
 
   signer = wallet;
   address = wallet.address;
@@ -49,9 +49,9 @@ export async function initWeb3Modal() {
   };
 
   const metadata = {
-    name: 'insideout.codes dev',
+    name: 'client.storage.zeropool.network dev',
     description: 'Web3Modal',
-    url: 'https://insideout.codes',
+    url: 'https://client.storage.zeropool.network',
     icons: ['https://avatars.githubusercontent.com/u/37784886']
   };
 
@@ -65,6 +65,15 @@ export async function initWeb3Modal() {
 
   await modal.open();
 
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const modal2 = createWeb3Modal({
+    ethersConfig,
+    chains: [testnet],
+    projectId,
+  });
+  await modal2.open();
+
   const p = modal.getWalletProvider();
   if (!p) {
     throw new Error('Provider is not initialized');
@@ -77,6 +86,8 @@ export async function initWeb3Modal() {
   const FIXED_MESSAGE: string = 'zpst'; // FIXME
   const sig = (await signer.signMessage(FIXED_MESSAGE)).replace(/^0x/i, '').substring(0, 128);
   const sigHash = hashMessage(sig);
+
+  modal.close();
 
   sk = (deriveSecretScalar(sigHash) % Fr.MODULUS);
   skBuf = Buffer.from(sk.toString(16).padStart(64, '0'), 'hex');

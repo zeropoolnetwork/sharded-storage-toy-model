@@ -28,6 +28,9 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
 
   let fileIndex = indices.vacantFileIndex;
   const segmentedData = encodeFile(new Uint8Array(data));
+
+  console.log('Uploading segments:', segmentedData.length, ', file size:', fileSize, ', file name:', fileName);
+
   const segments = segmentedData.map((segmentData) => {
     const elements = bufferToFrElements(segmentData).map((x) => x.toString());
     const hash = BigInt(poseidon2_bn256_hash(elements));

@@ -33,7 +33,7 @@
   });
 </script>
 
-<div class="border rounded-lg p-4 w-1/3">
+<div class="border rounded-lg p-4 w-full sm:w-2/3 lg:w-1/3 bg-slate-100">
   <div class="flex justify-center">
     <button
       on:click={connectWallet}
@@ -43,7 +43,7 @@
     </button>
   </div>
   <div class="flex justify-center mt-4">
-    <p class="text-base text-gray-300">or</p>
+    <p class="text-base text-gray-500">or</p>
   </div>
   <div class="flex space-x-2 mt-4">
     <input
@@ -54,7 +54,7 @@
     />
     <button
       on:click={initHD}
-      class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded"
+      class="bg-orange-400 hover:bg-orange-500 text-white font-bold py-2 px-4 rounded"
     >
       Init
     </button>

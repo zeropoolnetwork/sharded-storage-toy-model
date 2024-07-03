@@ -66,7 +66,7 @@
       blocks = await getLatestBlocks();
       files = (await listFiles()).map((meta) => ({
         name: meta.filePath,
-        url: `${NODE_API_URL}/files/${meta.filePath}`
+        url: `${NODE_API_URL}/files/${pk}/${meta.filePath}`
       }));
     }, 3000);
   });
@@ -82,93 +82,107 @@
   }
 </script>
 
-<div class="border rounded-lg p-4 w-full sm:w-2/3 md:w-1/2 lg:w-1/3">
+<div class="border rounded-lg p-4 w-full sm:w-2/3 md:w-2/3 lg:w-1/2 bg-slate-100">
   {#await promise}
     <p>Loading...</p>
   {:then}
-    <div class="mb-4">
-      <div class="flex justify-between">
-        <p class="text-sm text-gray-300">
-          Sequencer: {SEQUENCER_API_URL}
-          {#if status.rollup}
-            <span class="text-green-500">✅</span>
-          {:else}
-            <span class="text-red-500">❌</span>
-          {/if}
-        </p>
-        <p class="text-sm text-gray-300">
-          Node: {NODE_API_URL}
-          {#if status.node}
-            <span class="text-green">✅</span>
-          {:else}
-            <span class="text-red"> ❌ </span>
-          {/if}
-        </p>
-      </div>
-    </div>
     <div class="flex">
-      <div class="pt-4 grow">
-        <h2 class="text-xl font-bold mb-2">Files</h2>
-        <button
-          on:click={handleUpload}
-          class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded mb-2"
-        >
-          Upload
-        </button>
-        {#each files as file}
-          <div class="flex items-center mb-2">
-            <img src={file.url} alt={file.name} class="w-12 h-12 mr-2 rounded" />
-            <a href={file.url} target="_blank" class="text-blue-500 overflow-hidden">{file.name}</a>
-          </div>
-        {/each}
+      <div class="grow">
+        <div class="flex items-center">
+          <h2 class="mb-2 mr-2 font-bold uppercase">Files</h2>
+          {#if balance > 0n}
+            <button
+              on:click={handleUpload}
+              class="py-2 px-4 bg-orange-400 hover:bg-orange-500 text-white font-bold rounded mb-2"
+            >
+              Upload
+            </button>
+          {/if}
+        </div>
+        <div class="overflow-y-scroll max-h-64">
+          {#each files as file}
+            <div class="flex items-center mb-2">
+              <!-- <img src={file.url} alt={file.name} class="w-12 h-12 mr-2 rounded" /> -->
+              <a href={file.url} target="_blank" class="text-blue-500 overflow-hidden">
+                {file.name}
+              </a>
+            </div>
+          {/each}
+        </div>
       </div>
-      <div class="border-l p-4">
-        <h2 class="text-xl font-bold mb-2">Account</h2>
-        <div class="flex items-center mb-2">
+      <div class="border-l pl-4">
+        <h2 class="mb-2 font-bold uppercase text-center">Account</h2>
+        <div class="mb-2 rounded bg-slate-600">
           <!-- <div class="text-l text-gray-600 overflow-hidden">Address: {pk}</div> -->
-          <div class="text-l text-gray-600 mr-2">Balance: {balance}</div>
+          <div class="text-l text-gray-100 py-2 px-4 text-center">{balance}</div>
           <button
             on:click={handleFaucet}
-            class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded"
+            class="w-full py-2 px-4 bg-orange-400 hover:bg-orange-500 border text-white font-bold rounded"
           >
             Faucet
           </button>
         </div>
       </div>
     </div>
-    <div class="border-t pt-4">
-      <h2 class="text-xl font-bold mb-2">Blocks</h2>
-      <div class="flex items-center mb-2">
-        {#each blocks as block}
-          <div
-            class="p-4 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-2 sm:p-6 flex-grow-0"
-          >
-            <div class="text-gray-900 font-bold text-xl mb-2">Block #{block.height}</div>
-            {#if block.height > 0}
-              <div class="text-sm text-gray-600">Now: {block.now}</div>
-              <div class="overflow-hidden">
-                <a
-                  href={txLink(block.txHash)}
-                  target="_blank"
-                  class="text-sm text-blue-500 overflow-hidden"
-                >
-                  {block.txHash}
-                </a>
-              </div>
-            {:else}
-              <div class="text-sm text-gray-600">Genesis</div>
-            {/if}
-          </div>
-        {/each}
-        {#if status.blockInProgress}
-          <div class="p-4 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-2 sm:p-6">
-            <div class="text-gray-900 font-bold text-xl mb-2">
-              Block #{blocks[blocks.length - 1]?.height ?? 0 + 1}
+    <div class="border-t mt-2 pt-4">
+      <h2 class="mb-4 font-bold uppercase">Blocks</h2>
+      {#if blocks.length === 0}
+        <div class="flex items-center justify-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      {:else}
+        <div class="grid grid-cols-3 gap-4">
+          {#if status.blockInProgress}
+            <div class="p-4 bg-white rounded-xl shadow-md">
+              <h4 class="text-gray-900 font-bold mb-2 uppercase text-sm">
+                Block #{(blocks[0]?.height ?? 0) + 1}
+              </h4>
+              <div class="text-xs text-gray-600">In progress...</div>
             </div>
-            <div class="text-sm text-gray-600">In progress...</div>
-          </div>
+          {/if}
+          {#each blocks as block}
+            <div class="p-4 bg-white rounded-xl shadow-md">
+              <h4 class="text-gray-900 font-bold mb-2 uppercase text-sm">
+                Block #{block.height}
+              </h4>
+              {#if block.height > 0}
+                <div class="text-xs text-gray-600">Now: {block.now}</div>
+                <div class="overflow-hidden">
+                  <a
+                    href={txLink(block.txHash)}
+                    target="_blank"
+                    class="text-xs text-blue-500 line-clamp-1"
+                  >
+                    {block.txHash}
+                  </a>
+                </div>
+              {:else}
+                <div class="text-xs text-gray-600">Genesis</div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+    <div class="flex justify-between mt-16 p-2 bg-slate-600 rounded text-xs text-gray-300">
+      <p class="text-gray-300 line-clamp-1">
+        <span class="text-gray-400">S:</span>
+        {SEQUENCER_API_URL}
+        {#if status.rollup}
+          <span class="text-green-500">✅</span>
+        {:else}
+          <span class="text-red-500">❌</span>
         {/if}
-      </div>
+      </p>
+      <p class="text-gray-300">
+        <span class="text-gray-400">N:</span>
+        {NODE_API_URL}
+        {#if status.node}
+          <span class="text-green">✅</span>
+        {:else}
+          <span class="text-red">❌</span>
+        {/if}
+      </p>
     </div>
   {:catch error}
     <p>Error: {error.message}</p>

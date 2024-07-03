@@ -13,7 +13,7 @@
   });
 </script>
 
-<div class="flex h-screen items-center justify-center">
+<div class="flex h-screen md:items-center justify-center">
   {#if loading}
     <p>Loading...</p>
   {:else}
