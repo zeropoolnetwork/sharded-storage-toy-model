@@ -2,6 +2,7 @@ import { Tree } from './../src/merkle-tree';
 import { bigIntToFr, frAdd, Fr, fr_serialize, fr_deserialize } from '../src/util';
 import { cpus } from 'os';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
+import { Account, File } from '../src/state';
 
 function id<T>(x: T): T { return x }
 
@@ -83,5 +84,58 @@ describe('Merkle Tree', () => {
     expect(ten).toEqual(10n);
 
     expect(ten_proof).toEqual(two_proof);
+  });
+
+  test('ser/de num', () => {
+    const values = [1n, 2n, 3n, 4n];
+    const depth = 2;
+    const tree = Tree.init(depth, values, 0n, id);
+
+    const ser = tree.toBuffer();
+    const de = new Tree<bigint>(depth, [], [], id);
+    de.fromBuffer(ser, () => 0n);
+
+    expect(de).toEqual(tree);
+  });
+
+  test('ser/de Account', () => {
+    const h = (acc: Account) => acc.hash();
+    const acc = new Account();
+    acc.balance += 1n;
+    const values: Account[] = [acc];
+    const depth = 4;
+    const tree = Tree.init(depth, values, new Account(), h);
+
+    const ser = tree.toBuffer();
+
+    const de = new Tree(
+      depth,
+      [],
+      [],
+      h,
+    );
+    de.fromBuffer(ser, () => new Account());
+
+    expect(de).toEqual(tree);
+  });
+
+  test('ser/de File', () => {
+    const h = (file: File) => file.hash();
+    const file = File.blank(3);
+    file.owner = 1n;
+    const values: File[] = [file];
+    const depth = 4;
+    const tree = Tree.init(depth, values, File.blank(3), h);
+
+    const ser = tree.toBuffer();
+    const de = new Tree(
+      depth,
+      [],
+      [],
+      h,
+    );
+    de.fromBuffer(ser, () => File.blank(3));
+
+    expect(de).toEqual(tree);
   });
 });

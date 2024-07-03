@@ -225,10 +225,10 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove(circuits_path, prover_data);
+    const proof = await prove(circuits_path, prover_data);
 
     expect(
-      verify(circuits_path, verifier_data, proof)
+      await verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     // TODO: chage now value here and verify another transaction, making sure
@@ -348,23 +348,23 @@ describe('State', () => {
       pubhash: pubInputHash,
     };
 
-    const proof = prove(circuits_path, prover_data);
+    const proof = await prove(circuits_path, prover_data);
 
     expect(
-      verify(circuits_path, verifier_data, proof)
+      await verify(circuits_path, verifier_data, proof)
     ).toEqual(true);
 
     let corrupted_proof = proof;
     proof[0] ^= 0xff;
     expect(
-      verify(circuits_path, verifier_data, corrupted_proof)
+      await verify(circuits_path, verifier_data, corrupted_proof)
     ).toEqual(false);
 
     // Prover must throw an exception when invoked with wrong data
     await expect(async () => {
       let prover_data_wrong = prover_data;
       prover_data_wrong.pubhash = (BigInt(prover_data_wrong.pubhash) + 1n).toString();
-      prove(circuits_path, prover_data_wrong);
+      await prove(circuits_path, prover_data_wrong);
     }).rejects.toThrow();
 
   }, 10 * 60 * 1000); // 10 minutes

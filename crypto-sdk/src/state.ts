@@ -52,24 +52,20 @@ export class Account implements Serde {
     return fr_deserialize(poseidon2_bn256_hash(to_hash.map(fr_serialize)));
   }
 
-  serialize(): Buffer {
-    const w = new BinaryWriter(32 * 4);
+  serialize(w: BinaryWriter) {
     w.writeU256(this.key);
     w.writeU256(this.balance);
     w.writeU256(this.nonce);
     w.writeU256(this.random_oracle_nonce);
-
-    return w.toBuffer();
   }
 
-  deserialize(buf: Buffer) {
-    const r = new BinaryReader(buf);
+  deserialize(r: BinaryReader) {
     this.key = r.readU256();
     this.balance = r.readU256();
     this.nonce = r.readU256();
     this.random_oracle_nonce = r.readU256();
   }
-};
+}
 
 export function fileToNoir(file: File): NoirFile {
   return {
@@ -131,23 +127,20 @@ export class File implements Serde {
     );
   }
 
-  serialize(): Buffer {
-    const w = new BinaryWriter(32 * 3);
+  serialize(w: BinaryWriter) {
     w.writeU256(this.expiration_time);
+    w.writeU8(this.locked ? 1 : 0);
     w.writeU256(this.owner);
     w.writeU256(this.data_hash);
-
-    return w.toBuffer();
   }
 
-  deserialize(buf: Buffer) {
-    const r = new BinaryReader(buf);
+  deserialize(r: BinaryReader) {
     this.expiration_time = r.readU256();
+    this.locked = r.readU8() == 1;
     this.owner = r.readU256();
     this.data_hash = r.readU256();
   }
-};
-
+}
 
 export function blank_account_tx(sett: ShardedStorageSettings): AccountTxEx {
   const tx: AccountTx = {

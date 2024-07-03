@@ -18,6 +18,7 @@ import {
   unpackPublicKey
 } from "@zk-kit/eddsa-poseidon"
 import { MiningResult } from './mining';
+import { BinaryReader, BinaryWriter } from 'zpst-common/src/binary';
 
 export function bigIntToFr(x: bigint): Fr {
   return x % FR_MODULUS;
@@ -189,7 +190,7 @@ export function prep_file_tx(
 ///
 /// Outputs of this function should be passed to Tree.build_account_tx_assets
 /// (by sequencer) to make a full transaction to be passed to contract.
-export async function prep_account_tx(
+export function prep_account_tx(
   amount: bigint,
   /// Account leaf indices in global merkle tree, from 0 to 2^depth-1
   sender_index: number,
@@ -200,7 +201,7 @@ export async function prep_account_tx(
   receiver_pk: bigint,
   /// Sender account's nonce. Increases by 1 with each transaction from sender
   nonce: bigint,
-): Promise<[AccountTx, SignaturePacked]> {
+): [AccountTx, SignaturePacked] {
 
   const tx: AccountTx = {
     sender_index: sender_index.toString(),
@@ -275,7 +276,7 @@ export function pack_tx(
 }
 
 export interface Serde {
-  serialize(): Buffer;
+  serialize(w: BinaryWriter): void;
   // TODO: A static method on an abstract class wouldn't work here. Have to find a better way.
-  deserialize(data: Buffer, ...args: any[]): void;
+  deserialize(r: BinaryReader, ...args: any[]): void;
 }

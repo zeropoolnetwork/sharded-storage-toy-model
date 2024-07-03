@@ -17,7 +17,7 @@ export function proof_to_noir(prf: MerkleProof): NoirMerkleProof {
   } as NoirMerkleProof;
 }
 
-export class Tree<T> implements Serde {
+export class Tree<T> {
   depth: number = 0;
   nodes: Fr[] = [];
   values: T[] = [];
@@ -104,8 +104,9 @@ export class Tree<T> implements Serde {
     return new Tree(this.depth, this.nodes.slice(), this.values.slice(), this.hash_cb);
   }
 
-  serialize(): Buffer {
-    const size = 4 + (1 << (this.depth + 1) + 1 << this.depth) * 32;
+  toBuffer(): Buffer {
+    const valueSize = 32; // FIXME: account for different types of T during preallocation
+    const size = 4 + (1 << (this.depth + 1)) * 32 + (1 << this.depth) * valueSize;
     const w = new BinaryWriter(size);
 
     w.writeU32(this.depth);
@@ -118,14 +119,14 @@ export class Tree<T> implements Serde {
       if (typeof value === 'bigint') {
         w.writeU256(value);
       } else {
-        w.writeBuffer((value as unknown as Serde).serialize());
+        (value as unknown as Serde).serialize(w);
       }
     }
 
     return w.toBuffer();
   }
 
-  deserialize(bytes: Buffer, defaultValue: () => T): void {
+  fromBuffer(bytes: Buffer, defaultValue: () => T): void {
     const r = new BinaryReader(bytes);
     this.depth = r.readU32();
 
@@ -138,7 +139,7 @@ export class Tree<T> implements Serde {
       if (typeof value == 'bigint') {
         this.values.push(r.readU256() as unknown as T);
       } else {
-        (value as unknown as Serde).deserialize(r.buf.subarray(r.offset));
+        (value as unknown as Serde).deserialize(r);
         this.values.push(value);
       }
     }
