@@ -22,7 +22,7 @@ export async function startHttpServer(port: number) {
     }
 
     const tree: Tree<bigint> = new Tree(0, [], [0n], (v) => v);
-    tree.deserialize(data, () => 0n);
+    tree.fromBuffer(data, () => 0n);
     const bytes = tree.values
       .map((v) => v.toString(16).padStart(64, '0'))
       .join('');

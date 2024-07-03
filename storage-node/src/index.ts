@@ -1,10 +1,16 @@
+//@ts-ignore
+BigInt.prototype['toJSON'] = function () {
+  return this.toString();
+}
+
 import { program } from 'commander';
 import io from 'socket.io-client';
-import { AccountData, init, appState } from './state';
+import { init, appState } from './state';
 
-import { UploadAndMineResponse, mineSegment, uploadSegments } from './handlers';
+import { UploadAndMineResponse, mineSegment } from './handlers';
 import { startHttpServer } from './http-server';
-import { SEQUENCER_URL } from './env';
+import { NODE_PK, SEQUENCER_URL } from './env';
+import { Account } from 'zpst-crypto-sdk';
 
 async function main() {
   program.option('-p, --port <port>', 'Port to listen on', '3001');
@@ -22,11 +28,11 @@ async function main() {
 
     socket.emit(
       'register',
-      appState.nodePk,
-      async (res: AccountData | undefined) => {
+      NODE_PK,
+      async (res: [number, Account] | undefined) => {
         if (res) {
           console.log('Account data:', res);
-          await init(res);
+          await init(res[1], res[0]);
         } else {
           console.error('Account not found');
         }
@@ -64,6 +70,18 @@ async function main() {
   );
 
   socket.on(
+    'getSegment',
+    async (id: string, cb: (res: Buffer | { error: string }) => void) => {
+      const data = await appState.storage.read(id);
+      if (data) {
+        cb(data);
+      } else {
+        cb({ error: 'Segment not found' });
+      }
+    },
+  );
+
+  socket.on(
     'mine',
     async (
       roValues: bigint[],
@@ -72,6 +90,7 @@ async function main() {
     ) => {
       try {
         const res = await mineSegment(roValues, roOffset);
+        console.log('Mining result:', res);
         cb(res);
       } catch (err) {
         console.error('Mining error:', err);

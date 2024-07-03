@@ -1,3 +1,7 @@
+// @ts-ignore
+BigInt.prototype['toJSON'] = function () {
+  return this.toString()
+}
 
 import { program } from 'commander';
 import express, { Express, Request, Response } from 'express';

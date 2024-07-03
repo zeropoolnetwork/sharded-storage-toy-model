@@ -1,17 +1,25 @@
+//@ts-ignore
+BigInt.prototype['toJSON'] = function () {
+  return this.toString();
+}
+
+
 // place files you want to import through the `$lib` alias in this folder.
 import { ethers, Wallet, JsonRpcProvider, BrowserProvider, hashMessage } from 'ethers';
 import type { JsonRpcApiProvider, HDNodeWallet } from 'ethers';
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import { Fr } from 'zpst-common/src/fields';
-import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
+import { derivePublicKey, deriveSecretScalar } from '@zk-kit/eddsa-poseidon';
 
 // TODO: Get rid of global variables
 // let wallet: Wallet;
 let provider: JsonRpcApiProvider;
 let signer: ethers.Signer;
 let address: string;
-export let sk: any;
-export let pk: any;
+export let sk: bigint;
+export let skBuf: Buffer;
+export let pk: bigint;
+export let pkBuf: Buffer;
 export async function initHDWallet(mnemonic: string) {
   if (signer) {
     return;
@@ -23,6 +31,10 @@ export async function initHDWallet(mnemonic: string) {
 
   signer = wallet;
   address = wallet.address;
+  sk = (deriveSecretScalar(Buffer.from(wallet.privateKey.replace(/^0x/i, ''), 'hex')) % Fr.MODULUS);
+  skBuf = Buffer.from(sk.toString(16).padStart(64, '0'), 'hex');
+  pk = derivePublicKey(sk.toString())[0];
+  pkBuf = Buffer.from(pk.toString(16).padStart(64, '0'), 'hex');
 }
 
 export async function initWeb3Modal() {
@@ -66,8 +78,10 @@ export async function initWeb3Modal() {
   const sig = (await signer.signMessage(FIXED_MESSAGE)).replace(/^0x/i, '').substring(0, 128);
   const sigHash = hashMessage(sig);
 
-  sk = Fr.fromBufferReduce(Buffer.from(sigHash.replace(/^0x/i, ''), 'hex'));
+  sk = (deriveSecretScalar(sigHash) % Fr.MODULUS);
+  skBuf = Buffer.from(sk.toString(16).padStart(64, '0'), 'hex');
   pk = derivePublicKey(sk.toString())[0];
+  pkBuf = Buffer.from(pk.toString(16).padStart(64, '0'), 'hex');
 }
 
 export function isWalletInitialized() {

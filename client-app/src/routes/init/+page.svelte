@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { initHDWallet, initWeb3Modal } from '$lib';
   import { onMount } from 'svelte';
+  import { PUBLIC_DEBUG_SEED } from '$env/static/public';
 
   let mnemonic = '';
 
@@ -22,6 +23,14 @@
       console.error(err);
     }
   }
+
+  onMount(async () => {
+    if (PUBLIC_DEBUG_SEED && PUBLIC_DEBUG_SEED.length > 0) {
+      mnemonic = PUBLIC_DEBUG_SEED;
+      await initHDWallet(mnemonic);
+      goto('/app');
+    }
+  });
 </script>
 
 <div class="border rounded-lg p-4 w-1/3">
@@ -32,6 +41,9 @@
     >
       Connect Wallet
     </button>
+  </div>
+  <div class="flex justify-center mt-4">
+    <p class="text-base text-gray-300">or</p>
   </div>
   <div class="flex space-x-2 mt-4">
     <input

@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { OPERATOR_SK, ROLLUP_CONTRACT_ADDRESS, RPC_URL } from './env';
+import { MOCK_BLOCKCHAIN, OPERATOR_SK, ROLLUP_CONTRACT_ADDRESS, RPC_URL } from './env';
 import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 
 export interface IRollupContract {
@@ -46,7 +46,7 @@ export class RollupContract implements IRollupContract {
     );
 
     const owner = await contract.getOwner();
-    if (owner.toLowerCase() !== wallet.address.toLowerCase()) {
+    if (owner.toLowerCase() !== wallet.address.toLowerCase() && !MOCK_BLOCKCHAIN) {
       throw new Error('Specified OPERATOR_SK is not the owner of the contract');
     }
 
@@ -108,6 +108,8 @@ export class RollupContract implements IRollupContract {
 export class RollupContractMock implements IRollupContract {
   latestBlockNumber: number = 1337;
 
+  blocks: { [blockNumber: number]: { newRoot: bigint, proof: Uint8Array, now: bigint } } = {};
+
   constructor() { }
 
   async publishBlock(
@@ -117,7 +119,9 @@ export class RollupContractMock implements IRollupContract {
   ): Promise<string> {
     this.latestBlockNumber++;
 
-    return `0x${(this.latestBlockNumber - 1).toString(16)}`;
+    this.blocks[this.latestBlockNumber] = { newRoot, proof, now };
+
+    return `0x${(this.latestBlockNumber - 1).toString(16).padStart(64, '0')}`;
   }
 
   async getRoot(): Promise<number> {
@@ -135,7 +139,7 @@ export class RollupContractMock implements IRollupContract {
   async getRandomOracleValues(
     randomOracleSize: number,
   ): Promise<[bigint, bigint[], number]> {
-    const values = Array(randomOracleSize).fill(0n).map((_, i) => BigInt(this.latestBlockNumber - i));
+    const values = Array(randomOracleSize).fill(0n).map((_, i) => BigInt(this.latestBlockNumber - i)).reverse();
     return [0n, values, this.latestBlockNumber];
   }
 }

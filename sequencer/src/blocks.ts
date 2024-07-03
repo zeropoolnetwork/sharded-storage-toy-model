@@ -39,13 +39,13 @@ export class Blocks {
     return self;
   }
 
-  createNewBlock(): Block {
+  createNewBlock(newRoot: string, txHash: string, now: number): Block {
     return {
       height: this.latestBlock.height + 1,
       oldRoot: this.latestBlock.newRoot,
-      newRoot: '',
-      txHash: '',
-      now: 0,
+      newRoot,
+      txHash,
+      now,
     };
   }
 

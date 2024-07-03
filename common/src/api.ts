@@ -6,7 +6,7 @@ export interface VacantIndicesResponse {
 }
 
 export interface AccountData {
-  index: Field;
+  // index: Field;
   balance: Field;
   nonce: Field;
   random_oracle_nonce: Field;
@@ -24,6 +24,12 @@ export interface FileTx {
   time_interval: Field;
   data: Field;
   nonce: Field;
+}
+
+export interface GatewayMeta {
+  filePath: string;
+  fileIndices: Field[];
+  fileSize: number;
 }
 
 export interface FileMetadata {
@@ -44,10 +50,14 @@ export interface FileRequest {
 }
 
 export interface Block {
-  height: number;
   oldRoot: string;
   newRoot: string;
+  /** Transaction hash of the published block */
   txHash: string;
+  /**  Block height on the rollup */
+  height: number;
+  /** Block height on the blockchain */
+  now: number;
 }
 
 export interface AccountTx {
@@ -66,12 +76,20 @@ export class SequencerClient {
     await post(`${this.url}/segments`, request);
   }
 
-  async account(pk: string): Promise<AccountData> {
+  async listFiles(owner: bigint): Promise<GatewayMeta[]> {
+    return await get(`${this.url}/files/${owner}`);
+  }
+
+  async getFile(owner: bigint, path: string): Promise<Buffer> {
+    return Buffer.from(await (await fetch(`${this.url}/files/${owner}/${path}`)).arrayBuffer());
+  }
+
+  async account(pk: bigint): Promise<{ index: number, account: AccountData }> {
     return await get(`${this.url}/accounts/${pk}`);
   }
 
-  async faucet(account: AccountTx, signature: SignaturePacked): Promise<void> {
-    await post(`${this.url}/faucet`, { account, signature });
+  async faucet(pk: bigint): Promise<{ index: number, account: AccountData }> {
+    return await post(`${this.url}/faucet`, { pk });
   }
 
   async vacantIndices(): Promise<VacantIndicesResponse> {

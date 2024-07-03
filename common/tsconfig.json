@@ -1,15 +1,16 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "node",
-    // "target": "ES2020",
-    "module": "CommonJS",
-    "declaration": true,
-  },
+  // "compilerOptions": {
+  //   "emitDecoratorMetadata": true,
+  //   "experimentalDecorators": true,
+  //   // "moduleResolution": "node",
+  //   // // "target": "ES2020",
+  //   // "module": "CommonJS",
+  //   "declaration": true,
+  // },
   "include": [
     "src/**/*.ts",
+    "test/**/*.ts"
   ],
   // "ts-node": {
   //   "experimentalResolver": true,

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { initHDWallet, isWalletInitialized, pk } from '$lib';
-  import { getLatestBlocks } from '$lib/api';
+  import { getLatestBlocks, listFiles } from '$lib/api';
   import {
     uploadFile,
     faucet,
@@ -11,28 +11,27 @@
     SEQUENCER_API_URL,
     NODE_API_URL
   } from '$lib/api';
-  import type { Block } from 'zpst-common';
+  import { type Block } from 'zpst-common/src/api';
 
   let files: { name: string; url: string }[] = [];
-  let balance = 0;
+  let balance = 0n;
   let blocks: Block[] = [];
 
   const handleUpload = async () => {
     let input = document.createElement('input');
     input.type = 'file';
+    input.multiple = false;
     input.onchange = async (_) => {
       // @ts-ignore
       let files = Array.from(input.files);
-
       await uploadFile(files[0] as File);
-      await update();
     };
     input.click();
   };
 
-  const handleMint = async () => {
-    await faucet(0, 100n);
-    balance += 100.0;
+  const handleFaucet = async () => {
+    let { index, account } = await faucet();
+    balance = BigInt(account.balance);
   };
 
   async function load() {
@@ -45,25 +44,31 @@
 
   // TODO: Proper state management
   async function update() {
-    const account = await getAccount(pk);
-    blocks = await getLatestBlocks();
-    // files = account.files.map((name: string) => ({
-    //   name,
-    //   url: `${NODE_API_URL}/files/${name}`
-    // }));
-    // balance = account.balance;
+    try {
+      const account = await getAccount(pk);
+      console.log(account);
+      balance = BigInt(account.account.balance);
+    } catch (e) {
+      balance = 0n;
+    }
   }
 
-  let nodeStatus = true;
-  let rollupStatus = true;
+  let status: { rollup: boolean; node: boolean; blockInProgress: boolean } = {
+    rollup: false,
+    node: false,
+    blockInProgress: false
+  };
 
   let interval: any;
   onMount(async () => {
     interval = setInterval(async () => {
-      let status = await checkStatus();
-      nodeStatus = status.node;
-      rollupStatus = status.rollup;
-    }, 1000);
+      status = await checkStatus();
+      blocks = await getLatestBlocks();
+      files = (await listFiles()).map((meta) => ({
+        name: meta.filePath,
+        url: `${NODE_API_URL}/files/${meta.filePath}`
+      }));
+    }, 3000);
   });
 
   onDestroy(() => {
@@ -85,7 +90,7 @@
       <div class="flex justify-between">
         <p class="text-sm text-gray-300">
           Sequencer: {SEQUENCER_API_URL}
-          {#if rollupStatus}
+          {#if status.rollup}
             <span class="text-green-500">✅</span>
           {:else}
             <span class="text-red-500">❌</span>
@@ -93,7 +98,7 @@
         </p>
         <p class="text-sm text-gray-300">
           Node: {NODE_API_URL}
-          {#if nodeStatus}
+          {#if status.node}
             <span class="text-green">✅</span>
           {:else}
             <span class="text-red"> ❌ </span>
@@ -101,47 +106,68 @@
         </p>
       </div>
     </div>
-    <div class="mb-4">
-      <div class="mb-4">
-        <p class="text-sm text-gray-600 overflow-hidden">Address: {'FIXME'}</p>
-      </div>
-      <div class="flex flex-row items-baseline space-x-2">
-        <span class="text-sm text-gray-600">Balance: {balance}</span>
+    <div class="flex">
+      <div class="pt-4 grow">
+        <h2 class="text-xl font-bold mb-2">Files</h2>
         <button
-          on:click={handleMint}
-          class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded"
+          on:click={handleUpload}
+          class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded mb-2"
         >
-          Faucet
+          Upload
         </button>
+        {#each files as file}
+          <div class="flex items-center mb-2">
+            <img src={file.url} alt={file.name} class="w-12 h-12 mr-2 rounded" />
+            <a href={file.url} target="_blank" class="text-blue-500 overflow-hidden">{file.name}</a>
+          </div>
+        {/each}
       </div>
-    </div>
-    <div class="border-t pt-4">
-      <h2 class="text-xl font-bold mb-2">Files</h2>
-      <button
-        on:click={handleUpload}
-        class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded mb-2"
-      >
-        Upload
-      </button>
-      {#each files as file}
+      <div class="border-l p-4">
+        <h2 class="text-xl font-bold mb-2">Account</h2>
         <div class="flex items-center mb-2">
-          <img src={file.url} alt={file.name} class="w-12 h-12 mr-2 rounded" />
-          <a href={file.url} target="_blank" class="text-blue-500 overflow-hidden">{file.name}</a>
+          <!-- <div class="text-l text-gray-600 overflow-hidden">Address: {pk}</div> -->
+          <div class="text-l text-gray-600 mr-2">Balance: {balance}</div>
+          <button
+            on:click={handleFaucet}
+            class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded"
+          >
+            Faucet
+          </button>
         </div>
-      {/each}
+      </div>
     </div>
     <div class="border-t pt-4">
       <h2 class="text-xl font-bold mb-2">Blocks</h2>
-
       <div class="flex items-center mb-2">
         {#each blocks as block}
-          <div class="p-4 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-2 sm:p-6">
+          <div
+            class="p-4 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-2 sm:p-6 flex-grow-0"
+          >
             <div class="text-gray-900 font-bold text-xl mb-2">Block #{block.height}</div>
-            <a href={txLink(block.txHash)} target="_blank" class="text-blue-500 overflow-hidden">
-              {block.txHash}
-            </a>
+            {#if block.height > 0}
+              <div class="text-sm text-gray-600">Now: {block.now}</div>
+              <div class="overflow-hidden">
+                <a
+                  href={txLink(block.txHash)}
+                  target="_blank"
+                  class="text-sm text-blue-500 overflow-hidden"
+                >
+                  {block.txHash}
+                </a>
+              </div>
+            {:else}
+              <div class="text-sm text-gray-600">Genesis</div>
+            {/if}
           </div>
         {/each}
+        {#if status.blockInProgress}
+          <div class="p-4 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-2 sm:p-6">
+            <div class="text-gray-900 font-bold text-xl mb-2">
+              Block #{blocks[blocks.length - 1]?.height ?? 0 + 1}
+            </div>
+            <div class="text-sm text-gray-600">In progress...</div>
+          </div>
+        {/if}
       </div>
     </div>
   {:catch error}

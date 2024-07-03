@@ -1,9 +1,7 @@
-import type { Block } from 'zpst-common';
-
 import { PUBLIC_SEQUENCER_API_URL, PUBLIC_NODE_API_URL } from '$env/static/public';
 import { prep_account_tx, prep_file_tx, type AccountTx } from './tx';
-import { pk, sk } from '$lib';
-import { SequencerClient, type AccountData, type FileMetadata, type VacantIndicesResponse } from 'zpst-common/src/api';
+import { pk, sk, skBuf } from '$lib';
+import { SequencerClient, type AccountData, type Block, type FileMetadata, type GatewayMeta, type VacantIndicesResponse } from 'zpst-common/src/api';
 import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 
@@ -28,13 +26,12 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
   const indices = await vacantIndices();
   const account = await getAccount(pk);
 
-
   let fileIndex = indices.vacantFileIndex;
   const segmentedData = encodeFile(new Uint8Array(data));
   const segments = segmentedData.map((segmentData) => {
     const elements = bufferToFrElements(segmentData).map((x) => x.toString());
     const hash = BigInt(poseidon2_bn256_hash(elements));
-    const [tx, signature] = prep_file_tx(DEFAULT_FILE_LIFETIME, Number(account.index), fileIndex++, hash, sk, BigInt(account.nonce))
+    const [tx, signature] = prep_file_tx(DEFAULT_FILE_LIFETIME, Number(account.index), fileIndex++, hash, skBuf.toString('hex'), BigInt(account.account.nonce))
 
     return { tx, signature, data: Buffer.from(segmentData) };
   });
@@ -47,31 +44,36 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
   };
 }
 
-export async function faucet(accountId: number, amount: bigint) {
-  const acc = await getAccount(pk);
-
-  const [account, signature] = prep_account_tx(amount, Number(acc.index), accountId, sk, pk, BigInt(acc.nonce));
-
-  await client.faucet(account, signature);
+export async function faucet(): Promise<{ index: number, account: AccountData }> {
+  return await client.faucet(pk);
 }
 
 export async function vacantIndices(): Promise<VacantIndicesResponse> {
   return await client.vacantIndices();
 }
 
-export async function getAccount(publicKey: string | bigint): Promise<AccountData> {
-  return client.account(String(publicKey));
+export async function getAccount(publicKey: bigint): Promise<{ index: number, account: AccountData }> {
+  return client.account(publicKey);
 }
 
 export async function getLatestBlocks(): Promise<Block[]> {
   return await client.blocks();
 }
 
-export async function checkStatus(): Promise<{ rollup: boolean, node: boolean }> {
+export async function listFiles(): Promise<GatewayMeta[]> {
+  return await client.listFiles(pk);
+}
+
+export async function checkStatus(): Promise<{ rollup: boolean, node: boolean, blockInProgress: boolean }> {
   let rollup = false;
+  let blockInProgress = false;
   try {
     const rollupRes = await fetch(`${SEQUENCER_API_URL}/status`);
-    rollup = rollupRes.ok && (await rollupRes.json()).status === 'OK';
+    if (rollupRes.ok) {
+      const status = await rollupRes.json();
+      rollup = status.status === 'OK';
+      blockInProgress = status.blockInProgress;
+    }
   } catch (err) { }
 
   let node = false;
@@ -80,5 +82,5 @@ export async function checkStatus(): Promise<{ rollup: boolean, node: boolean }>
     node = nodeRes.ok && (await nodeRes.json()).status === 'OK';
   } catch (err) { }
 
-  return { rollup, node };
+  return { rollup, node, blockInProgress };
 }

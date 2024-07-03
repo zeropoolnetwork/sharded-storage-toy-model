@@ -1,6 +1,4 @@
 import { MerkleProof, Tree } from 'zpst-crypto-sdk/src/merkle-tree';
-import { bufferToFrElements } from 'zpst-common';
-import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
 import { mine } from 'zpst-crypto-sdk';
 import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 import { MiningResult } from 'zpst-crypto-sdk/src/mining';
@@ -9,21 +7,6 @@ import { MiningTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 
 import { appState } from './state';
 import { NODE_SK } from './env';
-
-export async function uploadSegments(segments: Buffer[]): Promise<void> {
-  const promises = segments.map(async (segment) => {
-    const elements = bufferToFrElements(segment);
-    const tree = Tree.init(
-      defShardedStorageSettings.file_tree_depth,
-      elements,
-      (num) => BigInt(poseidon2_bn256_hash([num.toString()])),
-    );
-
-    await appState.storage.write(tree.root.toString(), tree.serialize());
-  });
-
-  await Promise.all(promises);
-}
 
 export interface UploadAndMineResponse {
   miningRes: MiningResult;
@@ -35,6 +18,7 @@ export async function mineSegment(
   roValues: bigint[],
   globalRoOffset: bigint,
 ): Promise<UploadAndMineResponse> {
+  console.log('Mining...')
   const roOffset = Math.floor(Math.random() * roValues.length);
   const roVal = roValues[roOffset];
 
@@ -48,11 +32,12 @@ export async function mineSegment(
       let tree: Tree<bigint>;
       if (segment) {
         tree = new Tree<bigint>(0, [], [], (v: bigint) => v);
-        tree.deserialize(segment, () => BigInt(0));
+        tree.fromBuffer(segment, () => BigInt(0));
       } else {
         tree = Tree.init(
           defShardedStorageSettings.file_tree_depth,
           new Array(1 << defShardedStorageSettings.file_tree_depth).fill(0n),
+          0n,
           (x) => x,
         );
       }
@@ -64,22 +49,22 @@ export async function mineSegment(
   );
 
   const miningTx = prep_mining_tx(
-    Number(appState.accountData.index),
+    Number(appState.accountIndex),
     miningRes,
     NODE_SK,
     appState.accountData.nonce,
     globalRoOffset + BigInt(roOffset),
   );
 
-  const segment = await appState.storage.read(
+  let segment = await appState.storage.read(
     miningRes.file_in_storage_index.toString(),
   );
   if (!segment) {
-    throw new Error('Segment not found');
+    segment = Buffer.alloc(1 << defShardedStorageSettings.file_tree_depth);
   }
 
   const tree = new Tree<bigint>(0, [], [], (v: bigint) => v);
-  tree.deserialize(segment, () => BigInt(0));
+  tree.fromBuffer(segment, () => BigInt(0));
 
   const word = tree.readLeaf(Number(miningRes.word_in_file_index));
 

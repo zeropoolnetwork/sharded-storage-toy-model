@@ -17,11 +17,14 @@
     "dotenv": "^16.4.5",
     "ethers": "^6.12.1",
     "express": "^4.19.2",
+    "file-type": "^19.0.0",
     "level": "^8.0.1",
-    "poseidon2-merkle-tree": "workspace:../poseidon2-merkle-tree",
+    "mime": "^4.0.3",
     "socket.io": "^4.7.5",
     "tsx": "^4.15.7",
-    "zpst-crypto-sdk": "workspace:../crypto-sdk"
+    "zpst-common": "workspace:../common",
+    "zpst-crypto-sdk": "workspace:../crypto-sdk",
+    "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256/nodejs"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

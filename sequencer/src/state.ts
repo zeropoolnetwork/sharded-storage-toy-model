@@ -12,6 +12,7 @@ import {
   prep_file_tx,
   prep_mining_tx,
   pack_tx,
+  frSub,
 } from 'zpst-crypto-sdk/src/util';
 import {
   Account,
@@ -69,11 +70,17 @@ import {
 import { upload, broadcastMiningChallenge, UploadAndMineResponse } from './nodes';
 import { BinaryWriter } from 'zpst-common/src/binary';
 import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
+import { deflate, unzip } from 'node:zlib';
+import { promisify } from 'node:util';
+
+const deflateAsync = promisify(deflate);
+const unzipAsync = promisify(unzip)
 
 const FILES_TREE_PATH = './data/files_tree.bin';
 const ACCOUNT_TREE_PATH = './data/account_tree.bin';
 const ACCOUNTS_PATH = './data/accounts';
 const FILE_METADATA_PATH = './data/file_metadata';
+const BLOCKS_PATH = './data/blocks';
 const DEFAULT_DURATION = 7149n * 10n; // ~10 days
 
 const ssConfig = defShardedStorageSettings;
@@ -87,17 +94,6 @@ export interface FileData {
 export interface FileMetadata {
   path: string;
   size: number;
-}
-
-interface FileMetadataEx extends FileMetadata {
-  expiration_time: string;
-}
-
-export interface AccountData {
-  index: string;
-  balance: string;
-  nonce: string;
-  random_oracle_nonce: string;
 }
 
 export class AppState {
@@ -119,13 +115,11 @@ export class AppState {
   blocks: Blocks = null!;
   // Public key of the master account for convenience.
   masterPk: Fr = null!;
-  // Account cache (user public key -> account data)
-  accounts: Level<string, AccountData> = null!;
 
-  // Gateway-specific metadata
-  fileMetadata: Level<string, FileMetadataEx> = null!;
-  // FIXME: temporary
-  counters: Level<string, number> = null!;
+  // Gateway-level metadata, useful for querying files by owner/path.
+  fileMetadata: Level<bigint, GatewayMeta[]> = null!;
+
+  blockInProgress: boolean = false;
 
   private constructor() { }
 
@@ -138,13 +132,11 @@ export class AppState {
       self.contract = await RollupContract.init();
     }
 
-    self.accounts = new Level(ACCOUNTS_PATH, { valueEncoding: 'json' });
     self.fileMetadata = new Level(FILE_METADATA_PATH, {
       valueEncoding: 'json',
     });
-    self.counters = new Level('./data/counters');
 
-    self.blocks = await Blocks.new('./data/blocks');
+    self.blocks = await Blocks.new(BLOCKS_PATH);
     self.masterPk = derivePublicKey(MASTER_SK)[0];
 
     if (
@@ -163,13 +155,6 @@ export class AppState {
       self.state = State.genesisState(firstAcc, ssConfig);
 
       await self.saveState();
-
-      await self.accounts.put(self.masterPk.toString(), {
-        index: '0',
-        balance: bigIntToFr(GENESIS_BALANCE).toString(),
-        nonce: '0',
-        random_oracle_nonce: '0',
-      });
     } else {
       console.log('State found, loading...');
       const accTreeData = await fs.readFile(ACCOUNT_TREE_PATH);
@@ -180,21 +165,34 @@ export class AppState {
         [],
         (acc: Account) => acc.hash(),
       );
-      accTree.deserialize(accTreeData, () => new Account());
+      accTree.fromBuffer(accTreeData, () => new Account());
       const fileTree = new Tree(
         ssConfig.acc_data_tree_depth,
         [],
         [],
         (file: File) => file.hash(),
       );
-      fileTree.deserialize(fileTreeData, () => new File());
+      fileTree.fromBuffer(fileTreeData, () => new File());
 
       self.state = new State(accTree, fileTree);
     }
 
+    console.log('Vacant account index:', self.getVacantAccountIndex());
+    console.log('Vacant file index:', self.getVacantFileIndex());
+
     console.log('State loaded.');
 
     return self;
+  }
+
+  pubKeyToIndex(pk: bigint): number {
+    // FIXME: Cache. If the tree grows any larger, this is going to be painful.
+    return this.state.accounts.values.findIndex((acc) => BigInt(acc.key) === BigInt(pk));
+  }
+
+  async getAccountByPk(pk: bigint): Promise<[number, Account]> {
+    const index = this.pubKeyToIndex(pk);
+    return [index, this.state.accounts.readLeaf(index)[1]];
   }
 
   async addAccountTransaction(account: AccountTx, signature: SignaturePacked) {
@@ -209,30 +207,26 @@ export class AppState {
     this.pendingFiles.push({ tx: [file, signature], data });
   }
 
-  // FIXME: quick and dirty id/index allocation
-  async getVacantIndices(): Promise<{
-    vacantFileIndex: number;
-    vacantAccountIndex: number;
-  }> {
-    let fileIndex = 0;
-    let accountIndex = 0;
-
-    try {
-      fileIndex = await this.counters.get('file_index');
-    } catch (e) {
-      // Do nothing
+  getVacantAccountIndex(): number {
+    for (let i = 1; i < this.state.accounts.values.length; i++) {
+      const acc = this.state.accounts.readLeaf(i)[1];
+      console.log(acc);
+      if (acc.balance === 0n) {
+        return i;
+      }
     }
 
-    try {
-      accountIndex = await this.counters.get('account_index');
-    } catch (e) {
-      // Do nothing
+    return this.state.accounts.values.length;
+  }
+
+  getVacantFileIndex(): number {
+    for (let i = 0; i < this.state.files.values.length; i++) {
+      if (this.state.files.readLeaf(i)[1].owner === 0n) {
+        return i;
+      }
     }
 
-    return {
-      vacantFileIndex: fileIndex,
-      vacantAccountIndex: accountIndex,
-    };
+    return this.state.files.values.length;
   }
 
   async updateBlockchainState() {
@@ -291,7 +285,11 @@ export class AppState {
       this.pendingFiles = this.pendingFiles.slice(ssConfig.file_tx_per_block);
       this.pendingMining = this.pendingMining.slice(ssConfig.mining_tx_per_block);
 
+      // Backup the state in case of failure
+      const st = this.state.clone();
+
       try {
+        this.blockInProgress = true;
         await this.updateBlockchainState();
 
         await this.batchTransactions(
@@ -303,12 +301,16 @@ export class AppState {
 
         await this.saveState();
       } catch (err) {
+        this.state = st;
+
         console.log(
           'Failed to create a block:',
           err,
           'Discarding transactions...',
         );
       }
+
+      this.blockInProgress = false;
 
     }
   }
@@ -321,15 +323,13 @@ export class AppState {
   ): Promise<void> {
     console.log('Creating a new block...');
 
-    const st = this.state.clone();
-
-    const stateHash = st.hash();
+    const stateHash = this.state.hash();
     const stateRoot: Root = {
-      acc: fr_serialize(st.accounts.root()),
-      data: fr_serialize(st.files.root()),
+      acc: fr_serialize(this.state.accounts.root()),
+      data: fr_serialize(this.state.files.root()),
     };
 
-    const accTxs = accounts.map((acc) => st.build_account_txex(acc));
+    const accTxs = accounts.map((acc) => this.state.build_account_txex(acc));
     const accTxsPadded = pad_array(
       accTxs,
       ssConfig.account_tx_per_block,
@@ -337,7 +337,8 @@ export class AppState {
     );
 
     const miningTxs = mining.map(m => {
-      return st.build_mining_txex(
+      console.log('!!! mining', m);
+      return this.state.build_mining_txex(
         m.miningRes,
         m.word,
         m.tx,
@@ -350,8 +351,7 @@ export class AppState {
     );
 
     const fileTxs = files.map((file) => {
-      const hash = BigInt(file.tx[0].data); // FIXME: Is this correct or do I need to calculate the hash?
-      return st.build_file_txex(now, hash, file.tx);
+      return this.state.build_file_txex(now, BigInt(file.tx[0].data), file.tx);
     });
     const fileTxsPaddedIncomplete = pad_array(
       fileTxs,
@@ -360,20 +360,24 @@ export class AppState {
     );
 
 
+    // [pk, path] => GatewayMeta
     const gatewayMetas = files.reduce((acc, seg) => {
-      let entry = acc.get(seg.data.metadata.path);
+      const accPk = this.state.accounts.readLeaf(Number(seg.tx[0].sender_index))[1].key;
+      const key: [bigint, string] = [accPk, seg.data.metadata.path];
+      let entry = acc.get(key);
       if (entry) {
         entry.fileIndices.push(BigInt(seg.tx[0].data_index));
       } else {
-        acc.set(seg.data.metadata.path, new GatewayMeta(seg.data.metadata.path, seg.data.metadata.size, [BigInt(seg.tx[0].data_index)]));
+        acc.set(key, new GatewayMeta(seg.data.metadata.path, seg.data.metadata.size, [BigInt(seg.tx[0].data_index)]));
       }
 
       return acc;
-    }, new Map<string, GatewayMeta>());
+    }, new Map<[bigint, string], GatewayMeta>());
 
     const metaFile = new MetadataFile(accTxs, fileTxs, miningTxs, [...gatewayMetas.values()]);
     const metaFileData = metaFile.serialize();
-    const encodedMetaFileSegments = encodeFile(metaFileData);
+    const metaFileDataCompressed = await deflateAsync(metaFileData);
+    const encodedMetaFileSegments = encodeFile(metaFileDataCompressed);
 
     if (encodedMetaFileSegments.length > 1) {
       throw new Error('Metadata file too large');
@@ -384,11 +388,8 @@ export class AppState {
     const metaFileTree = Tree.init(ssConfig.file_tree_depth, metaFileElements, 0n, (t: any) => t);
 
     // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
-    const masterAccount: AccountData = await this.accounts.get(
-      this.masterPk.toString(),
-    ); // Can't fail since we add the master account on start
-
-    const masterAccountNonce = BigInt(masterAccount.nonce);
+    const masterAccount = this.state.accounts.readLeaf(0);
+    const masterAccountNonce = BigInt(masterAccount[1].nonce);
 
     const metaFileIndex = (1 << ssConfig.acc_data_tree_depth) - this.blocks.count() - 1;
     const metaFileDuration = 7149n * 1000n; // ~1000 days
@@ -400,7 +401,7 @@ export class AppState {
       data: metaFileTree.root().toString(),
       nonce: masterAccountNonce.toString(),
     };
-    const metaTxData = Tree.init(
+    const metaTxTree = Tree.init(
       ssConfig.file_tree_depth,
       pad_array(
         pack_tx(
@@ -419,22 +420,20 @@ export class AppState {
       metaFileDuration,
       metaFileSender,
       metaFileIndex,
-      metaTxData.root(),
+      metaTxTree.root(),
       MASTER_SK,
       masterAccountNonce,
     );
 
-    masterAccount.nonce = (masterAccountNonce + 1n).toString();
-
-    const metaFileTxEx = st.build_file_txex(now, metaTxData.root(), metaFileTx);
+    const metaFileTxEx = this.state.build_file_txex(now, metaTxTree.root(), metaFileTx, true);
     const fileTxsPadded = [...fileTxsPaddedIncomplete, metaFileTxEx];
 
     // Generate a proof
     const newStateRoot: Root = {
-      acc: fr_serialize(st.accounts.root()),
-      data: fr_serialize(st.files.root()),
+      acc: fr_serialize(this.state.accounts.root()),
+      data: fr_serialize(this.state.files.root()),
     };
-    const newStateHash = st.hash();
+    const newStateHash = this.state.hash();
 
     const pubInput: RollupPubInput = {
       old_root: fr_serialize(stateHash),
@@ -467,13 +466,13 @@ export class AppState {
       input: input,
     };
 
-    const proof = prove('../circuits/', proverData);
+    const proof = await prove('../circuits/', proverData);
 
     const verifierData: VerifierToml = {
       pubhash: pubInputHash,
     };
 
-    if (!verify('../circuits/', verifierData, proof)) {
+    if (!await verify('../circuits/', verifierData, proof)) {
       throw new Error('Proof verification failed');
     }
 
@@ -487,64 +486,49 @@ export class AppState {
     // Upload the meta file to storage nodes
     await upload([{ id: metaFileIndex.toString(), data: Buffer.from(metaFileSegment) }]);
 
+    // Group metadata by owner.
+    const userMetas = Array.from(gatewayMetas.entries()).reduce((acc, [[pk, _path], meta]) => {
+      let entry = acc.get(pk);
+      if (entry) {
+        entry.push(meta);
+      } else {
+        acc.set(pk, [meta]);
+      }
+
+      return acc;
+    }, new Map<bigint, GatewayMeta[]>());
+
+    // Save gateway-level metadata.
     await Promise.all(
-      files.map((f) => {
-        return this.fileMetadata.put(f.tx[0].data_index.toString(), {
-          expiration_time: (now + DEFAULT_DURATION).toString(),
-          ...f.data.metadata,
-        });
+      Array.from(userMetas.entries()).map(async ([pk, metas]) => {
+        let storedMetas: GatewayMeta[];
+        try {
+          storedMetas = await this.fileMetadata.get(pk);
+        } catch {
+          storedMetas = [];
+        }
+
+        // TODO: Deduplicate just in case?
+        storedMetas.push(...metas);
+
+        return this.fileMetadata.put(pk, storedMetas);
       }),
     );
 
-    const block = this.blocks.createNewBlock();
-    block.txHash = txHash;
-    block.newRoot = newStateHash.toString(); // FIXME: hex?
-    block.now = Number(now);
-
+    const block = this.blocks.createNewBlock(newStateHash.toString(), txHash, Number(now));
     await this.blocks.addBlock(block);
-
-    await this.incrementIndices(
-      accounts.length,
-      files.length,
-    );
 
     // FIMXE: temporary
     if (accounts.length > 0 || files.length > 0) {
       this.miningNeeded = true;
     }
-
-    for (let account of accounts) {
-      const accData = await this.accounts.get(account[0].sender_index);
-      accData.balance = frAdd(BigInt(accData.balance), BigInt(account[0].amount)).toString();
-      accData.nonce = (BigInt(accData.nonce) + 1n).toString();
-      await this.accounts.put(account[0].sender_index, accData);
-    }
-
-    this.state = st;
-  }
-
-  // FIXME: replace with a proper account/file slot allocation system.
-  private async incrementIndices(accountsBy: number, filesBy: number) {
-    try {
-      const accIndex = await this.counters.get('account_index');
-      await this.counters.put('account_index', accIndex + accountsBy);
-    } catch (e) {
-      await this.counters.put('account_index', accountsBy);
-    }
-
-    try {
-      const fileIndex = await this.counters.get('file_index');
-      await this.counters.put('file_index', fileIndex + filesBy);
-    } catch (e) {
-      await this.counters.put('file_index', filesBy);
-    }
   }
 
   private async saveState() {
     console.log('Saving account tree')
-    await fs.writeFile(ACCOUNT_TREE_PATH, this.state.accounts.serialize());
+    await fs.writeFile(ACCOUNT_TREE_PATH, this.state.accounts.toBuffer());
     console.log('Saving file tree')
-    await fs.writeFile(FILES_TREE_PATH, this.state.files.serialize());
+    await fs.writeFile(FILES_TREE_PATH, this.state.files.toBuffer());
   }
 }
 
@@ -563,10 +547,12 @@ async function checkFileExists(path: string): Promise<boolean> {
 }
 
 // TODO: Move to a separate module
-class MetadataFile {
+export class MetadataFile {
   accountTxs: AccountTxEx[];
   fileTxs: FileTxEx[];
   miningTxs: MiningTxEx[];
+
+  // TODO: It's not a part of the core protocol, it should be stored separately in production.
   meta: GatewayMeta[];
 
   constructor(accountTxs: AccountTxEx[], fileTxs: FileTxEx[], miningTxs: MiningTxEx[], meta: GatewayMeta[]) {
@@ -656,7 +642,7 @@ class MetadataFile {
     });
 
     w.writeArray(this.meta, (m: GatewayMeta) => {
-      w.writeBuffer(m.serialize());
+      m.serialize(w);
     });
 
     return w.toBuffer();
@@ -704,7 +690,7 @@ function serializeSignature(w: BinaryWriter, sig: SignaturePacked) {
   w.writeU256(BigInt(sig.r8));
 }
 
-class GatewayMeta {
+export class GatewayMeta {
   filePath: string;
   fileSize: number;
   fileIndices: bigint[];
@@ -715,13 +701,9 @@ class GatewayMeta {
     this.fileIndices = fileIndices;
   }
 
-  serialize(): Buffer {
-    const w = new BinaryWriter();
-
+  serialize(w: BinaryWriter) {
     w.writeString(this.filePath);
     w.writeU64(this.fileSize);
     w.writeArray(this.fileIndices, (n: bigint) => w.writeU64(n));
-
-    return w.toBuffer();
   }
 }

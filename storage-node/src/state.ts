@@ -3,31 +3,27 @@ import { FileStorage } from './file-storage';
 import { NODE_SK, SEQUENCER_URL } from './env';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
 import { SequencerClient } from 'zpst-common/src/api';
-
-export interface AccountData {
-  index: bigint;
-  balance: bigint;
-  nonce: bigint;
-  random_oracle_nonce: bigint;
-}
+import { Account } from 'zpst-crypto-sdk';
 
 export class AppState {
   storage: FileStorage;
   /** This node's account data */
-  accountData: AccountData;
+  accountData: Account;
+  accountIndex: number;
   sequencer: SequencerClient;
   nodePk: bigint = derivePublicKey(NODE_SK)[0];
 
-  constructor(storage: FileStorage, accountData: AccountData, sequencer: SequencerClient) {
+  constructor(storage: FileStorage, accountData: Account, accountIndex: number, sequencer: SequencerClient) {
     this.storage = storage;
     this.accountData = accountData;
+    this.accountIndex = accountIndex;
     this.sequencer = sequencer;
   }
 }
 
 export let appState: AppState;
 
-export async function init(accountData: AccountData) {
+export async function init(accountData: Account, accountIndex: number) {
   const storage = await FileStorage.new(
     1 << defShardedStorageSettings.file_tree_depth,
     './data/segments',
@@ -35,5 +31,6 @@ export async function init(accountData: AccountData) {
 
   const sequencer = new SequencerClient(SEQUENCER_URL);
 
-  appState = new AppState(storage, accountData, sequencer);
+  appState = new AppState(storage, accountData, accountIndex, sequencer);
 }
+
