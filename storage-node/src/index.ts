@@ -10,7 +10,7 @@ import { init, appState } from './state';
 import { UploadAndMineResponse, mineSegment } from './handlers';
 import { startHttpServer } from './http-server';
 import { NODE_PK, SEQUENCER_URL } from './env';
-import { Account } from 'zpst-crypto-sdk';
+import { AccountData } from 'zpst-common/src/api';
 
 async function main() {
   program.option('-p, --port <port>', 'Port to listen on', '3001');
@@ -29,12 +29,13 @@ async function main() {
     socket.emit(
       'register',
       NODE_PK,
-      async (res: [number, Account] | undefined) => {
+      async (res: [number, AccountData] | undefined) => {
         if (res) {
           console.log('Account data:', res);
           await init(res[1], res[0]);
         } else {
-          console.error('Account not found');
+          console.warn('Account not found. Initializing new one...');
+          await init();
         }
       },
     );

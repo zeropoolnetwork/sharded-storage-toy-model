@@ -1,26 +1,19 @@
 import fs from 'fs/promises';
 import * as path from 'path';
 import { Level } from 'level';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 
-export interface FileMetadata {
-  /// Until when was it paid for
-  expiration_time: number;
-  // /// Who owns it (and has the right to delete/modify).
-  // /// `owner == 0` means that the file was erased
-  // owner: bigint,
-  // /// Merkle Root of the data
-  // data: bigint,
-}
+const DEFAULT_SEGMENT_SIZE = (1 << defShardedStorageSettings.file_tree_depth) * 32;
 
 export class FileStorage {
-  private segmentSize: number = 2 ** 10;
+  private segmentSize: number = DEFAULT_SEGMENT_SIZE;
   private fileDirectory: string = './files';
 
   private constructor() { }
 
   static async new(
-    segmentSize: number = 2 ** 10,
     fileDirectory: string = './data/files',
+    segmentSize: number = DEFAULT_SEGMENT_SIZE,
   ): Promise<FileStorage> {
     const self = new FileStorage();
 

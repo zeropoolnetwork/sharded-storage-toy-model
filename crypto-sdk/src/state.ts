@@ -34,11 +34,11 @@ export class Account implements Serde {
   // Mining nonce
   random_oracle_nonce: Fr;
 
-  constructor() {
-    this.key = 0n;
-    this.balance = 0n;
-    this.nonce = 0n;
-    this.random_oracle_nonce = 0n;
+  constructor(key: Fr = 0n, balance: Fr = 0n, nonce: Fr = 0n, random_oracle_nonce: Fr = 0n) {
+    this.key = key;
+    this.balance = balance;
+    this.nonce = nonce;
+    this.random_oracle_nonce = random_oracle_nonce;
   }
 
   hash(): Fr {
@@ -64,6 +64,15 @@ export class Account implements Serde {
     this.balance = r.readU256();
     this.nonce = r.readU256();
     this.random_oracle_nonce = r.readU256();
+  }
+
+  clone(): Account {
+    return new Account(
+      this.key,
+      this.balance,
+      this.nonce,
+      this.random_oracle_nonce,
+    );
   }
 }
 
@@ -139,6 +148,15 @@ export class File implements Serde {
     this.locked = r.readU8() == 1;
     this.owner = r.readU256();
     this.data_hash = r.readU256();
+  }
+
+  clone(): File {
+    return new File({
+      expiration_time: this.expiration_time,
+      locked: this.locked,
+      owner: this.owner,
+      data_hash: this.data_hash,
+    });
   }
 }
 

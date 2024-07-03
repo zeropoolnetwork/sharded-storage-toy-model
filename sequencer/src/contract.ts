@@ -7,7 +7,7 @@ export interface IRollupContract {
   getRoot(): Promise<number>;
   getLastCommittedBlockNumber(): Promise<number>;
   getOwner(): Promise<string>;
-  getRandomOracleValues(randomOracleSize: number): Promise<[bigint, bigint[], number]>; // FIXME: return an object
+  getRandomOracleValues(randomOracleSize: number): Promise<{ roOffset: bigint, roValues: bigint[], latestBlock: number }>; // FIXME: return an object
 }
 
 export class RollupContract implements IRollupContract {
@@ -89,7 +89,7 @@ export class RollupContract implements IRollupContract {
 
   async getRandomOracleValues(
     randomOracleSize: number,
-  ): Promise<[bigint, bigint[], number]> {
+  ): Promise<{ roOffset: bigint, roValues: bigint[], latestBlock: number }> {
     const blockNumber = await this.provider.getBlockNumber();
 
     const promises: Promise<ethers.Block | null>[] = [];
@@ -101,7 +101,7 @@ export class RollupContract implements IRollupContract {
       return BigInt(b?.hash ?? '0');
     });
 
-    return [BigInt(blockNumber - defShardedStorageSettings.oracle_len), values, blockNumber];
+    return { roOffset: BigInt(blockNumber - defShardedStorageSettings.oracle_len), roValues: values, latestBlock: blockNumber };
   }
 }
 
@@ -138,8 +138,12 @@ export class RollupContractMock implements IRollupContract {
 
   async getRandomOracleValues(
     randomOracleSize: number,
-  ): Promise<[bigint, bigint[], number]> {
+  ): Promise<{ roOffset: bigint, roValues: bigint[], latestBlock: number }> {
     const values = Array(randomOracleSize).fill(0n).map((_, i) => BigInt(this.latestBlockNumber - i)).reverse();
-    return [0n, values, this.latestBlockNumber];
+    return {
+      roOffset: BigInt(this.latestBlockNumber - defShardedStorageSettings.oracle_len),
+      roValues: values,
+      latestBlock: this.latestBlockNumber
+    };
   }
 }

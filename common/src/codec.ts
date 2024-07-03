@@ -4,15 +4,16 @@ export const FIELD_SIZE = 32;
 export const CHUNK_SIZE = 31;
 // TODO: Extract settings from crypto-sdk to common
 // According to settings in the crypto-sdk
-export const SEGMENT_SIZE = 1 << 10;
+export const SEGMENT_NUM_ELEMENTS = 1 << 10;
+export const SEGMENT_SIZE_BYTES = SEGMENT_NUM_ELEMENTS * CHUNK_SIZE;
 
 export function encodeFile(buffer: Uint8Array): Uint8Array[] {
   const segments = [];
-  const numSegments = Math.ceil(buffer.length / SEGMENT_SIZE);
+  const numSegments = Math.ceil(buffer.length / SEGMENT_SIZE_BYTES);
 
   for (let i = 0; i < numSegments; i++) {
-    const start = i * SEGMENT_SIZE;
-    const end = Math.min((i + 1) * SEGMENT_SIZE, buffer.length);
+    const start = i * SEGMENT_SIZE_BYTES;
+    const end = Math.min((i + 1) * SEGMENT_SIZE_BYTES, buffer.length);
     const segment = buffer.subarray(start, end);
     segments.push(encodeSegment(segment));
   }
@@ -24,8 +25,8 @@ export function decodeFile(segments: Uint8Array[], fileSize: number): Uint8Array
   const buffer = new Uint8Array(fileSize);
 
   for (let i = 0; i < segments.length; i++) {
-    const segment = decodeSegment(segments[i], i === segments.length - 1 ? fileSize % SEGMENT_SIZE : SEGMENT_SIZE);
-    buffer.set(segment, i * SEGMENT_SIZE);
+    const segment = decodeSegment(segments[i], i === segments.length - 1 ? fileSize % SEGMENT_SIZE_BYTES : SEGMENT_SIZE_BYTES);
+    buffer.set(segment, i * SEGMENT_SIZE_BYTES);
   }
 
   return buffer;

@@ -6,7 +6,7 @@ export interface VacantIndicesResponse {
 }
 
 export interface AccountData {
-  // index: Field;
+  key: Field;
   balance: Field;
   nonce: Field;
   random_oracle_nonce: Field;

@@ -101,7 +101,13 @@ export class Tree<T> {
   }
 
   clone(): Tree<T> {
-    return new Tree(this.depth, this.nodes.slice(), this.values.slice(), this.hash_cb);
+    return new Tree(this.depth, this.nodes.slice(), this.values.slice().map((val) => {
+      if ((val as any).clone === undefined) {
+        return (val as any).clone();
+      } else {
+        return val;
+      }
+    }), this.hash_cb);
   }
 
   toBuffer(): Buffer {

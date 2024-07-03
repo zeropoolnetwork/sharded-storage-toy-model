@@ -48,25 +48,36 @@ export async function mineSegment(
     },
   );
 
+  await appState.updateAccountData();
+
   const miningTx = prep_mining_tx(
     Number(appState.accountIndex),
     miningRes,
     NODE_SK,
-    appState.accountData.nonce,
+    BigInt(appState.accountData.nonce),
     globalRoOffset + BigInt(roOffset),
   );
 
   let segment = await appState.storage.read(
     miningRes.file_in_storage_index.toString(),
   );
-  if (!segment) {
-    segment = Buffer.alloc(1 << defShardedStorageSettings.file_tree_depth);
+
+  let tree;
+  if (segment) {
+    tree = new Tree<bigint>(0, [], [], (v: bigint) => v);
+    tree.fromBuffer(segment, () => BigInt(0));
+  } else {
+    tree = Tree.init(
+      defShardedStorageSettings.file_tree_depth,
+      [],
+      0n,
+      (x) => x,
+    );
   }
 
-  const tree = new Tree<bigint>(0, [], [], (v: bigint) => v);
-  tree.fromBuffer(segment, () => BigInt(0));
-
   const word = tree.readLeaf(Number(miningRes.word_in_file_index));
+
+  console.log('Mining done', miningRes, word, miningTx);
 
   return {
     miningRes,

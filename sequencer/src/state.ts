@@ -70,11 +70,13 @@ import {
 import { upload, broadcastMiningChallenge, UploadAndMineResponse } from './nodes';
 import { BinaryWriter } from 'zpst-common/src/binary';
 import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
-import { deflate, unzip } from 'node:zlib';
+import { deflate, unzip, brotliCompress, brotliDecompress } from 'node:zlib';
 import { promisify } from 'node:util';
 
 const deflateAsync = promisify(deflate);
 const unzipAsync = promisify(unzip)
+const brotliCompressAsync = promisify(brotliCompress);
+const brotliDecompressAsync = promisify(brotliDecompress);
 
 const FILES_TREE_PATH = './data/files_tree.bin';
 const ACCOUNT_TREE_PATH = './data/account_tree.bin';
@@ -96,6 +98,7 @@ export interface FileMetadata {
   size: number;
 }
 
+// TODO: Separation of concerns.
 export class AppState {
   contract: IRollupContract = null!;
 
@@ -190,8 +193,11 @@ export class AppState {
     return this.state.accounts.values.findIndex((acc) => BigInt(acc.key) === BigInt(pk));
   }
 
-  async getAccountByPk(pk: bigint): Promise<[number, Account]> {
+  async getAccountByPk(pk: bigint): Promise<[number, Account] | null> {
     const index = this.pubKeyToIndex(pk);
+    if (index === -1) {
+      return null;
+    }
     return [index, this.state.accounts.readLeaf(index)[1]];
   }
 
@@ -210,7 +216,6 @@ export class AppState {
   getVacantAccountIndex(): number {
     for (let i = 1; i < this.state.accounts.values.length; i++) {
       const acc = this.state.accounts.readLeaf(i)[1];
-      console.log(acc);
       if (acc.balance === 0n) {
         return i;
       }
@@ -299,7 +304,8 @@ export class AppState {
           mining,
         );
 
-        await this.saveState();
+        // not critical enugh to await
+        this.saveState();
       } catch (err) {
         this.state = st;
 
@@ -337,7 +343,6 @@ export class AppState {
     );
 
     const miningTxs = mining.map(m => {
-      console.log('!!! mining', m);
       return this.state.build_mining_txex(
         m.miningRes,
         m.word,
@@ -376,11 +381,12 @@ export class AppState {
 
     const metaFile = new MetadataFile(accTxs, fileTxs, miningTxs, [...gatewayMetas.values()]);
     const metaFileData = metaFile.serialize();
-    const metaFileDataCompressed = await deflateAsync(metaFileData);
+    const metaFileDataCompressed = await brotliCompressAsync(metaFileData);
     const encodedMetaFileSegments = encodeFile(metaFileDataCompressed);
 
     if (encodedMetaFileSegments.length > 1) {
-      throw new Error('Metadata file too large');
+      console.error('Meta file bigger than expected', metaFile);
+      throw new Error(`Metadata file too large: ${encodedMetaFileSegments.length} segments of sizes ${encodedMetaFileSegments.map((x) => x.length).join(`, `)}. Only data that fits into a single segment is supported.`);
     }
 
     const metaFileSegment = encodedMetaFileSegments[0];
@@ -479,9 +485,11 @@ export class AppState {
     const txHash = await this.contract.publishBlock(newStateHash, now, proof);
 
     // Upload segments to storage nodes
-    await upload(
-      files.map((f) => ({ id: f.tx[0].data_index, data: f.data.data })),
-    );
+    if (files.length > 0) {
+      await upload(
+        files.map((f) => ({ id: f.tx[0].data_index, data: f.data.data })),
+      );
+    }
 
     // Upload the meta file to storage nodes
     await upload([{ id: metaFileIndex.toString(), data: Buffer.from(metaFileSegment) }]);
@@ -498,7 +506,7 @@ export class AppState {
       return acc;
     }, new Map<bigint, GatewayMeta[]>());
 
-    // Save gateway-level metadata.
+    // Cache gateway-level metadata.
     await Promise.all(
       Array.from(userMetas.entries()).map(async ([pk, metas]) => {
         let storedMetas: GatewayMeta[];

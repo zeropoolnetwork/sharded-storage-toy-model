@@ -40,22 +40,23 @@ app.post('/files', async (req: Request, res: Response) => {
 
 // List all files for a given owner
 app.get('/files/:owner', async (req: Request, res: Response) => {
-  const owner = BigInt(req.params.owner);
-  let metas: GatewayMeta[] = [];
   try {
+    const owner = BigInt(req.params.owner);
+    let metas: GatewayMeta[] = [];
     metas = await appState.fileMetadata.get(owner);
-  } catch (e) { }
-  res.send(metas);
+    res.send(metas);
+  } catch (e) {
+    res.status(404).send({ error: e });
+  }
 });
 
 // Get a file by owner and path
 // Fetches needed segments from the storage nodes, assembles them into a file and returns it.
 app.get('/files/:owner/*', async (req: Request, res: Response) => {
-  const owner = BigInt(req.params.owner);
-  const fullPath = req.params[0];
-
   let meta: GatewayMeta;
   try {
+    const owner = BigInt(req.params.owner);
+    const fullPath = req.params[0];
     const metas = await appState.fileMetadata.get(owner);
     const m = metas.find((m) => m.filePath === fullPath); // TODO: Get rid of linear search
     if (m) {
@@ -83,16 +84,20 @@ app.get('/files/:owner/*', async (req: Request, res: Response) => {
   }
 });
 
+// TODO: Implement a proper optimistic state with rollback.
+// FIXME: quick and dirty temporary fix, since the main state doesn't update quick enough.
+let masterNonce = 0n;
 app.post('/faucet', async (req: Request, res: Response) => {
   const pk = BigInt(req.body.pk);
   let account: Account;
   let accIndex: number;
-  try {
-    const [index, acc] = await appState.getAccountByPk(pk);
-    account = acc;
+
+  const r = await appState.getAccountByPk(pk);
+  if (r) {
+    account = r[1];
     account.balance += FAUCET_AMOUNT;
-    accIndex = index;
-  } catch (err) {
+    accIndex = r[0];
+  } else {
     account = new Account();
     account.key = pk;
     account.balance = FAUCET_AMOUNT;
@@ -100,14 +105,23 @@ app.post('/faucet', async (req: Request, res: Response) => {
   }
 
   const masterAccount = appState.state.accounts.readLeaf(0)[1];
-  const [acc, signature] = prep_account_tx(FAUCET_AMOUNT, 0, accIndex, MASTER_SK, pk, masterAccount.nonce);
+  let nonce;
+  if (masterAccount.nonce > masterNonce) {
+    masterNonce = masterAccount.nonce;
+    nonce = masterNonce;
+  } else {
+    nonce = masterNonce++;
+  }
+
+  const [acc, signature] = prep_account_tx(FAUCET_AMOUNT, 0, accIndex, MASTER_SK, pk, nonce);
   await appState.addAccountTransaction(acc, signature);
   res.send({ index: accIndex, account });
 });
 
 app.get('/accounts/:id', async (req: Request, res: Response) => {
   const acc = await appState.getAccountByPk(BigInt(req.params.id));
-  if (acc[0]) {
+  if (acc) {
+    console.log('Requested account data:', acc);
     res.send({
       index: acc[0],
       account: acc[1],
@@ -115,7 +129,6 @@ app.get('/accounts/:id', async (req: Request, res: Response) => {
   } else {
     res.status(404).send({ error: 'Account not found' });
   }
-
 });
 
 app.get('/blocks', async (req: Request, res: Response) => {
