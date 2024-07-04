@@ -3,30 +3,9 @@
 
 import { derivePublicKey, signMessage } from '@zk-kit/eddsa-poseidon';
 import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
+import type { SignaturePacked, AccountTx, FileTx } from 'zpst-common/src/api';
 
 type Field = string;
-
-export type SignaturePacked = {
-  a: Field;
-  s: Field;
-  r8: Field;
-};
-
-export type AccountTx = {
-  sender_index: Field;
-  receiver_index: Field;
-  receiver_key: Field;
-  amount: Field;
-  nonce: Field;
-};
-
-export type FileTx = {
-  sender_index: Field;
-  data_index: Field;
-  time_interval: Field;
-  data: Field;
-  nonce: Field;
-};
 
 
 /// This function prepares the account transaction. It does not use global

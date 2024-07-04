@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { initHDWallet, initWeb3Modal } from '$lib';
+  import { DEBUG_SEED } from '$lib/api';
   import { onMount } from 'svelte';
-  import { PUBLIC_DEBUG_SEED } from '$env/static/public';
 
   let mnemonic = '';
 
@@ -25,8 +25,8 @@
   }
 
   onMount(async () => {
-    if (PUBLIC_DEBUG_SEED && PUBLIC_DEBUG_SEED.length > 0) {
-      mnemonic = PUBLIC_DEBUG_SEED;
+    if (DEBUG_SEED && DEBUG_SEED.length > 0) {
+      mnemonic = DEBUG_SEED;
       await initHDWallet(mnemonic);
       goto('/app');
     }

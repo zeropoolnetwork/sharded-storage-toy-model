@@ -17,7 +17,7 @@ io.on('connection', (socket) => {
   socket.on('register', async (pk: string, cb) => {
     nodes.set(socket.id, socket);
 
-    let res: [number, Account] | null = await appState.getAccountByPk(BigInt(pk));
+    const res = await appState.getAccountByPk(BigInt(pk));
     if (!res) {
       console.error('Storage node\'s requested account not found:', pk);
     }

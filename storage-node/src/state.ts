@@ -22,7 +22,7 @@ export class AppState {
 
   async updateAccountData() {
     try {
-      const res = await this.sequencer.account(this.nodePk);
+      const res = await this.sequencer.getAccount(this.nodePk);
       console.log('Updated account data:', res);
       this.accountData = res.account;
       this.accountIndex = res.index;
@@ -45,7 +45,7 @@ export async function init(accountData?: AccountData, accountIndex?: number) {
   const storage = await FileStorage.new('./data/segments');
   const sequencer = new SequencerClient(SEQUENCER_URL);
 
-  const vacantIndex = accountIndex || (await sequencer.vacantIndices()).vacantAccountIndex;
+  const vacantIndex = accountIndex || (await sequencer.getVacantIndices()).vacantAccountIndex;
   accountData = accountData || {
     nonce: 0n.toString(),
     balance: 0n.toString(),

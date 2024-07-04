@@ -110,7 +110,15 @@ export class RollupContractMock implements IRollupContract {
 
   blocks: { [blockNumber: number]: { newRoot: bigint, proof: Uint8Array, now: bigint } } = {};
 
-  constructor() { }
+  constructor() {
+    this.latestBlockNumber = require('fs').existsSync('data/blockchain.json')
+      ? JSON.parse(require('fs').readFileSync('data/blockchain.json').toString()).latestBlockNumber
+      : 1337;
+  }
+
+  async save() {
+    require('fs').writeFileSync('data/blockchain.json', JSON.stringify({ latestBlockNumber: this.latestBlockNumber }));
+  }
 
   async publishBlock(
     newRoot: bigint,
@@ -121,7 +129,9 @@ export class RollupContractMock implements IRollupContract {
 
     this.blocks[this.latestBlockNumber] = { newRoot, proof, now };
 
-    return `0x${(this.latestBlockNumber - 1).toString(16).padStart(64, '0')}`;
+    await this.save();
+
+    return `0x${(this.latestBlockNumber - 1).toString(16).padStart(32, '0')}`;
   }
 
   async getRoot(): Promise<number> {

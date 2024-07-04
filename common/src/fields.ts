@@ -67,6 +67,10 @@ export class Fr {
     return this.fromBuffer(Buffer.from(str.replace(/^0x/i, ''), 'hex'));
   }
 
+  toBigInt() {
+    return toBigIntBE(this.value);
+  }
+
   toBuffer() {
     return this.value;
   }

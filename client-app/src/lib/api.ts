@@ -1,13 +1,14 @@
-import { PUBLIC_SEQUENCER_API_URL, PUBLIC_NODE_API_URL } from '$env/static/public';
-import { prep_account_tx, prep_file_tx, type AccountTx } from './tx';
-import { pk, sk, skBuf } from '$lib';
-import { SequencerClient, type AccountData, type Block, type FileMetadata, type GatewayMeta, type VacantIndicesResponse } from 'zpst-common/src/api';
-import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
-import { poseidon2_bn256_hash } from 'zpst-poseidon2-bn256';
+import { PUBLIC_SEQUENCER_API_URL, PUBLIC_NODE_API_URL, PUBLIC_DEBUG_SEED } from '$env/static/public';
+import { prep_file_tx } from './tx';
+import { pk, sk } from '$lib';
+import { SequencerClient, type AccountData, type Block, type FileMetadata, type FullFileMeta, type VacantIndicesResponse } from 'zpst-common/src/api';
+import { encodeFile, bufferToFrElements, encodeSegment } from 'zpst-common/src/codec';
+import { poseidon2_bn256_hash, merkle_tree } from 'zpst-poseidon2-bn256';
 
 export const SEQUENCER_API_URL = PUBLIC_SEQUENCER_API_URL || 'http://localhost:3000';
 export const NODE_API_URL = PUBLIC_NODE_API_URL || 'http://localhost:3001';
 
+export const DEBUG_SEED: string | undefined = PUBLIC_DEBUG_SEED;
 
 const DEFAULT_FILE_LIFETIME = 7149n * 10n; // about 10 days
 
@@ -19,31 +20,51 @@ export interface UploadFileResult {
 }
 
 export async function uploadFile(file: File): Promise<UploadFileResult> {
-  const data = await file.arrayBuffer();
+  const data = Buffer.from(await file.arrayBuffer());
   const fileName = file.name;
   const fileSize = data.byteLength;
 
-  const indices = await vacantIndices();
   const account = await getAccount(pk);
+  if (!account) {
+    throw new Error('Cannot upload: account not found');
+  }
 
-  let fileIndex = indices.vacantFileIndex;
-  const segmentedData = encodeFile(new Uint8Array(data));
+  const fullFileEncoded = encodeSegment(data);
+  const fullFileHash = BigInt(poseidon2_bn256_hash(bufferToFrElements(fullFileEncoded).map((x) => x.toBigInt().toString())));
+  const segmentedData = encodeFile(data);
+  const indices = await getVacantFileIndices(segmentedData.length);
 
-  console.log('Uploading segments:', segmentedData.length, ', file size:', fileSize, ', file name:', fileName);
+  let nonce = BigInt(account.account.nonce);
+  const segments = segmentedData.map((segmentData, index) => {
+    console.log(`Preparing segment ${index}...`);
+    const elements = bufferToFrElements(segmentData).map((x) => x.toBigInt().toString());
 
-  const segments = segmentedData.map((segmentData) => {
-    const elements = bufferToFrElements(segmentData).map((x) => x.toString());
-    const hash = BigInt(poseidon2_bn256_hash(elements));
-    const [tx, signature] = prep_file_tx(DEFAULT_FILE_LIFETIME, Number(account.index), fileIndex++, hash, skBuf.toString('hex'), BigInt(account.account.nonce))
+    console.log('Building merkle tree...')
+    const depth = 10; // FIXME: hardcoded
+    const tree = merkle_tree(depth, elements, '0');
+    const root = tree[1];
 
-    return { tx, signature, data: Buffer.from(segmentData) };
+    console.log('nonce', nonce);
+
+    const fileIndex = indices[index];
+    const [tx, signature] = prep_file_tx(
+      DEFAULT_FILE_LIFETIME,
+      Number(account.index),
+      fileIndex,
+      BigInt(root),
+      sk.toString(),
+      nonce++,
+    );
+
+    return { tx, signature, data: Buffer.from(segmentData).toString('base64'), order: index };
   });
 
-  await client.upload({ segments, fileMetadata: { size: fileSize, path: fileName } });
+  console.log(`Uploading ${segments.length} segment(s), `, ' file size:', fileSize, ', file name:', fileName)
+  await client.upload({ segments, fileMetadata: { size: fileSize, path: fileName, hash: fullFileHash } });
 
   return {
-    indices: [...Array(segments.length)].map((_, i) => BigInt(i) + BigInt(indices.vacantFileIndex)),
-    metadata: { size: fileSize, path: fileName },
+    indices: indices.map((x) => BigInt(x)),
+    metadata: { size: fileSize, path: fileName, hash: fullFileHash },
   };
 }
 
@@ -51,20 +72,28 @@ export async function faucet(): Promise<{ index: number, account: AccountData }>
   return await client.faucet(pk);
 }
 
-export async function vacantIndices(): Promise<VacantIndicesResponse> {
-  return await client.vacantIndices();
+export async function getVacantIndices(): Promise<VacantIndicesResponse> {
+  return await client.getVacantIndices();
 }
 
-export async function getAccount(publicKey: bigint): Promise<{ index: number, account: AccountData }> {
-  return client.account(publicKey);
+export async function getVacantFileIndices(num: number): Promise<number[]> {
+  return await client.getVacantFileIndices(num);
+}
+
+export async function getAccount(publicKey: bigint): Promise<{ index: number, account: AccountData } | null> {
+  try {
+    return await client.getAccount(publicKey);
+  } catch (err) {
+    return null;
+  }
 }
 
 export async function getLatestBlocks(): Promise<Block[]> {
-  return await client.blocks();
+  return await client.getLatestBlocks();
 }
 
-export async function listFiles(): Promise<GatewayMeta[]> {
-  return await client.listFiles(pk);
+export async function getFiles(): Promise<FullFileMeta[]> {
+  return await client.getFiles(pk);
 }
 
 export async function checkStatus(): Promise<{ rollup: boolean, node: boolean, blockInProgress: boolean }> {

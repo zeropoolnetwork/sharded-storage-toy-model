@@ -102,7 +102,7 @@ export class Tree<T> {
 
   clone(): Tree<T> {
     return new Tree(this.depth, this.nodes.slice(), this.values.slice().map((val) => {
-      if ((val as any).clone === undefined) {
+      if ((val as any).clone) {
         return (val as any).clone();
       } else {
         return val;

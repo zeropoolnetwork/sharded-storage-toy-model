@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
-  import { initHDWallet, isWalletInitialized, pk } from '$lib';
-  import { getLatestBlocks, listFiles } from '$lib/api';
+  import { isWalletInitialized, pk } from '$lib';
   import {
     uploadFile,
     faucet,
+    getLatestBlocks,
+    getFiles,
     getAccount,
     checkStatus,
     SEQUENCER_API_URL,
@@ -14,6 +15,7 @@
   import { type Block } from 'zpst-common/src/api';
 
   let files: { name: string; url: string }[] = [];
+  let pendingFiles: { name: string }[] = [];
   let balance = 0n;
   let blocks: Block[] = [];
 
@@ -24,6 +26,7 @@
     input.onchange = async (_) => {
       // @ts-ignore
       let files = Array.from(input.files);
+      pendingFiles = [{ name: files[0].name }, ...pendingFiles];
       await uploadFile(files[0] as File);
     };
     input.click();
@@ -35,21 +38,8 @@
   };
 
   async function load() {
-    if (isWalletInitialized()) {
-      await update();
-    } else {
+    if (!isWalletInitialized()) {
       return goto('/init');
-    }
-  }
-
-  // TODO: Proper state management
-  async function update() {
-    try {
-      const account = await getAccount(pk);
-      console.log(account);
-      balance = BigInt(account.account.balance);
-    } catch (e) {
-      balance = 0n;
     }
   }
 
@@ -59,23 +49,32 @@
     blockInProgress: false
   };
 
-  let interval: any;
+  let updateInterval: any;
+  let promise: Promise<void>;
   onMount(async () => {
-    interval = setInterval(async () => {
+    promise = load();
+    updateInterval = setInterval(async () => {
       status = await checkStatus();
       blocks = await getLatestBlocks();
-      files = (await listFiles()).map((meta) => ({
+
+      const account = await getAccount(pk);
+      balance = BigInt(account?.account.balance ?? 0n);
+
+      const fetchedFiles = await getFiles();
+      files = fetchedFiles.map((meta) => ({
         name: meta.filePath,
-        url: `${NODE_API_URL}/files/${pk}/${meta.filePath}`
+        url: `${SEQUENCER_API_URL}/files/${pk}/${meta.filePath}`
       }));
+
+      pendingFiles = pendingFiles.filter(
+        (file) => !fetchedFiles.some((meta) => meta.filePath === file.name)
+      );
     }, 3000);
   });
 
   onDestroy(() => {
-    clearInterval(interval);
+    clearInterval(updateInterval);
   });
-
-  let promise = load();
 
   function txLink(tx: string) {
     return `https://sepolia.etherscan.io/tx/${tx}`;
@@ -100,6 +99,12 @@
           {/if}
         </div>
         <div class="overflow-y-scroll max-h-64">
+          {#each pendingFiles as file}
+            <div class="flex items-center mb-2">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+              <div class="text-gray-600">{file.name}</div>
+            </div>
+          {/each}
           {#each files as file}
             <div class="flex items-center mb-2">
               <!-- <img src={file.url} alt={file.name} class="w-12 h-12 mr-2 rounded" /> -->

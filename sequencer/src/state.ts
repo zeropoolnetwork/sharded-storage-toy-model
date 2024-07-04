@@ -70,11 +70,11 @@ import {
 import { upload, broadcastMiningChallenge, UploadAndMineResponse } from './nodes';
 import { BinaryWriter } from 'zpst-common/src/binary';
 import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
-import { deflate, unzip, brotliCompress, brotliDecompress } from 'node:zlib';
+import { brotliCompress, brotliDecompress } from 'node:zlib';
 import { promisify } from 'node:util';
 
-const deflateAsync = promisify(deflate);
-const unzipAsync = promisify(unzip)
+// const deflateAsync = promisify(deflate);
+// const unzipAsync = promisify(unzip)
 const brotliCompressAsync = promisify(brotliCompress);
 const brotliDecompressAsync = promisify(brotliDecompress);
 
@@ -83,19 +83,150 @@ const ACCOUNT_TREE_PATH = './data/account_tree.bin';
 const ACCOUNTS_PATH = './data/accounts';
 const FILE_METADATA_PATH = './data/file_metadata';
 const BLOCKS_PATH = './data/blocks';
-const DEFAULT_DURATION = 7149n * 10n; // ~10 days
 
 const ssConfig = defShardedStorageSettings;
 export let appState: AppState;
 
 export interface FileData {
   data: Buffer;
-  metadata: FileMetadata;
+  fileMetadata: FileMetadata;
 }
 
 export interface FileMetadata {
+  hash: bigint
   path: string;
   size: number;
+}
+
+type PendingSegment = { tx: [FileTx, SignaturePacked]; data: Buffer, order: number, fileMetadata: FileMetadata };
+
+class AccountCache {
+  accounts: Level<bigint, { index: number, account: Account }> = null!;
+
+  constructor() {
+    this.accounts = new Level(ACCOUNTS_PATH, {
+      valueEncoding: 'json',
+    });
+  }
+
+  async get(pk: bigint): Promise<{ index: number, account: Account } | null> {
+    try {
+      return await this.accounts.get(pk);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async put(pk: bigint, account: { index: number, account: Account }) {
+    await this.accounts.put(pk, account);
+  }
+}
+
+function saturatingSub(a: bigint, b: bigint): bigint {
+  return a > b ? a - b : 0n;
+}
+
+class OptimisticState {
+  accounts: Map<number, Account> = new Map();
+  accountIndices: Map<bigint, number> = new Map();
+  files: Map<number, File> = new Map();
+
+  accountTxs: [AccountTx, SignaturePacked][] = [];
+  fileTxs: PendingSegment[] = [];
+  mineTxs: UploadAndMineResponse[] = [];
+
+  constructor() { }
+
+  findPrevAccount(state: State, index: number): Account {
+    const cachedAcc = this.accounts.get(index);
+    if (cachedAcc) {
+      return cachedAcc;
+    } else {
+      return state.accounts.values[index].clone();
+    }
+  }
+
+  findPrevFile(state: State, index: number): File {
+    const cachedFile = this.files.get(index);
+    if (cachedFile) {
+      return cachedFile;
+    } else {
+      return state.files.values[index].clone();
+    }
+  }
+
+  add(state: State, now: bigint, accounts: [AccountTx, SignaturePacked][], files: PendingSegment[], mining: UploadAndMineResponse[]) {
+    this.accountTxs.push(...accounts);
+    this.fileTxs.push(...files);
+    this.mineTxs.push(...mining);
+
+    this.apply(state, now);
+  }
+
+  clearOld(state: State, now: bigint, oldAccounts: [AccountTx, SignaturePacked][], oldFiles: PendingSegment[], oldMining: UploadAndMineResponse[]) {
+    console.log('Clearing optimistic state...');
+
+    this.accounts.clear();
+    this.files.clear();
+    this.accountIndices.clear();
+
+    this.accountTxs = this.accountTxs.filter(item => oldAccounts.includes(item));
+    this.fileTxs = this.fileTxs.filter(item => oldFiles.includes(item));
+    this.mineTxs = this.mineTxs.filter(item => oldMining.includes(item));
+
+    this.apply(state, now);
+  }
+
+  private apply(state: State, now: bigint) {
+    const accounts = this.accountTxs;
+    const files = this.fileTxs;
+    const mining = this.mineTxs;
+
+    // Accounts
+    for (const acc of accounts) {
+      const newSender = this.findPrevAccount(state, Number(acc[0].sender_index));
+      const senderPk = BigInt(acc[1].a);
+      newSender.balance = saturatingSub(newSender.balance, BigInt(acc[0].amount));
+      newSender.nonce = BigInt(acc[0].nonce);
+      newSender.key = senderPk;
+      this.accounts.set(Number(acc[0].sender_index), newSender);
+      this.accountIndices.set(senderPk, Number(acc[0].sender_index));
+
+      const newReceiver = this.findPrevAccount(state, Number(acc[0].receiver_index));
+      const receiverPk = BigInt(acc[0].receiver_key);
+      newReceiver.balance = frAdd(newReceiver.balance, BigInt(acc[0].amount));
+      newReceiver.nonce = BigInt(acc[0].nonce);
+      newReceiver.key = BigInt(receiverPk);
+      this.accounts.set(Number(acc[0].receiver_index), newReceiver);
+      this.accountIndices.set(receiverPk, Number(acc[0].receiver_index));
+    }
+
+    // Files
+    for (const file of files) {
+      const newSender = this.findPrevAccount(state, Number(file.tx[0].sender_index));
+      newSender.balance = frSub(newSender.balance, BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
+      newSender.nonce = BigInt(file.tx[0].nonce);
+      this.accounts.set(Number(file.tx[0].sender_index), newSender);
+
+      const newFile = this.findPrevFile(state, Number(file.tx[0].data_index));
+      const expTime = newFile.expiration_time;
+      newFile.data_hash = BigInt(file.tx[0].data);
+      newFile.expiration_time = BigInt((now > expTime ? now : expTime) + BigInt(file.tx[0].time_interval));
+      newFile.owner = BigInt(file.tx[0].sender_index);
+      newFile.locked = false;
+      this.files.set(Number(file.tx[0].data_index), newFile);
+    }
+
+    // Mining
+    for (const m of mining) {
+      const newSender = this.findPrevAccount(state, Number(m.tx[0].sender_index));
+      newSender.random_oracle_nonce = BigInt(m.tx[0].random_oracle_nonce);
+      newSender.nonce = BigInt(m.tx[0].nonce);
+      newSender.balance = frAdd(newSender.balance, BigInt(ssConfig.mining_reward));
+      this.accounts.set(Number(m.tx[0].sender_index), newSender);
+      this.accountIndices.set(BigInt(m.tx[1].a), Number(m.tx[0].sender_index));
+    }
+  }
 }
 
 // TODO: Separation of concerns.
@@ -107,20 +238,23 @@ export class AppState {
   now: number = 0;
 
   // FIXME: temporary measure to stop mining when there are no transactions.
-  miningNeeded: boolean = false;
+  private miningNeeded: boolean = false;
 
   // TODO: Replace naive global state with redis or some other queue (rabbitmq, kafka, etc.)
   //       Redis would probaly be the best choice since we can use it as a cache as well.
-  pendingAccounts: [AccountTx, SignaturePacked][] = [];
-  pendingFiles: { tx: [FileTx, SignaturePacked]; data: FileData }[] = [];
-  pendingMining: UploadAndMineResponse[] = [];
+  private pendingAccounts: [AccountTx, SignaturePacked][] = [];
+  private pendingSegments: PendingSegment[] = [];
+  private pendingMining: UploadAndMineResponse[] = [];
   state: State = null!;
   blocks: Blocks = null!;
   // Public key of the master account for convenience.
   masterPk: Fr = null!;
 
+  private optimisticState: OptimisticState = new OptimisticState();
+
   // Gateway-level metadata, useful for querying files by owner/path.
-  fileMetadata: Level<bigint, GatewayMeta[]> = null!;
+  fileMetadata: Level<bigint, FullFileMeta[]> = null!;
+  // private accountCache: AccountCache = new AccountCache();
 
   blockInProgress: boolean = false;
 
@@ -180,63 +314,96 @@ export class AppState {
       self.state = new State(accTree, fileTree);
     }
 
-    console.log('Vacant account index:', self.getVacantAccountIndex());
-    console.log('Vacant file index:', self.getVacantFileIndex());
-
     console.log('State loaded.');
 
     return self;
   }
 
-  pubKeyToIndex(pk: bigint): number {
-    // FIXME: Cache. If the tree grows any larger, this is going to be painful.
-    return this.state.accounts.values.findIndex((acc) => BigInt(acc.key) === BigInt(pk));
-  }
+  async getAccountByPk(pk: bigint): Promise<{ index: number, account: Account } | null> {
+    const optimisticIndex = this.optimisticState.accountIndices.get(pk);
+    if (optimisticIndex) {
+      const account = this.optimisticState.accounts.get(optimisticIndex)!.clone();
+      return { index: optimisticIndex, account };
+    }
 
-  async getAccountByPk(pk: bigint): Promise<[number, Account] | null> {
-    const index = this.pubKeyToIndex(pk);
-    if (index === -1) {
+    // const cached = await this.accountCache.get(pk);
+    // if (cached) {
+    //   return cached;
+    // }
+
+    const index = this.state.accounts.values.findIndex((acc) => BigInt(acc.key) === BigInt(pk));
+    if (index > -1) {
+      return { index, account: this.state.accounts.values[index].clone() };
+    } else {
       return null;
     }
-    return [index, this.state.accounts.readLeaf(index)[1]];
   }
 
-  async addAccountTransaction(account: AccountTx, signature: SignaturePacked) {
+  getAccountByIndex(index: number): Account {
+    const optimisticAccount = this.optimisticState.accounts.get(index);
+    if (optimisticAccount) {
+      return optimisticAccount;
+    }
+
+    return this.state.accounts.values[index].clone();
+  }
+
+  addAccountTransaction(account: AccountTx, signature: SignaturePacked) {
+    this.optimisticState.add(this.state, BigInt(this.now), [[account, signature]], [], []);
     this.pendingAccounts.push([account, signature]);
   }
 
-  async addFileTransaction(
+  addFileTransaction(
     file: FileTx,
     signature: SignaturePacked,
-    data: FileData,
+    data: Buffer,
+    fileMetadata: FileMetadata,
+    order: number,
   ) {
-    this.pendingFiles.push({ tx: [file, signature], data });
+    const txPair: [FileTx, SignaturePacked] = [file, signature];
+    const tx = { tx: txPair, data, order, fileMetadata }
+    this.optimisticState.add(this.state, BigInt(this.now), [], [tx], []);
+    this.pendingSegments.push(tx);
+  }
+
+  addMiningTransaction(mining: UploadAndMineResponse) {
+    this.optimisticState.add(this.state, BigInt(this.now), [], [], [mining]);
+    this.pendingMining.push(mining);
   }
 
   getVacantAccountIndex(): number {
     for (let i = 1; i < this.state.accounts.values.length; i++) {
-      const acc = this.state.accounts.readLeaf(i)[1];
+      const acc = this.optimisticState.accounts.get(i) || this.state.accounts.values[i];
       if (acc.balance === 0n) {
         return i;
       }
     }
 
-    return this.state.accounts.values.length;
+    throw new Error('No vacant account index');
   }
 
-  getVacantFileIndex(): number {
+  getVacantFileIndices(num: number): number[] {
+    const indices = [];
     for (let i = 0; i < this.state.files.values.length; i++) {
-      if (this.state.files.readLeaf(i)[1].owner === 0n) {
-        return i;
+      const file = this.optimisticState.files.get(i) || this.state.files.values[i];
+      const expired = file.expiration_time < BigInt(this.now);
+      const empty = file.owner === 0n;
+
+      if (expired || empty) {
+        indices.push(i);
+      }
+
+      if (indices.length === num) {
+        break;
       }
     }
 
-    return this.state.files.values.length;
+    return indices;
   }
 
   async updateBlockchainState() {
     console.log('Updating blockchain state...');
-    const [roOffset, roValues, latestBlock] = await this.contract.getRandomOracleValues(ssConfig.oracle_len);
+    const { roOffset, roValues, latestBlock } = await this.contract.getRandomOracleValues(ssConfig.oracle_len);
     const now = latestBlock - ssConfig.oracle_len;
 
     this.roOffset = roOffset;
@@ -256,20 +423,26 @@ export class AppState {
           continue;
         }
 
-        console.log('Broadcasting mining challenge...')
-        const mining = await broadcastMiningChallenge(
-          this.roValues,
-          this.roOffset,
-        );
+        try {
+          console.log('Broadcasting mining challenge...')
+          const mining = await broadcastMiningChallenge(
+            this.roValues,
+            this.roOffset,
+          );
 
-        this.pendingMining.push(mining);
-        this.miningNeeded = false;
+          console.log('Mining response:', mining);
+
+          this.addMiningTransaction(mining);
+          this.miningNeeded = false;
+        } catch (err) {
+          console.error('Failed to mine:', err);
+        }
       }
     }, 1);
 
     console.log('Waiting for transactions...');
     while (true) {
-      if (this.pendingAccounts.length === 0 && this.pendingFiles.length === 0 && this.pendingMining.length === 0) {
+      if (this.pendingAccounts.length === 0 && this.pendingSegments.length === 0 && this.pendingMining.length === 0) {
         console.log('No transactions, waiting...');
         await new Promise((resolve) =>
           setTimeout(resolve, BLOCK_TIME_INTERVAL),
@@ -282,60 +455,55 @@ export class AppState {
         0,
         ssConfig.account_tx_per_block,
       );
-      const files = this.pendingFiles.slice(0, ssConfig.file_tx_per_block);
+      const files = this.pendingSegments.slice(0, ssConfig.file_tx_per_block - 1);
       const mining = this.pendingMining.slice(0, ssConfig.mining_tx_per_block);
       this.pendingAccounts = this.pendingAccounts.slice(
         ssConfig.account_tx_per_block,
       );
-      this.pendingFiles = this.pendingFiles.slice(ssConfig.file_tx_per_block);
+      this.pendingSegments = this.pendingSegments.slice(ssConfig.file_tx_per_block);
       this.pendingMining = this.pendingMining.slice(ssConfig.mining_tx_per_block);
-
-      // Backup the state in case of failure
-      const st = this.state.clone();
 
       try {
         this.blockInProgress = true;
         await this.updateBlockchainState();
 
-        await this.batchTransactions(
+        const newState = await this.batchTransactions(
           BigInt(this.now),
           accounts,
           files,
           mining,
         );
 
-        // not critical enugh to await
+        this.state = newState;
+
+        // not critical enough to await
         this.saveState();
       } catch (err) {
-        this.state = st;
-
-        console.log(
-          'Failed to create a block:',
-          err,
-          'Discarding transactions...',
-        );
+        console.log('Failed to create a block:', err);
       }
 
+      this.optimisticState.clearOld(this.state, BigInt(this.now), accounts, files, mining);
       this.blockInProgress = false;
-
     }
   }
 
   private async batchTransactions(
     now: bigint,
     accounts: [AccountTx, SignaturePacked][],
-    files: { tx: [FileTx, SignaturePacked]; data: FileData }[],
+    files: PendingSegment[],
     mining: UploadAndMineResponse[],
-  ): Promise<void> {
+  ): Promise<State> {
     console.log('Creating a new block...');
 
-    const stateHash = this.state.hash();
+    const st = this.state.clone();
+
+    const stateHash = st.hash();
     const stateRoot: Root = {
-      acc: fr_serialize(this.state.accounts.root()),
-      data: fr_serialize(this.state.files.root()),
+      acc: fr_serialize(st.accounts.root()),
+      data: fr_serialize(st.files.root()),
     };
 
-    const accTxs = accounts.map((acc) => this.state.build_account_txex(acc));
+    const accTxs = accounts.map((acc) => st.build_account_txex(acc));
     const accTxsPadded = pad_array(
       accTxs,
       ssConfig.account_tx_per_block,
@@ -343,7 +511,7 @@ export class AppState {
     );
 
     const miningTxs = mining.map(m => {
-      return this.state.build_mining_txex(
+      return st.build_mining_txex(
         m.miningRes,
         m.word,
         m.tx,
@@ -356,7 +524,7 @@ export class AppState {
     );
 
     const fileTxs = files.map((file) => {
-      return this.state.build_file_txex(now, BigInt(file.tx[0].data), file.tx);
+      return st.build_file_txex(now, BigInt(file.tx[0].data), file.tx);
     });
     const fileTxsPaddedIncomplete = pad_array(
       fileTxs,
@@ -364,20 +532,27 @@ export class AppState {
       blank_file_tx(ssConfig),
     );
 
-
-    // [pk, path] => GatewayMeta
+    // [pk, path] => FullFileMeta
     const gatewayMetas = files.reduce((acc, seg) => {
-      const accPk = this.state.accounts.readLeaf(Number(seg.tx[0].sender_index))[1].key;
-      const key: [bigint, string] = [accPk, seg.data.metadata.path];
+      const accPk = st.accounts.values[Number(seg.tx[0].sender_index)].key;
+      const key: [bigint, string] = [accPk, seg.fileMetadata.path];
       let entry = acc.get(key);
       if (entry) {
-        entry.fileIndices.push(BigInt(seg.tx[0].data_index));
+        entry.fileIndices.push({ segmentIndex: BigInt(seg.tx[0].data_index), order: seg.order });
       } else {
-        acc.set(key, new GatewayMeta(seg.data.metadata.path, seg.data.metadata.size, [BigInt(seg.tx[0].data_index)]));
+        acc.set(
+          key,
+          new FullFileMeta(
+            seg.fileMetadata.hash,
+            seg.fileMetadata.path,
+            seg.fileMetadata.size,
+            [{ segmentIndex: BigInt(seg.tx[0].data_index), order: seg.order }]
+          )
+        );
       }
 
       return acc;
-    }, new Map<[bigint, string], GatewayMeta>());
+    }, new Map<[bigint, string], FullFileMeta>());
 
     const metaFile = new MetadataFile(accTxs, fileTxs, miningTxs, [...gatewayMetas.values()]);
     const metaFileData = metaFile.serialize();
@@ -394,8 +569,8 @@ export class AppState {
     const metaFileTree = Tree.init(ssConfig.file_tree_depth, metaFileElements, 0n, (t: any) => t);
 
     // Create the special 0th file tx that saves all of txes we've seen so far into ShardedStorage
-    const masterAccount = this.state.accounts.readLeaf(0);
-    const masterAccountNonce = BigInt(masterAccount[1].nonce);
+    const masterAccount = st.accounts.values[0];
+    const masterAccountNonce = BigInt(masterAccount.nonce);
 
     const metaFileIndex = (1 << ssConfig.acc_data_tree_depth) - this.blocks.count() - 1;
     const metaFileDuration = 7149n * 1000n; // ~1000 days
@@ -431,15 +606,15 @@ export class AppState {
       masterAccountNonce,
     );
 
-    const metaFileTxEx = this.state.build_file_txex(now, metaTxTree.root(), metaFileTx, true);
+    const metaFileTxEx = st.build_file_txex(now, metaTxTree.root(), metaFileTx, true);
     const fileTxsPadded = [...fileTxsPaddedIncomplete, metaFileTxEx];
 
     // Generate a proof
     const newStateRoot: Root = {
-      acc: fr_serialize(this.state.accounts.root()),
-      data: fr_serialize(this.state.files.root()),
+      acc: fr_serialize(st.accounts.root()),
+      data: fr_serialize(st.files.root()),
     };
-    const newStateHash = this.state.hash();
+    const newStateHash = st.hash();
 
     const pubInput: RollupPubInput = {
       old_root: fr_serialize(stateHash),
@@ -472,6 +647,7 @@ export class AppState {
       input: input,
     };
 
+    console.log('Generating proof...');
     const proof = await prove('../circuits/', proverData);
 
     const verifierData: VerifierToml = {
@@ -482,16 +658,19 @@ export class AppState {
       throw new Error('Proof verification failed');
     }
 
+    console.log('Publishing block...');
     const txHash = await this.contract.publishBlock(newStateHash, now, proof);
+    console.log('Block published:', txHash);
 
     // Upload segments to storage nodes
+    console.log('Uploading segments...');
     if (files.length > 0) {
-      await upload(
-        files.map((f) => ({ id: f.tx[0].data_index, data: f.data.data })),
-      );
+      const segments = files.map((f) => ({ id: f.tx[0].data_index, data: f.data }));
+      await upload(segments);
     }
 
     // Upload the meta file to storage nodes
+    console.log('Uploading metadata...');
     await upload([{ id: metaFileIndex.toString(), data: Buffer.from(metaFileSegment) }]);
 
     // Group metadata by owner.
@@ -504,20 +683,34 @@ export class AppState {
       }
 
       return acc;
-    }, new Map<bigint, GatewayMeta[]>());
+    }, new Map<bigint, FullFileMeta[]>());
 
     // Cache gateway-level metadata.
+    // FIXME: Get rid of linear search.
+    console.log('Caching file metadata...');
     await Promise.all(
       Array.from(userMetas.entries()).map(async ([pk, metas]) => {
-        let storedMetas: GatewayMeta[];
+        let storedMetas: FullFileMeta[];
         try {
           storedMetas = await this.fileMetadata.get(pk);
-        } catch {
-          storedMetas = [];
-        }
 
-        // TODO: Deduplicate just in case?
-        storedMetas.push(...metas);
+          for (const meta of metas) {
+            const existing = storedMetas.find((m) => m.fileHash === meta.fileHash);
+            if (existing) {
+              // TODO: Maybe store the map directly?
+              const orderMap = new Map<number, { order: number, segmentIndex: bigint }>();
+              for (const { order, segmentIndex } of existing.fileIndices.concat(meta.fileIndices)) {
+                orderMap.set(order, { order, segmentIndex });
+              }
+              existing.fileIndices = Array.from(orderMap.values());
+            } else {
+              storedMetas.push(meta);
+            }
+
+          }
+        } catch {
+          storedMetas = [...metas];
+        }
 
         return this.fileMetadata.put(pk, storedMetas);
       }),
@@ -526,10 +719,30 @@ export class AppState {
     const block = this.blocks.createNewBlock(newStateHash.toString(), txHash, Number(now));
     await this.blocks.addBlock(block);
 
+    // // Cache accounts
+    // console.log('Caching accounts...');
+    // for (const acc of accounts) {
+    //   const senderIndex = Number(acc[0].sender_index);
+    //   const sender = st.accounts.values[senderIndex];
+    //   await this.accountCache.put(BigInt(acc[0].sender_index), { index: senderIndex, account: sender });
+
+    //   const receiverIndex = Number(acc[0].receiver_index);
+    //   const receiver = st.accounts.values[receiverIndex];
+    //   await this.accountCache.put(BigInt(acc[0].receiver_index), { index: receiverIndex, account: receiver });
+    // }
+
+    // for (const file of files) {
+    //   const senderIndex = file.tx[0].sender_index;
+    //   const sender = st.accounts.values[Number(senderIndex)];
+    //   await this.accountCache.put(BigInt(senderIndex), { index: Number(senderIndex), account: sender });
+    // }
+
     // FIMXE: temporary
     if (accounts.length > 0 || files.length > 0) {
       this.miningNeeded = true;
     }
+
+    return st;
   }
 
   private async saveState() {
@@ -561,9 +774,9 @@ export class MetadataFile {
   miningTxs: MiningTxEx[];
 
   // TODO: It's not a part of the core protocol, it should be stored separately in production.
-  meta: GatewayMeta[];
+  meta: FullFileMeta[];
 
-  constructor(accountTxs: AccountTxEx[], fileTxs: FileTxEx[], miningTxs: MiningTxEx[], meta: GatewayMeta[]) {
+  constructor(accountTxs: AccountTxEx[], fileTxs: FileTxEx[], miningTxs: MiningTxEx[], meta: FullFileMeta[]) {
     this.accountTxs = accountTxs;
     this.fileTxs = fileTxs;
     this.miningTxs = miningTxs;
@@ -649,7 +862,7 @@ export class MetadataFile {
       serializeSignature(w, tx.assets.signature);
     });
 
-    w.writeArray(this.meta, (m: GatewayMeta) => {
+    w.writeArray(this.meta, (m: FullFileMeta) => {
       m.serialize(w);
     });
 
@@ -698,20 +911,26 @@ function serializeSignature(w: BinaryWriter, sig: SignaturePacked) {
   w.writeU256(BigInt(sig.r8));
 }
 
-export class GatewayMeta {
+export class FullFileMeta {
+  fileHash: bigint;
   filePath: string;
   fileSize: number;
-  fileIndices: bigint[];
+  fileIndices: { order: number, segmentIndex: bigint }[];
 
-  constructor(filePath: string, fileSize: number, fileIndices: bigint[]) {
+  constructor(fileHash: bigint, filePath: string, fileSize: number, fileIndices: { order: number, segmentIndex: bigint }[]) {
+    this.fileHash = fileHash;
     this.filePath = filePath;
     this.fileSize = fileSize;
     this.fileIndices = fileIndices;
   }
 
   serialize(w: BinaryWriter) {
+    w.writeU256(this.fileHash);
     w.writeString(this.filePath);
     w.writeU64(this.fileSize);
-    w.writeArray(this.fileIndices, (n: bigint) => w.writeU64(n));
+    w.writeArray(this.fileIndices, ({ order, segmentIndex }: { order: number, segmentIndex: bigint }) => {
+      w.writeU32(Number(order));
+      w.writeU64(segmentIndex)
+    });
   }
 }

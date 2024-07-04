@@ -7,6 +7,7 @@ export const CHUNK_SIZE = 31;
 export const SEGMENT_NUM_ELEMENTS = 1 << 10;
 export const SEGMENT_SIZE_BYTES = SEGMENT_NUM_ELEMENTS * CHUNK_SIZE;
 
+/** Separate file into segments and encode each one */
 export function encodeFile(buffer: Uint8Array): Uint8Array[] {
   const segments = [];
   const numSegments = Math.ceil(buffer.length / SEGMENT_SIZE_BYTES);

@@ -76,7 +76,7 @@ export class Blocks {
     const blocks: Block[] = [this.latestBlock];
 
     let latestBlock = this.latestBlock;
-    while (this.latestBlock.oldRoot && this.latestBlock.oldRoot !== '0') {
+    while (this.latestBlock.oldRoot && this.latestBlock.oldRoot !== '0' && blocks.length < n) {
       const block = await this.getBlock(latestBlock.oldRoot);
 
       if (block) {

@@ -26,26 +26,29 @@ export interface FileTx {
   nonce: Field;
 }
 
-export interface GatewayMeta {
+export interface FullFileMeta {
+  fileHash: Field;
   filePath: string;
   fileIndices: Field[];
   fileSize: number;
 }
 
 export interface FileMetadata {
+  hash: bigint;
   path: string;
   size: number;
 }
 
-export interface Segment {
+export interface SegmentRequest {
   tx: FileTx;
   signature: SignaturePacked;
-  data: Buffer;
+  data: string;
+  order: number
 }
 
 /** Contains file split into segments of field values */
 export interface FileRequest {
-  segments: Segment[],
+  segments: SegmentRequest[],
   fileMetadata: FileMetadata,
 }
 
@@ -73,10 +76,10 @@ export class SequencerClient {
   constructor(private url: string) { }
 
   async upload(request: FileRequest): Promise<void> {
-    await post(`${this.url}/segments`, request);
+    await post(`${this.url}/files`, request);
   }
 
-  async listFiles(owner: bigint): Promise<GatewayMeta[]> {
+  async getFiles(owner: bigint): Promise<FullFileMeta[]> {
     return await get(`${this.url}/files/${owner}`);
   }
 
@@ -84,7 +87,7 @@ export class SequencerClient {
     return Buffer.from(await (await fetch(`${this.url}/files/${owner}/${path}`)).arrayBuffer());
   }
 
-  async account(pk: bigint): Promise<{ index: number, account: AccountData }> {
+  async getAccount(pk: bigint): Promise<{ index: number, account: AccountData }> {
     return await get(`${this.url}/accounts/${pk}`);
   }
 
@@ -92,11 +95,15 @@ export class SequencerClient {
     return await post(`${this.url}/faucet`, { pk });
   }
 
-  async vacantIndices(): Promise<VacantIndicesResponse> {
+  async getVacantIndices(): Promise<VacantIndicesResponse> {
     return await get(`${this.url}/vacant-indices`);
   }
 
-  async blocks(): Promise<Block[]> {
+  async getVacantFileIndices(num: number): Promise<number[]> {
+    return await get(`${this.url}/vacant-file-indices?count=${num}`);
+  }
+
+  async getLatestBlocks(): Promise<Block[]> {
     return await get(`${this.url}/blocks`);
   }
 
@@ -115,21 +122,30 @@ export class SequencerClient {
 export class StorageNodeClient {
   constructor(private url: string) { }
 
-  async segment(segmentId: string): Promise<Buffer> {
+  async getSegment(segmentId: string): Promise<Buffer> {
     return Buffer.from(await (await fetch(`${this.url}/segment/${segmentId}`)).arrayBuffer());
   }
 }
 
 async function get<T>(url: string): Promise<T> {
-  return await (await fetch(url)).json();
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.statusText}.`);
+  }
+  return await res.json();
 }
 
 async function post<T>(url: string, body: any): Promise<T> {
-  return await (await fetch(url, {
+  const res = await fetch(url, {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
     },
-  })).json();
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to post ${url}: ${res.statusText}`);
+  }
+
+  return await res.json();
 }
