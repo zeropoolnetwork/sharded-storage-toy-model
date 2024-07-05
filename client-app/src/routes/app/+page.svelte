@@ -55,7 +55,12 @@
     promise = load();
     updateInterval = setInterval(async () => {
       status = await checkStatus();
-      blocks = await getLatestBlocks();
+
+      const b = await getLatestBlocks();
+      if (b.length < 3) {
+        b.push({ height: 0, now: 0, txHash: '', oldRoot: '', newRoot: ''});
+      }
+      blocks = b;
 
       const account = await getAccount(pk);
       balance = BigInt(account?.account.balance ?? 0n);
