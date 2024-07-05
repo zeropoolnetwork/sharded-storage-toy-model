@@ -6,7 +6,7 @@ import { ShardedStorageSettings, defShardedStorageSettings } from '../src/settin
 import { blank_mining_tx, mine } from '../src/mining';
 import { RandomOracle, Field, RollupInput, RollupPubInput, Root, AccountTx, AccountTxEx, FileTx } from '../src/noir_codegen';
 
-import { prove, verify, ProverToml, VerifierToml } from '../src/nargo-wrapper'
+import { prove, verify, ProverToml } from '../src/nargo-wrapper'
 
 import {
     derivePublicKey,
@@ -221,14 +221,10 @@ describe('State', () => {
       input: input
     };
 
-    const verifier_data: VerifierToml = {
-      pubhash: pubInputHash,
-    };
-
     const proof = await prove(circuits_path, prover_data);
 
     expect(
-      await verify(circuits_path, verifier_data, proof)
+      await verify(circuits_path, proof)
     ).toEqual(true);
 
     // TODO: chage now value here and verify another transaction, making sure
@@ -344,20 +340,16 @@ describe('State', () => {
       input: input
     };
 
-    const verifier_data: VerifierToml = {
-      pubhash: pubInputHash,
-    };
-
     const proof = await prove(circuits_path, prover_data);
 
     expect(
-      await verify(circuits_path, verifier_data, proof)
+      await verify(circuits_path, proof)
     ).toEqual(true);
 
     let corrupted_proof = proof;
-    proof[0] ^= 0xff;
+    proof[1][0] ^= 0xff;
     expect(
-      await verify(circuits_path, verifier_data, corrupted_proof)
+      await verify(circuits_path, corrupted_proof)
     ).toEqual(false);
 
     // Prover must throw an exception when invoked with wrong data

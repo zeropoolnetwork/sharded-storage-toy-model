@@ -10,6 +10,7 @@ import { RandomOracle, Field, RollupInput, RollupPubInput, Root, } from './noir_
 
 const execAsync = promisify(exec);
 
+export type PubInput = Uint8Array;
 export type Proof = Uint8Array;
 
 export type ProverToml = {
@@ -17,11 +18,7 @@ export type ProverToml = {
   input: RollupInput,
 };
 
-export type VerifierToml = {
-  pubhash: Field,
-}
-
-export async function prove(nargo_project_path: string, inputs: ProverToml): Promise<Proof> {
+export async function prove(nargo_project_path: string, inputs: ProverToml): Promise<[PubInput, Proof]> {
   const tempDirPath = await fs.mkdtemp(path.join(os.tmpdir(), 'sharded-storage-prover-'));
   const tempFilePath = path.join(tempDirPath, 'Prover.toml');
 
@@ -35,7 +32,8 @@ export async function prove(nargo_project_path: string, inputs: ProverToml): Pro
        bb prove -b ./target/circuits.json -w ./target/defwitness.gz -o ./proof
     `, { encoding: 'utf8' });
     const buf = await fs.readFile(path.join(tempDirPath, "circuits", "proof"));
-    return new Uint8Array(buf);
+    const buf_ = new Uint8Array(buf);
+    return [buf_.slice(0, 32), buf_.slice(32)];
   } catch (e) {
     throw e;
   } finally {
@@ -46,14 +44,13 @@ export async function prove(nargo_project_path: string, inputs: ProverToml): Pro
   }
 }
 
-export async function verify(nargo_project_path: string, inputs: VerifierToml, proof: Proof): Promise<boolean> {
+export async function verify(nargo_project_path: string, [pub_input, proof]: [PubInput, Proof]): Promise<boolean> {
   const tempDirPath = await fs.mkdtemp(path.join(os.tmpdir(), 'sharded-storage-verifier-'));
-  const tempFilePath = path.join(tempDirPath, 'Verifier.toml');
 
   try {
     await fs.cp(nargo_project_path, path.join(tempDirPath, "circuits"), { recursive: true });
-    await fs.writeFile(tempFilePath, stringify(inputs));
-    await fs.writeFile(path.join(tempDirPath, "circuits", "proof"), proof);
+    const proof_to_write = Buffer.concat([pub_input, proof]);
+    await fs.writeFile(path.join(tempDirPath, "circuits", "proof"), proof_to_write);
     try {
       await execAsync(`
          set -xefu
