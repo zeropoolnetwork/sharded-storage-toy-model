@@ -157,6 +157,10 @@ class OptimisticState {
 
   addAccount(state: State, acc: [AccountTx, SignaturePacked]) {
     this.accountTxs.push(acc);
+    this.applyAccount(state, acc);
+  }
+
+  private applyAccount(state: State, acc: [AccountTx, SignaturePacked]) {
     const newSender = this.findPrevAccount(state, Number(acc[0].sender_index));
     const senderPk = BigInt(acc[1].a);
     newSender.balance = saturatingSub(newSender.balance, BigInt(acc[0].amount));
@@ -176,6 +180,10 @@ class OptimisticState {
 
   addFile(state: State, now: bigint, file: PendingSegment) {
     this.fileTxs.push(file);
+    this.applyFile(state, now, file);
+  }
+
+  private applyFile(state: State, now: bigint, file: PendingSegment) {
     const newSender = this.findPrevAccount(state, Number(file.tx[0].sender_index));
     newSender.balance = frSub(newSender.balance, BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
     newSender.nonce = BigInt(file.tx[0].nonce);
@@ -192,6 +200,10 @@ class OptimisticState {
 
   addMining(state: State, mining: UploadAndMineResponse) {
     this.mineTxs.push(mining);
+    this.applyMining(state, mining);
+  }
+
+  private applyMining(state: State, mining: UploadAndMineResponse) {
     const newSender = this.findPrevAccount(state, Number(mining.tx[0].sender_index));
     newSender.random_oracle_nonce = BigInt(mining.tx[0].random_oracle_nonce);
     newSender.nonce = BigInt(mining.tx[0].nonce);
@@ -207,39 +219,36 @@ class OptimisticState {
     this.files.clear();
     this.accountIndices.clear();
 
-    console.log('Old accounts:', oldAccounts.length);
-    console.log('Old files:', oldFiles.length);
-    console.log('Old mining:', oldMining.length);
-
     this.accountTxs = this.accountTxs.filter(item => {
-      return !oldAccounts.find(([tx, _sig]) => tx.nonce === item[0].nonce);
+      return !oldAccounts.find(([tx, _sig]) => (
+          tx.sender_index == item[0].sender_index && tx.nonce === item[0].nonce
+      ));
     });
     this.fileTxs = this.fileTxs.filter(item => {
-        return !oldFiles.find(tx => tx.tx[0].nonce === item.tx[0].nonce);
+        return !oldFiles.find(tx => (
+            tx.tx[0].sender_index === item.tx[0].sender_index && tx.tx[0].nonce === item.tx[0].nonce
+        ));
     });
     this.mineTxs = this.mineTxs.filter(item => {
-        return !oldMining.find(tx => tx.tx[0].nonce === item.tx[0].nonce);
+        return !oldMining.find(tx => (
+            tx.tx[0].nonce === item.tx[0].nonce && tx.tx[0].sender_index === item.tx[0].sender_index
+        ));
     });
 
-    console.log('Remaining accounts:', this.accountTxs.length);
-    console.log('Remaining files:', this.fileTxs.length);
-    console.log('Remaining mining:', this.mineTxs.length);
-
-
-    this.apply(state, now);
+    this.applyCachedTxs(state, now);
   }
 
-  private apply(state: State, now: bigint) {
+  private applyCachedTxs(state: State, now: bigint) {
     for (const acc of this.accountTxs) {
-      this.addAccount(state, acc);
+      this.applyAccount(state, acc);
     }
 
     for (const file of this.fileTxs) {
-      this.addFile(state, now, file);
+      this.applyFile(state, now, file);
     }
 
     for (const mine of this.mineTxs) {
-      this.addMining(state, mine);
+      this.applyMining(state, mine);
     }
   }
 }
