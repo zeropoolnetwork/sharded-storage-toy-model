@@ -36,6 +36,7 @@ async function main() {
         } else {
           console.warn('Account not found. Initializing new one...');
           await init();
+          await appState.sequencer.faucet(NODE_PK);
         }
       },
     );

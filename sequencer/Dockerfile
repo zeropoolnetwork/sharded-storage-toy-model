@@ -21,10 +21,6 @@ SHELL ["/bin/bash", "-c"]
 RUN apt update && apt install -y curl bash git tar gzip libc++-dev jq
 RUN corepack enable && corepack prepare pnpm@9.1.1 --activate
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY sequencer/package.json sequencer/package.json
-COPY common common
-COPY crypto-sdk crypto-sdk
 COPY circuits circuits
 
 # Install Noir, barretenberg, and build circuits
@@ -38,7 +34,12 @@ WORKDIR /app/circuits
 RUN nargo compile
 RUN bb write_vk -b ./target/circuits.json -o ./target/vk
 
+
 WORKDIR /app
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY sequencer/package.json sequencer/package.json
+COPY common common
+COPY crypto-sdk crypto-sdk
 COPY poseidon2-bn256 poseidon2-bn256
 COPY tsconfig.json tsconfig.json
 COPY --from=poseidon2-bn256 /usr/src/poseidon2-bn256/nodejs poseidon2-bn256/nodejs

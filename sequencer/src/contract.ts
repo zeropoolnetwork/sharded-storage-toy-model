@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { MOCK_BLOCKCHAIN, OPERATOR_SK, ROLLUP_CONTRACT_ADDRESS, RPC_URL } from './env';
 import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
+import { Fr } from 'zpst-common/src/fields';
 
 export interface IRollupContract {
   publishBlock(newRoot: bigint, now: bigint, proof: Uint8Array): Promise<string>;
@@ -69,7 +70,8 @@ export class RollupContract implements IRollupContract {
     if (receipt.status === 1) {
       console.log('Transaction was successful!');
     } else {
-      console.log('Transaction failed.');
+      console.error('Transaction failed.', receipt);
+      throw new Error('Transaction was not successful');
     }
 
     return tx.hash;
@@ -98,7 +100,7 @@ export class RollupContract implements IRollupContract {
     }
 
     const values = (await Promise.all(promises)).map((b) => {
-      return BigInt(b?.hash ?? '0');
+      return BigInt(b?.hash ?? '0') % Fr.MODULUS;
     });
 
     return { roOffset: BigInt(blockNumber - defShardedStorageSettings.oracle_len), roValues: values, latestBlock: blockNumber };

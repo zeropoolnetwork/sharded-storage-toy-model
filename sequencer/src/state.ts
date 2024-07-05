@@ -155,12 +155,49 @@ class OptimisticState {
     }
   }
 
-  add(state: State, now: bigint, accounts: [AccountTx, SignaturePacked][], files: PendingSegment[], mining: UploadAndMineResponse[]) {
-    this.accountTxs.push(...accounts);
-    this.fileTxs.push(...files);
-    this.mineTxs.push(...mining);
+  addAccount(state: State, acc: [AccountTx, SignaturePacked]) {
+    this.accountTxs.push(acc);
+    const newSender = this.findPrevAccount(state, Number(acc[0].sender_index));
+    const senderPk = BigInt(acc[1].a);
+    newSender.balance = saturatingSub(newSender.balance, BigInt(acc[0].amount));
+    newSender.nonce = BigInt(acc[0].nonce);
+    newSender.key = senderPk;
+    this.accounts.set(Number(acc[0].sender_index), newSender);
+    this.accountIndices.set(senderPk, Number(acc[0].sender_index));
 
-    this.apply(state, now);
+    const newReceiver = this.findPrevAccount(state, Number(acc[0].receiver_index));
+    const receiverPk = BigInt(acc[0].receiver_key);
+    newReceiver.balance = frAdd(newReceiver.balance, BigInt(acc[0].amount));
+    newReceiver.nonce = BigInt(acc[0].nonce);
+    newReceiver.key = BigInt(receiverPk);
+    this.accounts.set(Number(acc[0].receiver_index), newReceiver);
+    this.accountIndices.set(receiverPk, Number(acc[0].receiver_index));
+  }
+
+  addFile(state: State, now: bigint, file: PendingSegment) {
+    this.fileTxs.push(file);
+    const newSender = this.findPrevAccount(state, Number(file.tx[0].sender_index));
+    newSender.balance = frSub(newSender.balance, BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
+    newSender.nonce = BigInt(file.tx[0].nonce);
+    this.accounts.set(Number(file.tx[0].sender_index), newSender);
+
+    const newFile = this.findPrevFile(state, Number(file.tx[0].data_index));
+    const expTime = newFile.expiration_time;
+    newFile.data_hash = BigInt(file.tx[0].data);
+    newFile.expiration_time = BigInt((now > expTime ? now : expTime) + BigInt(file.tx[0].time_interval));
+    newFile.owner = BigInt(file.tx[0].sender_index);
+    newFile.locked = false;
+    this.files.set(Number(file.tx[0].data_index), newFile);
+  }
+
+  addMining(state: State, mining: UploadAndMineResponse) {
+    this.mineTxs.push(mining);
+    const newSender = this.findPrevAccount(state, Number(mining.tx[0].sender_index));
+    newSender.random_oracle_nonce = BigInt(mining.tx[0].random_oracle_nonce);
+    newSender.nonce = BigInt(mining.tx[0].nonce);
+    newSender.balance = frAdd(newSender.balance, BigInt(ssConfig.mining_reward));
+    this.accounts.set(Number(mining.tx[0].sender_index), newSender);
+    this.accountIndices.set(BigInt(mining.tx[1].a), Number(mining.tx[0].sender_index));
   }
 
   clearOld(state: State, now: bigint, oldAccounts: [AccountTx, SignaturePacked][], oldFiles: PendingSegment[], oldMining: UploadAndMineResponse[]) {
@@ -170,61 +207,39 @@ class OptimisticState {
     this.files.clear();
     this.accountIndices.clear();
 
-    this.accountTxs = this.accountTxs.filter(item => oldAccounts.includes(item));
-    this.fileTxs = this.fileTxs.filter(item => oldFiles.includes(item));
-    this.mineTxs = this.mineTxs.filter(item => oldMining.includes(item));
+    console.log('Old accounts:', oldAccounts.length);
+    console.log('Old files:', oldFiles.length);
+    console.log('Old mining:', oldMining.length);
+
+    this.accountTxs = this.accountTxs.filter(item => {
+      return !oldAccounts.find(([tx, _sig]) => tx.nonce === item[0].nonce);
+    });
+    this.fileTxs = this.fileTxs.filter(item => {
+        return !oldFiles.find(tx => tx.tx[0].nonce === item.tx[0].nonce);
+    });
+    this.mineTxs = this.mineTxs.filter(item => {
+        return !oldMining.find(tx => tx.tx[0].nonce === item.tx[0].nonce);
+    });
+
+    console.log('Remaining accounts:', this.accountTxs.length);
+    console.log('Remaining files:', this.fileTxs.length);
+    console.log('Remaining mining:', this.mineTxs.length);
+
 
     this.apply(state, now);
   }
 
   private apply(state: State, now: bigint) {
-    const accounts = this.accountTxs;
-    const files = this.fileTxs;
-    const mining = this.mineTxs;
-
-    // Accounts
-    for (const acc of accounts) {
-      const newSender = this.findPrevAccount(state, Number(acc[0].sender_index));
-      const senderPk = BigInt(acc[1].a);
-      newSender.balance = saturatingSub(newSender.balance, BigInt(acc[0].amount));
-      newSender.nonce = BigInt(acc[0].nonce);
-      newSender.key = senderPk;
-      this.accounts.set(Number(acc[0].sender_index), newSender);
-      this.accountIndices.set(senderPk, Number(acc[0].sender_index));
-
-      const newReceiver = this.findPrevAccount(state, Number(acc[0].receiver_index));
-      const receiverPk = BigInt(acc[0].receiver_key);
-      newReceiver.balance = frAdd(newReceiver.balance, BigInt(acc[0].amount));
-      newReceiver.nonce = BigInt(acc[0].nonce);
-      newReceiver.key = BigInt(receiverPk);
-      this.accounts.set(Number(acc[0].receiver_index), newReceiver);
-      this.accountIndices.set(receiverPk, Number(acc[0].receiver_index));
+    for (const acc of this.accountTxs) {
+      this.addAccount(state, acc);
     }
 
-    // Files
-    for (const file of files) {
-      const newSender = this.findPrevAccount(state, Number(file.tx[0].sender_index));
-      newSender.balance = frSub(newSender.balance, BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
-      newSender.nonce = BigInt(file.tx[0].nonce);
-      this.accounts.set(Number(file.tx[0].sender_index), newSender);
-
-      const newFile = this.findPrevFile(state, Number(file.tx[0].data_index));
-      const expTime = newFile.expiration_time;
-      newFile.data_hash = BigInt(file.tx[0].data);
-      newFile.expiration_time = BigInt((now > expTime ? now : expTime) + BigInt(file.tx[0].time_interval));
-      newFile.owner = BigInt(file.tx[0].sender_index);
-      newFile.locked = false;
-      this.files.set(Number(file.tx[0].data_index), newFile);
+    for (const file of this.fileTxs) {
+      this.addFile(state, now, file);
     }
 
-    // Mining
-    for (const m of mining) {
-      const newSender = this.findPrevAccount(state, Number(m.tx[0].sender_index));
-      newSender.random_oracle_nonce = BigInt(m.tx[0].random_oracle_nonce);
-      newSender.nonce = BigInt(m.tx[0].nonce);
-      newSender.balance = frAdd(newSender.balance, BigInt(ssConfig.mining_reward));
-      this.accounts.set(Number(m.tx[0].sender_index), newSender);
-      this.accountIndices.set(BigInt(m.tx[1].a), Number(m.tx[0].sender_index));
+    for (const mine of this.mineTxs) {
+      this.addMining(state, mine);
     }
   }
 }
@@ -349,7 +364,7 @@ export class AppState {
   }
 
   addAccountTransaction(account: AccountTx, signature: SignaturePacked) {
-    this.optimisticState.add(this.state, BigInt(this.now), [[account, signature]], [], []);
+    this.optimisticState.addAccount(this.state, [account, signature]);
     this.pendingAccounts.push([account, signature]);
   }
 
@@ -362,12 +377,12 @@ export class AppState {
   ) {
     const txPair: [FileTx, SignaturePacked] = [file, signature];
     const tx = { tx: txPair, data, order, fileMetadata }
-    this.optimisticState.add(this.state, BigInt(this.now), [], [tx], []);
+    this.optimisticState.addFile(this.state, BigInt(this.now), tx);
     this.pendingSegments.push(tx);
   }
 
   addMiningTransaction(mining: UploadAndMineResponse) {
-    this.optimisticState.add(this.state, BigInt(this.now), [], [], [mining]);
+    this.optimisticState.addMining(this.state, mining);
     this.pendingMining.push(mining);
   }
 
@@ -415,30 +430,30 @@ export class AppState {
   }
 
   async startSequencer() {
-    setTimeout(async () => {
-      console.log('Starting mining loop...')
-      while (true) {
-        await new Promise((resolve) => setTimeout(resolve, MINING_INTERVAL));
-        if (!this.miningNeeded) {
-          continue;
-        }
-
-        try {
-          console.log('Broadcasting mining challenge...')
-          const mining = await broadcastMiningChallenge(
-            this.roValues,
-            this.roOffset,
-          );
-
-          console.log('Mining response:', mining);
-
-          this.addMiningTransaction(mining);
-          this.miningNeeded = false;
-        } catch (err) {
-          console.error('Failed to mine:', err);
-        }
-      }
-    }, 1);
+    // setTimeout(async () => {
+    //   console.log('Starting mining loop...')
+    //   while (true) {
+    //     await new Promise((resolve) => setTimeout(resolve, MINING_INTERVAL));
+    //     if (!this.miningNeeded) {
+    //       continue;
+    //     }
+    //
+    //     try {
+    //       console.log('Broadcasting mining challenge...')
+    //       const mining = await broadcastMiningChallenge(
+    //         this.roValues,
+    //         this.roOffset,
+    //       );
+    //
+    //       console.log('Mining response:', mining);
+    //
+    //       this.addMiningTransaction(mining);
+    //       this.miningNeeded = false;
+    //     } catch (err) {
+    //       console.error('Failed to mine:', err);
+    //     }
+    //   }
+    // }, 1);
 
     console.log('Waiting for transactions...');
     while (true) {

@@ -6,7 +6,7 @@ import { prep_mining_tx } from 'zpst-crypto-sdk/src/util';
 import { MiningTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 
 import { appState } from './state';
-import { NODE_SK } from './env';
+import {NODE_PK, NODE_SK} from './env';
 
 export interface UploadAndMineResponse {
   miningRes: MiningResult;
@@ -42,19 +42,17 @@ export async function mineSegment(
         );
       }
 
-      const leaf = tree.leaf(Number(word_id));
-
-      return leaf;
+      return tree.leaf(Number(word_id));
     },
   );
 
-  await appState.updateAccountData();
+  const account = await appState.sequencer.getAccount(NODE_PK);
 
   const miningTx = prep_mining_tx(
-    Number(appState.accountIndex),
+    Number(account.index),
     miningRes,
     NODE_SK,
-    BigInt(appState.accountData.nonce),
+    BigInt(account.account.nonce),
     globalRoOffset + BigInt(roOffset),
   );
 

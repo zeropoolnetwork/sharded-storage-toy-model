@@ -23,6 +23,9 @@ ENV PUBLIC_SEQUENCER_API_URL $PUBLIC_SEQUENCER_API_URL
 ARG PUBLIC_NODE_API_URL
 ENV PUBLIC_NODE_API_URL $PUBLIC_NODE_API_URL
 
+ARG PUBLIC_DEBUG_SEED
+ENV PUBLIC_DEBUG_SEED $PUBLIC_DEBUG_SEED
+
 RUN corepack enable && corepack prepare pnpm@9.1.1 --activate
 COPY ./pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY client-app/package.json client-app/package.json
