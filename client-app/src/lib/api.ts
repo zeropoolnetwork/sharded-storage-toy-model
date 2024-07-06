@@ -34,6 +34,13 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
   const segmentedData = encodeFile(data);
   const indices = await getVacantFileIndices(segmentedData.length);
 
+  const storageFee = 1n; // FIXME: hardcoded
+  const totalFee = storageFee * DEFAULT_FILE_LIFETIME * BigInt(segmentedData.length);
+
+  if (BigInt(account.account.balance) < totalFee) {
+    throw new Error(`Not enough funds to upload the file, required: ${totalFee}, available: ${account.account.balance}`);
+  }
+
   let nonce = BigInt(account.account.nonce);
   const segments = segmentedData.map((segmentData, index) => {
     console.log(`Preparing segment ${index}...`);
@@ -44,7 +51,9 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
     const tree = merkle_tree(depth, elements, '0');
     const root = tree[1];
 
-    console.log('nonce', nonce);
+    const accNonce = nonce + BigInt(index);
+
+    console.log('nonce', accNonce);
 
     const fileIndex = indices[index];
     const [tx, signature] = prep_file_tx(
@@ -53,7 +62,7 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
       fileIndex,
       BigInt(root),
       sk.toString(),
-      nonce++,
+      accNonce,
     );
 
     return { tx, signature, data: Buffer.from(segmentData).toString('base64'), order: index };

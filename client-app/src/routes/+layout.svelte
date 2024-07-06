@@ -1,6 +1,7 @@
 <script>
   import '../app.css';
   import { afterNavigate, beforeNavigate } from '$app/navigation';
+  import ErrorPopup from '$lib/components/ErrorPopup.svelte';
 
   let loading = false;
 
@@ -19,4 +20,6 @@
   {:else}
     <slot />
   {/if}
+
+  <ErrorPopup />
 </div>

@@ -61,7 +61,7 @@ export async function initWeb3Modal() {
   await modal.open();
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  modal.close();
+  await modal.close();
 
   const modal2 = createWeb3Modal({
     ethersConfig,
@@ -75,14 +75,14 @@ export async function initWeb3Modal() {
     throw new Error('Provider is not initialized');
   }
 
-  modal2.close();
-
   provider = new BrowserProvider(p);
   signer = await provider.getSigner();
 
   const FIXED_MESSAGE: string = '{}'; // FIXME
   const sig = (await signer.signMessage(FIXED_MESSAGE)).replace(/^0x/i, '').substring(0, 128);
   const sigHash = hashMessage(sig);
+
+  await modal2.close();
 
   sk = (deriveSecretScalar(sigHash) % Fr.MODULUS);
   pk = derivePublicKey(sk.toString())[0];

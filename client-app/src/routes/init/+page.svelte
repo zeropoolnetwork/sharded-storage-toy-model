@@ -3,6 +3,7 @@
   import { initHDWallet, initWeb3Modal } from '$lib';
   import { DEBUG_SEED } from '$lib/api';
   import { onMount } from 'svelte';
+  import { showError } from '$lib/error';
 
   let mnemonic = '';
 
@@ -10,8 +11,9 @@
     try {
       await initHDWallet(mnemonic);
       goto('/app');
-    } catch (err) {
-      console.error(err);
+    } catch (e: any) {
+      console.error(e);
+      showError(e.toString());
     }
   }
 
@@ -19,8 +21,9 @@
     try {
       await initWeb3Modal();
       goto('/app');
-    } catch (err) {
-      console.error(err);
+    } catch (e: any) {
+      console.error(e);
+      showError(e.toString());
     }
   }
 

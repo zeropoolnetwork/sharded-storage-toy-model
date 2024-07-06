@@ -13,6 +13,7 @@
     NODE_API_URL
   } from '$lib/api';
   import { type Block } from 'zpst-common/src/api';
+  import { showError } from '$lib/error';
 
   let files: { name: string; url: string }[] = [];
   let pendingFiles: { name: string }[] = [];
@@ -24,17 +25,28 @@
     input.type = 'file';
     input.multiple = false;
     input.onchange = async (_) => {
-      // @ts-ignore
-      let files = Array.from(input.files);
-      pendingFiles = [{ name: files[0].name }, ...pendingFiles];
-      await uploadFile(files[0] as File);
+      try {
+        // @ts-ignore
+        let files = Array.from(input.files);
+        pendingFiles = [{ name: files[0].name }, ...pendingFiles];
+        await uploadFile(files[0] as File);
+      } catch (e: any) {
+        pendingFiles = pendingFiles.slice(1);
+        console.error(e);
+        showError(e.toString());
+      }
     };
     input.click();
   };
 
   const handleFaucet = async () => {
-    let { index, account } = await faucet();
-    balance = BigInt(account.balance);
+    try {
+      let { index, account } = await faucet();
+      balance = BigInt(account.balance);
+    } catch (e: any) {
+      console.error(e);
+      showError(e.toString());
+    }
   };
 
   async function load() {
