@@ -298,12 +298,17 @@ export class State {
   build_account_txex([tx, signature]: [AccountTx, SignaturePacked]): AccountTxEx {
 
     // calculate proof for the sender and update tree
-    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    let sender_mod = new Account();
-    sender_mod.balance = frSub(
-      sender.balance,
-      fr_deserialize(tx.amount)
+    const [sender_prf, sender] = this.accounts.readLeaf(
+      Number(tx.sender_index),
     );
+    let sender_mod = new Account();
+    const balance = sender.balance - fr_deserialize(tx.amount);
+    if (sender_mod.balance < 0n) {
+      throw new Error("Insufficient funds");
+    }
+
+    sender_mod.balance = bigIntToFr(balance);
+
     if (sender_mod.balance == 0n) {
       sender_mod.nonce = 0n;
       sender_mod.random_oracle_nonce = 0n;
@@ -354,12 +359,15 @@ export class State {
     const fee = sett.storage_fee * BigInt(tx.time_interval);
 
     // calculate proof for the sender and update tree
-    const [sender_prf, sender] = this.accounts.readLeaf(Number(tx.sender_index));
-    let sender_mod = new Account();
-    sender_mod.balance = frSub(
-      sender.balance,
-      fee
+    const [sender_prf, sender] = this.accounts.readLeaf(
+      Number(tx.sender_index),
     );
+    let sender_mod = new Account();
+    sender_mod.balance = sender.balance - fee;
+    if (sender_mod.balance < 0n) {
+      throw new Error("Insufficient funds");
+    }
+
     if (sender_mod.balance == 0n) {
       sender_mod.nonce = 0n;
       sender_mod.random_oracle_nonce = 0n;
