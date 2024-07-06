@@ -50,7 +50,6 @@ import {
   prove,
   verify,
   ProverToml,
-  VerifierToml,
 } from 'zpst-crypto-sdk/src/nargo-wrapper';
 
 import {
@@ -122,10 +121,6 @@ class AccountCache {
   }
 }
 
-function saturatingSub(a: bigint, b: bigint): bigint {
-  return a > b ? a - b : 0n;
-}
-
 class OptimisticState {
   accounts: Map<number, Account> = new Map();
   accountIndices: Map<bigint, number> = new Map();
@@ -163,15 +158,15 @@ class OptimisticState {
   private applyAccount(state: State, acc: [AccountTx, SignaturePacked]) {
     const newSender = this.findPrevAccount(state, Number(acc[0].sender_index));
     const senderPk = BigInt(acc[1].a);
-    newSender.balance = saturatingSub(newSender.balance, BigInt(acc[0].amount));
-    newSender.nonce = BigInt(acc[0].nonce);
+    newSender.balance = newSender.balance - BigInt(acc[0].amount);
+    newSender.nonce = BigInt(acc[0].nonce) + 1n;
     newSender.key = senderPk;
     this.accounts.set(Number(acc[0].sender_index), newSender);
     this.accountIndices.set(senderPk, Number(acc[0].sender_index));
 
     const newReceiver = this.findPrevAccount(state, Number(acc[0].receiver_index));
     const receiverPk = BigInt(acc[0].receiver_key);
-    newReceiver.balance = frAdd(newReceiver.balance, BigInt(acc[0].amount));
+    newReceiver.balance = newReceiver.balance + BigInt(acc[0].amount);
     newReceiver.nonce = BigInt(acc[0].nonce);
     newReceiver.key = BigInt(receiverPk);
     this.accounts.set(Number(acc[0].receiver_index), newReceiver);
@@ -185,8 +180,8 @@ class OptimisticState {
 
   private applyFile(state: State, now: bigint, file: PendingSegment) {
     const newSender = this.findPrevAccount(state, Number(file.tx[0].sender_index));
-    newSender.balance = frSub(newSender.balance, BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
-    newSender.nonce = BigInt(file.tx[0].nonce);
+    newSender.balance = newSender.balance - (BigInt(ssConfig.storage_fee) * BigInt(file.tx[0].time_interval));
+    newSender.nonce = BigInt(file.tx[0].nonce) + 1n;
     this.accounts.set(Number(file.tx[0].sender_index), newSender);
 
     const newFile = this.findPrevFile(state, Number(file.tx[0].data_index));
@@ -219,20 +214,20 @@ class OptimisticState {
     this.files.clear();
     this.accountIndices.clear();
 
-    this.accountTxs = this.accountTxs.filter(item => {
-      return !oldAccounts.find(([tx, _sig]) => (
-          tx.sender_index == item[0].sender_index && tx.nonce === item[0].nonce
+    this.accountTxs = this.accountTxs.filter(tx => {
+      return !oldAccounts.find(([oldTx, _sig]) => (
+        oldTx.sender_index == tx[0].sender_index && oldTx.nonce === tx[0].nonce
       ));
     });
-    this.fileTxs = this.fileTxs.filter(item => {
-        return !oldFiles.find(tx => (
-            tx.tx[0].sender_index === item.tx[0].sender_index && tx.tx[0].nonce === item.tx[0].nonce
-        ));
+    this.fileTxs = this.fileTxs.filter(tx => {
+      return !oldFiles.find(oldTx => (
+        oldTx.tx[0].sender_index === tx.tx[0].sender_index && oldTx.tx[0].nonce === tx.tx[0].nonce
+      ));
     });
-    this.mineTxs = this.mineTxs.filter(item => {
-        return !oldMining.find(tx => (
-            tx.tx[0].nonce === item.tx[0].nonce && tx.tx[0].sender_index === item.tx[0].sender_index
-        ));
+    this.mineTxs = this.mineTxs.filter(tx => {
+      return !oldMining.find(oldTx => (
+        oldTx.tx[0].sender_index === tx.tx[0].sender_index && oldTx.tx[0].nonce === tx.tx[0].nonce
+      ));
     });
 
     this.applyCachedTxs(state, now);
@@ -281,6 +276,7 @@ export class AppState {
   // private accountCache: AccountCache = new AccountCache();
 
   blockInProgress: boolean = false;
+  limit: number = 1000;
 
   private constructor() { }
 
@@ -373,6 +369,10 @@ export class AppState {
   }
 
   addAccountTransaction(account: AccountTx, signature: SignaturePacked) {
+    if (this.pendingAccounts.length >= this.limit) {
+      throw new Error('Too many pending transactions');
+    }
+
     this.optimisticState.addAccount(this.state, [account, signature]);
     this.pendingAccounts.push([account, signature]);
   }
@@ -384,6 +384,10 @@ export class AppState {
     fileMetadata: FileMetadata,
     order: number,
   ) {
+    if (this.pendingSegments.length >= this.limit) {
+      throw new Error('Too many pending transactions');
+    }
+
     const txPair: [FileTx, SignaturePacked] = [file, signature];
     const tx = { tx: txPair, data, order, fileMetadata }
     this.optimisticState.addFile(this.state, BigInt(this.now), tx);
@@ -427,15 +431,14 @@ export class AppState {
 
   async updateBlockchainState() {
     console.log('Updating blockchain state...');
-    const { roOffset, roValues, latestBlock } = await this.contract.getRandomOracleValues(ssConfig.oracle_len);
-    const now = latestBlock - ssConfig.oracle_len;
+    const { roOffset, roValues, latestBlock } = await this.contract.getRandomOracleValues();
 
     this.roOffset = roOffset;
     this.roValues = roValues;
-    this.now = now;
+    this.now = latestBlock;
 
     console.log('New random oracle:', roOffset, roValues);
-    console.log('New now:', now);
+    console.log('New now:', this.now);
   }
 
   async startSequencer() {
@@ -484,24 +487,24 @@ export class AppState {
       this.pendingAccounts = this.pendingAccounts.slice(
         ssConfig.account_tx_per_block,
       );
-      this.pendingSegments = this.pendingSegments.slice(ssConfig.file_tx_per_block);
+      this.pendingSegments = this.pendingSegments.slice(ssConfig.file_tx_per_block - 1);
       this.pendingMining = this.pendingMining.slice(ssConfig.mining_tx_per_block);
 
       try {
         this.blockInProgress = true;
         await this.updateBlockchainState();
 
-        const newState = await this.batchTransactions(
+        const st = this.state.clone();
+
+        this.state = await this.batchTransactions(
+          st,
           BigInt(this.now),
           accounts,
           files,
           mining,
         );
 
-        this.state = newState;
-
-        // not critical enough to await
-        this.saveState();
+        await this.saveState();
       } catch (err) {
         console.log('Failed to create a block:', err);
       }
@@ -512,14 +515,13 @@ export class AppState {
   }
 
   private async batchTransactions(
+    st: State,
     now: bigint,
     accounts: [AccountTx, SignaturePacked][],
     files: PendingSegment[],
     mining: UploadAndMineResponse[],
   ): Promise<State> {
     console.log('Creating a new block...');
-
-    const st = this.state.clone();
 
     const stateHash = st.hash();
     const stateRoot: Root = {
@@ -666,6 +668,9 @@ export class AppState {
       new_root: newStateRoot,
     };
 
+    console.log('Old root:', stateHash);
+    console.log('New root:', newStateHash);
+
     const proverData: ProverToml = {
       pubhash: pubInputHash,
       input: input,
@@ -674,16 +679,12 @@ export class AppState {
     console.log('Generating proof...');
     const proof = await prove('../circuits/', proverData);
 
-    const verifierData: VerifierToml = {
-      pubhash: pubInputHash,
-    };
-
-    if (!await verify('../circuits/', verifierData, proof)) {
+    if (!await verify('../circuits/', proof)) {
       throw new Error('Proof verification failed');
     }
 
     console.log('Publishing block...');
-    const txHash = await this.contract.publishBlock(newStateHash, now, proof);
+    const txHash = await this.contract.publishBlock(newStateHash, now, proof[1]);
     console.log('Block published:', txHash);
 
     // Upload segments to storage nodes
@@ -765,6 +766,8 @@ export class AppState {
     if (accounts.length > 0 || files.length > 0) {
       this.miningNeeded = true;
     }
+
+    console.log('Block published:', txHash);
 
     return st;
   }

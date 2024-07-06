@@ -1,10 +1,10 @@
 import express, { Express, Request, Response } from 'express';
 import http from 'node:http';
 import cors from 'cors';
-import { FileTx, SignaturePacked } from 'zpst-crypto-sdk/src/noir_codegen';
 import mime from 'mime';
 import { fileTypeFromBuffer } from 'file-type';
 import nocache from 'nocache';
+import { rateLimit } from 'express-rate-limit';
 
 import { FullFileMeta, appState } from './state';
 import { prep_account_tx } from 'zpst-crypto-sdk/src/util';
@@ -13,16 +13,26 @@ import { getSegment } from './nodes';
 import { decodeFile } from 'zpst-common/src/codec';
 import { FileRequest } from 'zpst-common/src/api';
 import { Account } from 'zpst-crypto-sdk';
-// import morgan from 'morgan';
-
-// import bodyParser from 'body-parser';
 
 export const app: Express = express();
 export const server = new http.Server(app);
 
-app.use(express.json({ limit: '50mb' }));
-// app.use(bodyParser.json({ limit: '50mb' }));
-app.use(express.raw({ type: '*/*', limit: '50mb' }));
+const fileLimit = rateLimit({
+  windowMs: 1000 * 2,
+  limit: 1,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const faucetLimit = rateLimit({
+  windowMs: 1000 * 5,
+  limit: 2,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.raw({ type: '*/*', limit: '10mb' }));
 app.use(cors());
 app.use(nocache());
 app.set('etag', false);
@@ -33,7 +43,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 })
 
 // Upload a file
-app.post('/files', async (req: Request, res: Response) => {
+app.post('/files', fileLimit, async (req: Request, res: Response) => {
   const file: FileRequest = req.body;
 
   for (const seg of file.segments) {
@@ -83,7 +93,7 @@ app.get('/files/:owner/:path(*)', async (req: Request, res: Response) => {
   res.send(Buffer.from(file));
 });
 
-app.post('/faucet', async (req: Request, res: Response) => {
+app.post('/faucet', faucetLimit, async (req: Request, res: Response) => {
   const pk = BigInt(req.body.pk);
   let account: Account;
   let accIndex: number;
