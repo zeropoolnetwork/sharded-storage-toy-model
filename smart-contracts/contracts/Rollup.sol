@@ -9,8 +9,8 @@ import { UltraVerifier } from "./UltraVerifier.sol";
 
 
 contract Rollup {
-    uint256 constant GENESIS_ROOT_STATE = 19871422421421646937344925797383409458572221364445359412877539941584804856579; 
-    uint256 constant RANDOM_ORACLE_SIZE = 10;
+    uint256 constant GENESIS_ROOT_STATE = 16401344736640986707530875561901522019956508678914201367151582104570937928339;
+    uint256 constant RANDOM_ORACLE_SIZE = 16;
 
     // BN256 group order
     uint256 constant R = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
@@ -51,12 +51,12 @@ contract Rollup {
 
         // use block hashes as random oracle, should be replaced to randao
         uint256[RANDOM_ORACLE_SIZE] memory oracle;
-        uint ro_base = _now - RANDOM_ORACLE_SIZE + 1;
+        uint ro_offset = _now - RANDOM_ORACLE_SIZE + 1;
         for (uint256 i = 0; i < RANDOM_ORACLE_SIZE; i++) {
-            oracle[i] = uint256(blockhash(ro_base+i))%R;
+            oracle[i] = uint256(blockhash(ro_offset +i))%R;
         }
 
-        uint256 h = uint256(keccak256(abi.encodePacked(root, new_root, _now, _now-RANDOM_ORACLE_SIZE+1, oracle)))%R;
+        uint256 h = uint256(keccak256(abi.encodePacked(root, new_root, _now, ro_offset, oracle)))%R;
 
         bytes32[] memory inputs = new bytes32[](1);
         inputs[0] = bytes32(h);
