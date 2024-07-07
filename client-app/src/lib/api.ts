@@ -29,6 +29,8 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
     throw new Error('Cannot upload: account not found');
   }
 
+  console.log('Received account ', account);
+
   const fullFileEncoded = encodeSegment(data);
   const fullFileHash = BigInt(poseidon2_bn256_hash(bufferToFrElements(fullFileEncoded).map((x) => x.toBigInt().toString())));
   const segmentedData = encodeFile(data);
@@ -68,8 +70,10 @@ export async function uploadFile(file: File): Promise<UploadFileResult> {
     return { tx, signature, data: Buffer.from(segmentData).toString('base64'), order: index };
   });
 
-  console.log(`Uploading ${segments.length} segment(s), `, ' file size:', fileSize, ', file name:', fileName)
+  console.log(`Uploading ${segments.length} segment(s), `, ' file size:', fileSize, ', file name:', fileName, ', file hash:', fullFileHash);
   await client.upload({ segments, fileMetadata: { size: fileSize, path: fileName, hash: fullFileHash } });
+
+  console.log('Upload complete');
 
   return {
     indices: indices.map((x) => BigInt(x)),
