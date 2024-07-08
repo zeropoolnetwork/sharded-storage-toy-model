@@ -5,18 +5,19 @@ BigInt.prototype['toJSON'] = function () {
 
 
 // place files you want to import through the `$lib` alias in this folder.
-import { ethers, Wallet, JsonRpcProvider, BrowserProvider, hashMessage } from 'ethers';
+import { ethers, Wallet, JsonRpcProvider, BrowserProvider, hashMessage, type Eip1193Provider } from 'ethers';
 import type { JsonRpcApiProvider, HDNodeWallet } from 'ethers';
 import { createWeb3Modal, defaultConfig, type Web3Modal } from '@web3modal/ethers';
 import { Fr } from 'zpst-common/src/fields';
 import { derivePublicKey, deriveSecretScalar } from '@zk-kit/eddsa-poseidon';
+import { type Writable, writable } from 'svelte/store';
 
 // TODO: Get rid of global variables
 
 export let sk: bigint;
 export let pk: bigint;
+export let initialized: Writable<boolean> = writable(false);
 let modal: Web3Modal;
-export let modalInProgress: boolean = false;
 
 export async function initHDWallet(mnemonic: string) {
   // const p = new JsonRpcProvider('https://rpc.sepolia.org', 'sepolia');
@@ -26,6 +27,8 @@ export async function initHDWallet(mnemonic: string) {
   // skBuf = Buffer.from(sk.toString(16).padStart(64, '0'), 'hex');
   pk = derivePublicKey(sk.toString())[0];
   // pkBuf = Buffer.from(pk.toString(16).padStart(64, '0'), 'hex');
+
+  initialized.set(true);
 }
 
 export async function initWeb3Modal() {
@@ -58,12 +61,28 @@ export async function initWeb3Modal() {
 
   await modal.open();
 
-  modalInProgress = true;
+  await new Promise((resolve) => {
+    let interval = setInterval(async () => {
+      if (modal.getIsConnected()) {
+        clearInterval(interval);
+        resolve(undefined);
+      }
+    });
+  });
 
-  const p = modal.getWalletProvider();
-  if (!p) {
-    return;
-  }
+  const p: Eip1193Provider = await new Promise(async (resolve) => {
+    async function init() {
+      const p = modal.getWalletProvider();
+      if (!p) {
+        setTimeout(init, 200);
+        return;
+      }
+
+      resolve(p);
+    }
+
+    await init();
+  });
 
   const provider = new BrowserProvider(p);
   const signer = await provider.getSigner();
@@ -72,13 +91,12 @@ export async function initWeb3Modal() {
   const sig = (await signer.signMessage(FIXED_MESSAGE)).replace(/^0x/i, '').substring(0, 128);
   const sigHash = hashMessage(sig);
 
-  await modal.close();
-
   sk = (deriveSecretScalar(sigHash) % Fr.MODULUS);
   pk = derivePublicKey(sk.toString())[0];
+
+  initialized.set(true);
+
+  await modal.close();
 }
 
-export function isWalletInitialized() {
-  return !!sk;
-}
 
