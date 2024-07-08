@@ -32,7 +32,7 @@ async function main() {
       async (res: [number, AccountData] | undefined) => {
         if (res) {
           console.log('Account data:', res);
-          await init(res[1], res[0]);
+          await init();
         } else {
           console.warn('Account not found. Initializing new one...');
           await init();

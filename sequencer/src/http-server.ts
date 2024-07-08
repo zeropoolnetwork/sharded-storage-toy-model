@@ -17,19 +17,20 @@ import { Account } from 'zpst-crypto-sdk';
 export const app: Express = express();
 export const server = new http.Server(app);
 
-const fileLimit = rateLimit({
-  windowMs: 1000 * 2,
-  limit: 1,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const faucetLimit = rateLimit({
-  windowMs: 1000 * 5,
-  limit: 2,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// TODO: Setup the reverse proxy first
+// const fileLimit = rateLimit({
+//   windowMs: 1000 * 2,
+//   limit: 4,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+//
+// const faucetLimit = rateLimit({
+//   windowMs: 1000 * 5,
+//   limit: 5,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.raw({ type: '*/*', limit: '10mb' }));
@@ -43,12 +44,14 @@ app.use((err: any, req: any, res: any, next: any) => {
 })
 
 // Upload a file
-app.post('/files', fileLimit, async (req: Request, res: Response) => {
+app.post('/files', /*fileLimit ,*/ async (req: Request, res: Response) => {
   const file: FileRequest = req.body;
 
   for (const seg of file.segments) {
     appState.addFileTransaction(seg.tx, seg.signature, Buffer.from(seg.data, 'base64'), file.fileMetadata, seg.order);
   }
+
+  res.send({ success: true });
 });
 
 // List all files for a given owner
@@ -93,7 +96,7 @@ app.get('/files/:owner/:path(*)', async (req: Request, res: Response) => {
   res.send(Buffer.from(file));
 });
 
-app.post('/faucet', faucetLimit, async (req: Request, res: Response) => {
+app.post('/faucet', /*faucetLimit,*/ async (req: Request, res: Response) => {
   const pk = BigInt(req.body.pk);
   let account: Account;
   let accIndex: number;

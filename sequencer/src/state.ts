@@ -99,6 +99,7 @@ export interface FileMetadata {
 
 type PendingSegment = { tx: [FileTx, SignaturePacked]; data: Buffer, order: number, fileMetadata: FileMetadata };
 
+// TODO: It would be enough to just provide a pk => index mapping.
 class AccountCache {
   accounts: Level<bigint, { index: number, account: Account }> = null!;
 
@@ -167,7 +168,6 @@ class OptimisticState {
     const newReceiver = this.findPrevAccount(state, Number(acc[0].receiver_index));
     const receiverPk = BigInt(acc[0].receiver_key);
     newReceiver.balance = newReceiver.balance + BigInt(acc[0].amount);
-    newReceiver.nonce = BigInt(acc[0].nonce);
     newReceiver.key = BigInt(receiverPk);
     this.accounts.set(Number(acc[0].receiver_index), newReceiver);
     this.accountIndices.set(receiverPk, Number(acc[0].receiver_index));
@@ -442,31 +442,6 @@ export class AppState {
   }
 
   async startSequencer() {
-    // setTimeout(async () => {
-    //   console.log('Starting mining loop...')
-    //   while (true) {
-    //     await new Promise((resolve) => setTimeout(resolve, MINING_INTERVAL));
-    //     if (!this.miningNeeded) {
-    //       continue;
-    //     }
-    //
-    //     try {
-    //       console.log('Broadcasting mining challenge...')
-    //       const mining = await broadcastMiningChallenge(
-    //         this.roValues,
-    //         this.roOffset,
-    //       );
-    //
-    //       console.log('Mining response:', mining);
-    //
-    //       this.addMiningTransaction(mining);
-    //       this.miningNeeded = false;
-    //     } catch (err) {
-    //       console.error('Failed to mine:', err);
-    //     }
-    //   }
-    // }, 1);
-
     console.log('Waiting for transactions...');
     while (true) {
       if (this.pendingAccounts.length === 0 && this.pendingSegments.length === 0 && this.pendingMining.length === 0) {
@@ -677,7 +652,9 @@ export class AppState {
     };
 
     console.log('Generating proof...');
+    const start = Date.now();
     const proof = await prove('../circuits/', proverData);
+    console.log('Proof generated in', Date.now() - start, 'ms');
 
     if (!await verify('../circuits/', proof)) {
       throw new Error('Proof verification failed');
@@ -713,33 +690,35 @@ export class AppState {
     // Cache gateway-level metadata.
     // FIXME: Get rid of linear search.
     console.log('Caching file metadata...');
-    await Promise.all(
-      Array.from(userMetas.entries()).map(async ([pk, metas]) => {
+    try {
+      for (const [pk, metas] of userMetas.entries()) {
         let storedMetas: FullFileMeta[];
         try {
           storedMetas = await this.fileMetadata.get(pk);
-
-          for (const meta of metas) {
-            const existing = storedMetas.find((m) => m.fileHash === meta.fileHash);
-            if (existing) {
-              // TODO: Maybe store the map directly?
-              const orderMap = new Map<number, { order: number, segmentIndex: bigint }>();
-              for (const { order, segmentIndex } of existing.fileIndices.concat(meta.fileIndices)) {
-                orderMap.set(order, { order, segmentIndex });
-              }
-              existing.fileIndices = Array.from(orderMap.values());
-            } else {
-              storedMetas.push(meta);
-            }
-
-          }
-        } catch {
+        } catch (err) {
           storedMetas = [...metas];
         }
 
-        return this.fileMetadata.put(pk, storedMetas);
-      }),
-    );
+        for (const meta of metas) {
+          const existing = storedMetas.find((m) => m.fileHash === meta.fileHash);
+          if (existing) {
+            // TODO: Maybe store the map directly?
+            const orderMap = new Map<number, { order: number, segmentIndex: bigint }>();
+            for (const { order, segmentIndex } of existing.fileIndices.concat(meta.fileIndices)) {
+              orderMap.set(order, { order, segmentIndex });
+            }
+            existing.fileIndices = Array.from(orderMap.values());
+            existing.fileIndices.sort((a, b) => a.order - b.order);
+          } else {
+            storedMetas.push(meta);
+          }
+        }
+
+        await this.fileMetadata.put(pk, storedMetas);
+      }
+    } catch (err) {
+      console.error('Failed to cache file metadata:', err);
+    }
 
     const block = this.blocks.createNewBlock(newStateHash.toString(), txHash, Number(now));
     await this.blocks.addBlock(block);
@@ -762,12 +741,29 @@ export class AppState {
     //   await this.accountCache.put(BigInt(senderIndex), { index: Number(senderIndex), account: sender });
     // }
 
-    // FIMXE: temporary
-    if (accounts.length > 0 || files.length > 0) {
-      this.miningNeeded = true;
-    }
-
     console.log('Block published:', txHash);
+
+    const miningNeeded = MINING_INTERVAL !== 0 && block.height % MINING_INTERVAL === 0;
+    if (miningNeeded) {
+      new Promise(async (resolve, reject) => {
+        try {
+          console.log('Broadcasting mining challenge...')
+          const mining = await broadcastMiningChallenge(
+            this.roValues,
+            this.roOffset,
+          );
+
+          console.log('Mining response:', mining);
+
+          this.addMiningTransaction(mining);
+          this.miningNeeded = false;
+          resolve(void 0);
+        } catch (err) {
+          console.error('Failed to mine:', err);
+          reject(err);
+        }
+      });
+    }
 
     return st;
   }

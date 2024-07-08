@@ -16,7 +16,7 @@ export const GENESIS_BALANCE: bigint = BigInt(
   process.env.GENESIS_BALANCE || 10n ** 50n,
 );
 export const MOCK_BLOCKCHAIN: boolean = process.env.MOCK_BLOCKCHAIN === 'true';
-export const MINING_INTERVAL: number = parseInt(process.env.MINING_INTERVAL || '120000');
+export const MINING_INTERVAL: number = parseInt(process.env.MINING_INTERVAL || '5');
 export const FAUCET_AMOUNT: bigint = BigInt(process.env.FAUCET_AMOUNT || 1_000_000n);
 
 function required<T = string>(name: string, f: (v: string) => T): T {
