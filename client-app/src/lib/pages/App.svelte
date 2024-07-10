@@ -160,7 +160,7 @@
       </div>
     </div>
   </div>
-  <div class="border-t mt-2 pt-4">
+  <div class="border-t mt-2 pt-4 mb-8">
     <h2 class="mb-4 font-bold uppercase">Blocks</h2>
     {#if blocks.length === 0}
       <div class="flex items-center justify-center">
@@ -200,7 +200,7 @@
       </div>
     {/if}
   </div>
-  <div class="flex justify-between mt-16 p-2 bg-slate-600 rounded text-xs text-gray-300">
+  <div class="flex justify-between p-2 bg-slate-600 rounded text-xs text-gray-300">
     <p class="text-gray-300 line-clamp-1">
       {#if status.rollup}
         <span class="text-green-500">✅</span>
