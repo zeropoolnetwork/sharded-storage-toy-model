@@ -891,6 +891,70 @@ export class MetadataFile {
 
     return w.toBuffer();
   }
+
+  static deserialize(buffer: Buffer): MetadataFile {
+    const r = new BinaryReader(buffer);
+
+    const accountTxs = r.readArray(() => {
+      const tx = {
+        sender_index: r.readU256().toString(),
+        receiver_index: r.readU256().toString(),
+        receiver_key: r.readU256().toString(),
+        amount: r.readU256().toString(),
+        nonce: r.readU256().toString(),
+      };
+      const assets = {
+        proof_sender: deserializeMerkleProof(r),
+        proof_receiver: deserializeMerkleProof(r),
+        account_sender: deserializeAccount(r),
+        account_receiver: deserializeAccount(r),
+        signature: deserializeSignature(r),
+      };
+      return { tx, assets };
+    });
+
+    const fileTxs = r.readArray(() => {
+      const tx = {
+        sender_index: r.readU256().toString(),
+        data_index: r.readU256().toString(),
+        time_interval: r.readU256().toString(),
+        data: r.readU256().toString(),
+        nonce: r.readU256().toString(),
+      };
+      const assets = {
+        proof_sender: deserializeMerkleProof(r),
+        proof_file: deserializeMerkleProof(r),
+        account_sender: deserializeAccount(r),
+        file: deserializeFile(r),
+        signature: deserializeSignature(r),
+      };
+      return { tx, assets };
+    });
+
+    const miningTxs = r.readArray(() => {
+      const tx = {
+        sender_index: r.readU256().toString(),
+        nonce: r.readU256().toString(),
+        random_oracle_nonce: r.readU256().toString(),
+        mining_nonce: r.readU256().toString(),
+      };
+      const assets = {
+        proof_sender: deserializeMerkleProof(r),
+        account_sender: deserializeAccount(r),
+        random_oracle_value: r.readU256().toString(),
+        proof_file: deserializeMerkleProof(r),
+        file: deserializeFile(r),
+        proof_data_in_file: deserializeMerkleProof(r),
+        data_in_file: r.readU256().toString(),
+        signature: deserializeSignature(r),
+      };
+      return { tx, assets };
+    });
+
+    const meta = r.readArray(() => FullFileMeta.deserialize(r));
+
+    return new MetadataFile(accountTxs, fileTxs, miningTxs, meta);
+  }
 }
 
 function serializeMerkleProof(w: BinaryWriter, proof: MerkleProof) {
@@ -934,6 +998,39 @@ function serializeSignature(w: BinaryWriter, sig: SignaturePacked) {
   w.writeU256(BigInt(sig.r8));
 }
 
+function deserializeMerkleProof(r: BinaryReader): MerkleProof {
+  return {
+    index_bits: r.readArray(() => r.readU8() === 1),
+    hash_path: r.readArray(() => r.readU256().toString()),
+  };
+}
+
+function deserializeAccount(r: BinaryReader): AccountType {
+  return {
+    key: r.readU256().toString(),
+    balance: r.readU256().toString(),
+    nonce: r.readU256().toString(),
+    random_oracle_nonce: r.readU256().toString(),
+  };
+}
+
+function deserializeFile(r: BinaryReader): FileType {
+  return {
+    expiration_time: r.readU256().toString(),
+    locked: r.readU8() === 1,
+    owner: r.readU256().toString(),
+    data: r.readU256().toString(),
+  };
+}
+
+function deserializeSignature(r: BinaryReader): SignaturePacked {
+  return {
+    a: r.readU256().toString(),
+    s: r.readU256().toString(),
+    r8: r.readU256().toString(),
+  };
+}
+
 export class FullFileMeta {
   fileHash: bigint;
   filePath: string;
@@ -955,5 +1052,17 @@ export class FullFileMeta {
       w.writeU32(Number(order));
       w.writeU64(segmentIndex)
     });
+  }
+
+  static deserialize(r: BinaryReader): FullFileMeta {
+    const fileHash = r.readU256();
+    const filePath = r.readString();
+    const fileSize = r.readU64();
+    const fileIndices = r.readArray(() => ({
+      order: r.readU32(),
+      segmentIndex: r.readU64(),
+    }));
+
+    return new FullFileMeta(fileHash, filePath, fileSize, fileIndices);
   }
 }
