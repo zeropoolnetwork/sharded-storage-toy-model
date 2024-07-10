@@ -71,6 +71,10 @@ export interface UploadAndMineResponse {
 //   return res;
 // }
 
+export function isAnyNodeConnected(): boolean {
+  return nodes.size > 0;
+}
+
 export async function broadcastMiningChallenge(
   roValues: bigint[],
   roOffset: bigint,
@@ -135,7 +139,7 @@ export async function getSegment(segmentId: bigint): Promise<Buffer> {
   // select a random node
   const socket = Array.from(nodes.values())[Math.floor(Math.random() * nodes.size)];
 
-  const res = await new Promise<Buffer>((resolve, reject) => {
+  return await new Promise<Buffer>((resolve, reject) => {
     socket.emit('getSegment', segmentId.toString(), (res: Buffer | { error: string }) => {
       if (res.hasOwnProperty('error')) {
         reject((res as { error: string }).error);
@@ -144,6 +148,23 @@ export async function getSegment(segmentId: bigint): Promise<Buffer> {
       }
     });
   });
+}
 
-  return res;
+export async function getSegments(segmentIds: bigint[]): Promise<Buffer> {
+  if (nodes.size === 0) {
+    throw new Error('No storage nodes connected');
+  }
+
+  // select a random node
+  const socket = Array.from(nodes.values())[Math.floor(Math.random() * nodes.size)];
+
+  return await new Promise<Buffer>((resolve, reject) => {
+    socket.emit('getSegments', segmentIds.map((x) => x.toString()), (res: Buffer | { error: string }) => {
+      if (res.hasOwnProperty('error')) {
+        reject((res as { error: string }).error);
+      } else {
+        resolve(res as Buffer);
+      }
+    });
+  });
 }

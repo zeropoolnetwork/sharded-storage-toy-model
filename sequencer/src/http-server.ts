@@ -9,8 +9,8 @@ import { rateLimit } from 'express-rate-limit';
 import { FullFileMeta, appState } from './state';
 import { prep_account_tx } from 'zpst-crypto-sdk/src/util';
 import { FAUCET_AMOUNT, MASTER_SK } from './env';
-import { getSegment } from './nodes';
-import { decodeFile } from 'zpst-common/src/codec';
+import { getSegment, getSegments } from './nodes';
+import { decodeFile, decodeSegment } from 'zpst-common/src/codec';
 import { FileRequest } from 'zpst-common/src/api';
 import { Account } from 'zpst-crypto-sdk';
 
@@ -85,15 +85,15 @@ app.get('/files/:owner/:path(*)', async (req: Request, res: Response) => {
     return;
   }
 
-  let segments: { order: number, segmentData: Buffer }[] = await Promise.all(meta.fileIndices.map(async (seg) => {
-    return { order: seg.order, segmentData: await getSegment(seg.segmentIndex) };
-  }));
-  const orderedSegments = segments.sort((a, b) => a.order - b.order).map((s) => s.segmentData);
-  const file = decodeFile(orderedSegments, meta.fileSize);
-  const contentType = mime.getType(meta.filePath) || (await fileTypeFromBuffer(file))?.mime || 'application/octet-stream';
+  const sortedSegments = meta.fileIndices.sort((a, b) => a.order - b.order);
+  const segmentIndices = sortedSegments.map((seg) => seg.segmentIndex);
+  const data = await getSegments(segmentIndices);
+
+  const fileData = decodeSegment(data, meta.fileSize);
+  const contentType = mime.getType(meta.filePath) || (await fileTypeFromBuffer(fileData))?.mime || 'application/octet-stream';
 
   res.setHeader('Content-Type', contentType);
-  res.send(Buffer.from(file));
+  res.send(Buffer.from(fileData));
 });
 
 app.post('/faucet', /*faucetLimit,*/ async (req: Request, res: Response) => {

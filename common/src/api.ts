@@ -125,6 +125,11 @@ export class StorageNodeClient {
   async getSegment(segmentId: string): Promise<Buffer> {
     return Buffer.from(await (await fetch(`${this.url}/segment/${segmentId}`)).arrayBuffer());
   }
+
+  async getSegments(segmentIds: string[]): Promise<Buffer> {
+    const ids = segmentIds.join(',');
+    return Buffer.from(await (await fetch(`${this.url}/segments/${ids}`)).arrayBuffer());
+  }
 }
 
 async function get<T>(url: string): Promise<T> {

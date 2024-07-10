@@ -66,8 +66,8 @@ import {
   RollupContract,
   RollupContractMock,
 } from './contract';
-import { upload, broadcastMiningChallenge, UploadAndMineResponse } from './nodes';
-import { BinaryWriter } from 'zpst-common/src/binary';
+import { upload, broadcastMiningChallenge, UploadAndMineResponse, isAnyNodeConnected } from './nodes';
+import { BinaryReader, BinaryWriter } from 'zpst-common/src/binary';
 import { encodeFile, bufferToFrElements } from 'zpst-common/src/codec';
 import { brotliCompress, brotliDecompress } from 'node:zlib';
 import { promisify } from 'node:util';
@@ -255,9 +255,6 @@ export class AppState {
   roOffset: bigint = 0n;
   roValues: bigint[] = [];
   now: number = 0;
-
-  // FIXME: temporary measure to stop mining when there are no transactions.
-  private miningNeeded: boolean = false;
 
   // TODO: Replace naive global state with redis or some other queue (rabbitmq, kafka, etc.)
   //       Redis would probaly be the best choice since we can use it as a cache as well.
@@ -452,6 +449,14 @@ export class AppState {
         continue;
       }
 
+      if (!isAnyNodeConnected()) {
+        console.log('No connected nodes, waiting...');
+        await new Promise((resolve) =>
+          setTimeout(resolve, BLOCK_TIME_INTERVAL),
+        );
+        continue;
+      }
+
       console.log('Found transactions, batching...');
       const accounts = this.pendingAccounts.slice(
         0,
@@ -494,8 +499,32 @@ export class AppState {
     now: bigint,
     accounts: [AccountTx, SignaturePacked][],
     files: PendingSegment[],
-    mining: UploadAndMineResponse[],
+    _mining: UploadAndMineResponse[],
   ): Promise<State> {
+    const mining: UploadAndMineResponse[] = [];
+    // TODO: At this moment, mining is not possible outside of the current block (same `now`).
+    //       Fix this either in the contract or the circuit.
+    const miningNeeded = MINING_INTERVAL !== 0 && Number(now) % MINING_INTERVAL === 0;
+    if (miningNeeded) {
+      new Promise(async (resolve, reject) => {
+        try {
+          console.log('Broadcasting mining challenge...')
+          const miningTx = await broadcastMiningChallenge(
+            this.roValues,
+            this.roOffset,
+          );
+
+          console.log('Mining response:', miningTx);
+
+          mining.push(miningTx);
+          resolve(void 0);
+        } catch (err) {
+          console.error('Failed to mine:', err);
+          reject(err);
+        }
+      });
+    }
+
     console.log('Creating a new block...');
 
     const stateHash = st.hash();
@@ -660,10 +689,7 @@ export class AppState {
       throw new Error('Proof verification failed');
     }
 
-    console.log('Publishing block...');
-    const txHash = await this.contract.publishBlock(newStateHash, now, proof[1]);
-    console.log('Block published:', txHash);
-
+    // FIXME: Everything below must be atomic.
     // Upload segments to storage nodes
     console.log('Uploading segments...');
     if (files.length > 0) {
@@ -674,6 +700,10 @@ export class AppState {
     // Upload the meta file to storage nodes
     console.log('Uploading metadata...');
     await upload([{ id: metaFileIndex.toString(), data: Buffer.from(metaFileSegment) }]);
+
+    console.log('Publishing block...');
+    const txHash = await this.contract.publishBlock(newStateHash, now, proof[1]);
+    console.log('Block published:', txHash);
 
     // Group metadata by owner.
     const userMetas = Array.from(gatewayMetas.entries()).reduce((acc, [[pk, _path], meta]) => {
@@ -742,28 +772,6 @@ export class AppState {
     // }
 
     console.log('Block published:', txHash);
-
-    const miningNeeded = MINING_INTERVAL !== 0 && block.height % MINING_INTERVAL === 0;
-    if (miningNeeded) {
-      new Promise(async (resolve, reject) => {
-        try {
-          console.log('Broadcasting mining challenge...')
-          const mining = await broadcastMiningChallenge(
-            this.roValues,
-            this.roOffset,
-          );
-
-          console.log('Mining response:', mining);
-
-          this.addMiningTransaction(mining);
-          this.miningNeeded = false;
-          resolve(void 0);
-        } catch (err) {
-          console.error('Failed to mine:', err);
-          reject(err);
-        }
-      });
-    }
 
     return st;
   }
