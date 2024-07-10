@@ -33,6 +33,38 @@ export async function startHttpServer(port: number) {
     res.send(buf);
   });
 
+  app.get('/segments/:ids', async (req: Request, res: Response) => {
+    const ids = req.params.ids.split(',');
+
+    if (ids.length > 1000) {
+      res.status(400).send('Too many segments');
+      return;
+    }
+
+    const trees = await Promise.all(ids.map(async (id) => (await appState.storage.read(id))!));
+    for (const seg of trees) {
+      if (!seg) {
+        res.status(404).send('Segment not found');
+        return;
+      }
+    }
+
+    const data = trees.map(data => {
+      const tree: Tree<bigint> = new Tree(0, [], [0n], (v) => v);
+      tree.fromBuffer(data, () => 0n);
+      const bytes = tree.values
+        .map((v) => v.toString(16).padStart(64, '0'))
+        .join('');
+      return Buffer.from(bytes, 'hex');
+    });
+
+    const buf = Buffer.concat(data);
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    res.send(buf);
+  });
+
   app.get('/status', async (req: Request, res: Response) => {
     res.send({ status: 'OK' });
   });

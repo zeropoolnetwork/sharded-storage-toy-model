@@ -1,16 +1,17 @@
+import { program } from 'commander';
+import io from 'socket.io-client';
+import { appState, init } from './state';
+
+import { mineSegment, UploadAndMineResponse } from './handlers';
+import { startHttpServer } from './http-server';
+import { NODE_PK, SEQUENCER_URL } from './env';
+import { AccountData } from 'zpst-common/src/api';
+import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
+
 //@ts-ignore
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
 }
-
-import { program } from 'commander';
-import io from 'socket.io-client';
-import { init, appState } from './state';
-
-import { UploadAndMineResponse, mineSegment } from './handlers';
-import { startHttpServer } from './http-server';
-import { NODE_PK, SEQUENCER_URL } from './env';
-import { AccountData } from 'zpst-common/src/api';
 
 async function main() {
   program.option('-p, --port <port>', 'Port to listen on', '3001');
@@ -82,6 +83,27 @@ async function main() {
       }
     },
   );
+
+  socket.on(
+    'getSegments',
+    async (ids: string[], cb: (res: Buffer | { error: string }) => void) => {
+      const trees = await Promise.all(ids.map(async (id) => (await appState.storage.read(id))!));
+      for (const seg of trees) {
+        if (!seg) {
+          cb({ error: 'Segment not found' });
+          return;
+        }
+      }
+
+      const data = trees.map(data => {
+        return data.subarray(-1 << defShardedStorageSettings.file_tree_depth)
+      });
+
+      const buf = Buffer.concat(data);
+
+      cb(buf);
+    },
+  )
 
   socket.on(
     'mine',

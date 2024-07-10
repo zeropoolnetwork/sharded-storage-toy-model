@@ -2,8 +2,7 @@ import { defShardedStorageSettings } from 'zpst-crypto-sdk/src/settings';
 import { FileStorage } from './file-storage';
 import { NODE_SK, SEQUENCER_URL } from './env';
 import { derivePublicKey } from '@zk-kit/eddsa-poseidon';
-import { AccountData, SequencerClient } from 'zpst-common/src/api';
-import { Account } from 'zpst-crypto-sdk';
+import { SequencerClient } from 'zpst-common/src/api';
 
 export class AppState {
   storage: FileStorage;
