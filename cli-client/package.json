@@ -1,0 +1,26 @@
+{
+  "name": "cli-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "faucet": "tsx index.ts faucet",
+    "upload-dir": "tsx index.ts upload-dir"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "@types/node": "^20.14.9",
+    "tsx": "^4.15.7"
+  },
+  "dependencies": {
+    "@zk-kit/eddsa-poseidon": "^1.0.1",
+    "commander": "^12.1.0",
+    "ora": "^8.0.1",
+    "zpst-common": "workspace:../common",
+    "zpst-poseidon2-bn256": "workspace:../poseidon2-bn256/nodejs"
+  }
+}
